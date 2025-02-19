@@ -3,19 +3,73 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>com.github.berndreiss</groupId>
-    <artifactId>ZenToDo-api</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <groupId>net.berndreiss</groupId>
+    <artifactId>zentodo-api</artifactId>
+    <version>1.0</version>
 
     <properties>
         <maven.compiler.source>23</maven.compiler.source>
         <maven.compiler.target>23</maven.compiler.target>
     </properties>
+    
+    <name>ZenToDo API</name>
+    
+    <description>API for interactions with the ZenToDo server.</description>
+    <url>https://berndreiss.net</url>
+
+    <licenses>
+        <license>
+            <name>GNU General Public License Version 3</name>
+            <url>https://www.gnu.org/licenses/gpl-3.0.html</url>
+        </license>
+    </licenses>
+
+    <developers>
+        <developer>
+            <id>berndreiss</id>
+            <name>Bernd Reiß</name>
+            <email>bd_reiss@gmx.at</email>
+        </developer>
+    </developers>
+
+    <scm>
+       <url>https://github.com/berndreiss/ZenToDo-api</url>
+       <connection>scm:git:https://github.com/berndreiss/ZenToDo-api.git</connection>
+       <developerConnection>scm:git:https://github.com/berndreiss/ZenToDo-api.git</developerConnection>
+    </scm>
+
     <distributionManagement>
-    <repository>
-        <id>github</id>
-        <url>https://maven.pkg.github.com/berndreiss/ZenToDo-api</url>
-    </repository>
-</distributionManagement>
+         <repository>
+             <id>ossrh</id>
+             <url>https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+        </repository>
+    </distributionManagement>
+
+     <build>
+        <plugins>
+            <!-- GPG Signing -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-gpg-plugin</artifactId>
+                <version>3.0.1</version>
+                <executions>
+                    <execution>
+                        <id>sign-artifacts</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>sign</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- Deploy to Sonatype -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-deploy-plugin</artifactId>
+                <version>3.0.0-M1</version>
+            </plugin>
+        </plugins>
+    </build>
 </project>
 
