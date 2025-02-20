@@ -72,12 +72,14 @@ public interface Database {
     void updateDropped(int id, int value);
 
     /**
-     * Update the field with the value provided.
+     * Update the list field and the position with the value provided and increment all list items list positions greater than the position.
+     * If the old list is not null decrement all old list items positions greater than the old position.
      *
      * @param id the id of the task to be updated
      * @param value the value to update with
+     * @param position position in which to add the item
      */
-    void updateList(int id, String value);
+    void updateList(int id, String value, int position);
 
     /**
      * Update the field with the value provided.
@@ -104,6 +106,5 @@ public interface Database {
      * @param color the color to put
      */
     void updateListColor(String list, String color);
-
 
 }
