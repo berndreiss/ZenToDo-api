@@ -1,5 +1,5 @@
-package net.berndreiss.zentodo.api;
+package net.berndreiss.zentodo.data;
 
-public enum OperationFields {
+public enum OperationField {
     USER, ID, TASK, FOCUS, DROPPED, LIST, LIST_POSITION, REMINDER_DATE, RECURRENCE, POSITION, COLOR;
 }

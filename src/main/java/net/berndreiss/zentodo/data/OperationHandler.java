@@ -1,4 +1,4 @@
-package net.berndreiss.zentodo.api;
+package net.berndreiss.zentodo.data;
 
 import java.util.List;
 
@@ -6,7 +6,7 @@ import java.util.List;
  * This interface represents methods necessary to communicate with the server. If there are necessary side effects,
  * they are described in the methods documentation below. THESE SIDE EFFECTS ARE NECESSARY TO GUARANTEE CONSISTENCY.
  */
-public interface Database {
+public interface OperationHandler {
 
     /**
      * Add a list of entries to the database including all the fields in the entry.

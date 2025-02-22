@@ -1,4 +1,4 @@
-package net.berndreiss.zentodo.api;
+package net.berndreiss.zentodo.data;
 
 /**
  * TODO DESCRIBE
