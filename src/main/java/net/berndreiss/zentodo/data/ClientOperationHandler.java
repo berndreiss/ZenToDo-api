@@ -1,7 +1,7 @@
 package net.berndreiss.zentodo.data;
 
 import net.berndreiss.zentodo.OperationType;
-import net.berndreiss.zentodo.util.Message;
+import net.berndreiss.zentodo.util.ZenMessage;
 
 import java.util.List;
 
@@ -34,6 +34,19 @@ public interface ClientOperationHandler extends OperationHandler {
      * TODO DESCRIBE
      * @return
      */
-    List<Message> geQueued();
+    List<ZenMessage> geQueued();
+
+    /**
+     * TODO DESCRIBE
+     * @param user
+     * @return
+     */
+    String getToken(String user);
+
+    /**
+     * TODO DESCRIBE
+     * @param token
+     */
+    void setToken(String user, String token);
 
 }

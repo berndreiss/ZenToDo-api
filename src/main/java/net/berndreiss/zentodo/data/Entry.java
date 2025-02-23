@@ -1,39 +1,66 @@
 package net.berndreiss.zentodo.data;
 
+import jakarta.persistence.*;
+
 import java.time.LocalDate;
 
 /**
  * TODO ADD DESCRIPTION
  */
 
+@Entity
+@Table(name = "entries")
 public class Entry{
 
-    private final int id;//id generated in
+    @Column
+    private Long user_id = null;
+
+    @Id
+    private long id;//id generated in
+
+    @Column (nullable = false)
     private int position;
+
+    @Column (nullable = false)
     private String task;//a description of the task that has to be done
-    private Boolean focus;//true if task has been chosen today
-    private Boolean dropped;//true if task has been dropped and not been used in brainstorm and pick
-    private String list;//a list to which the task belongs to
-    private Integer listPosition;//position in according list
-    private LocalDate reminderDate;//a date, when the task is due -> "yyyyMMdd"
-    private String recurrence;//consisting of a String in the form of "y/m/w/d0-90-9" where the
+
+    @Column (nullable = false)
+    private Boolean focus = false;//true if task has been chosen today
+
+    @Column (nullable = false)
+    private Boolean dropped = true;//true if task has been dropped and not been used in brainstorm and pick
+
+    @Column
+    private String list = null;//a list to which the task belongs to
+
+    @Column
+    private Integer listPosition = null;//position in according list
+
+    @Column
+    private LocalDate reminderDate = null;//a date, when the task is due -> "yyyyMMdd"
+
+    @Column
+    private String recurrence = null;//consisting of a String in the form of "y/m/w/d0-90-9" where the
                               //two digit number defines the offset in years (y), months(m),
                               //weeks (w) or days(d) when the task is going to reoccur
 
-    public Entry(int id, int position, String task){
+    public Entry(){}
+
+    public Entry(long id, int position, String task){
         //creates a new instance and initializes the fields of the entry
         this.id = id;
         this.position = position;
         this.task=task;
-        this.dropped = true;
-        this.focus = false;
-        this.listPosition=null;
-        this.reminderDate = null;
-        this.recurrence = null;
+    }
+
+    public Entry(int position, String task){
+        //creates a new instance and initializes the fields of the entry
+        this.position = position;
+        this.task=task;
     }
 
     //the following functions simply return the different fields of the entry
-    public int getId(){return this.id;}
+    public long getId(){return this.id;}
 
     public int getPosition(){return this.position;}
 
@@ -48,7 +75,7 @@ public class Entry{
     public Integer getListPosition(){return listPosition;}
 
     public LocalDate getReminderDate(){return reminderDate;}
-    
+
     public String getRecurrence(){return recurrence;}
 
     //The following functions are to update the different fields
@@ -67,4 +94,5 @@ public class Entry{
     public void setReminderDate(LocalDate reminderDate){this.reminderDate=reminderDate;}
 
     public void setRecurrence(String recurrence){this.recurrence=recurrence;}
+
 }
