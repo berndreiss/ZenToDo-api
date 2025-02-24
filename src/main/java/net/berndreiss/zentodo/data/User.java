@@ -10,7 +10,6 @@ import jakarta.persistence.*;
 public class User {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @Column(unique = true, nullable = false)
@@ -20,9 +19,19 @@ public class User {
     private String userName = null;
 
     @Column
-    private String token;
+    private boolean enabled = false;
 
     public User(){}
+
+    public User(String email){
+        this.email = email;
+    }
+
+    public User(String email, String userName){
+        this.email = email;
+        this.userName = userName;
+    }
+
     public User(Long id, String email){
         this.id = id;
         this.email = email;
@@ -57,11 +66,11 @@ public class User {
         this.userName = userName;
     }
 
-    public String getToken() {
-        return token;
+    public boolean getEnabled(){
+        return enabled;
     }
 
-    public void setToken(String token) {
-        this.token = token;
+    public void setEnabled(boolean enabled){
+        this.enabled = enabled;
     }
 }

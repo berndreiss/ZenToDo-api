@@ -13,7 +13,7 @@ import java.time.LocalDate;
 public class Entry{
 
     @Column
-    private Long user_id = null;
+    private Long userId = null;
 
     @Id
     private long id;//id generated in
@@ -46,17 +46,19 @@ public class Entry{
 
     public Entry(){}
 
-    public Entry(long id, int position, String task){
+    public Entry(long id, int position, String task, Long userId){
         //creates a new instance and initializes the fields of the entry
         this.id = id;
         this.position = position;
         this.task=task;
+        this.userId = userId;
     }
 
-    public Entry(int position, String task){
+    public Entry(int position, String task, Long userId){
         //creates a new instance and initializes the fields of the entry
         this.position = position;
         this.task=task;
+        this.userId = userId;
     }
 
     //the following functions simply return the different fields of the entry

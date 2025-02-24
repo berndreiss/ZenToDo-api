@@ -3,6 +3,7 @@ package net.berndreiss.zentodo.data;
 import net.berndreiss.zentodo.OperationType;
 import net.berndreiss.zentodo.util.ZenMessage;
 
+import java.io.IOException;
 import java.util.List;
 
 /**
@@ -15,7 +16,7 @@ public interface ClientOperationHandler extends OperationHandler {
      * @param entry
      * @param id
      */
-    void updateId(int entry, int id);
+    void updateId(long entry, long id);
 
     /**
      * TODO DESCRIBE
@@ -41,12 +42,49 @@ public interface ClientOperationHandler extends OperationHandler {
      * @param user
      * @return
      */
-    String getToken(String user);
+    String getToken(long user) throws IOException;
 
     /**
      * TODO DESCRIBE
+     * @param user
      * @param token
      */
-    void setToken(String user, String token);
+    void setToken(long user, String token) throws IOException;
+
+
+    /**
+     * TODO DESCRIBE
+     * @param id
+     * @param email
+     * @param userName
+     */
+    void addUser(long id, String email, String userName);
+
+    /**
+     *
+     * @param email
+     * @return
+     */
+    User getUserByEmail(String email);
+
+    /**
+     * TODO DESCRIBE
+     * @param email
+     * @return
+     */
+    boolean userExists(String email);
+
+    /**
+     * TODO DESCRIBE
+     * @param email
+     * @return
+     */
+    boolean isEnabled(String email);
+
+    /**
+     * TODO DESCRIBE
+     * @param email
+     */
+    void enableUser(String email);
 
 }

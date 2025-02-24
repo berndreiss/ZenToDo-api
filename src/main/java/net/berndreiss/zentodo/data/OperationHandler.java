@@ -21,7 +21,7 @@ public interface OperationHandler {
      * @param id the id of the new task as provided by the server
      * @param task the task to be associated with the entry
      */
-    void addNewEntry(int id, String task);
+    void addNewEntry(long id, String task, Long userId);
 
     /**
      * Delete entry from database including the local queue(s). All entries with position greater than the deleted
@@ -29,7 +29,7 @@ public interface OperationHandler {
      *
      * @param id the id of the entry to be deleted
      */
-    void delete(int id);
+    void delete(long id);
 
     /**
      * Swap entry with id with the entry at position.
@@ -37,7 +37,7 @@ public interface OperationHandler {
      * @param id the id of the entry to be moved
      * @param position the position with which to swap
      */
-    void swapEntries(int id, int position);
+    void swapEntries(long id, int position);
 
     /**
      * Swap entry in list with entry at position.
@@ -45,7 +45,7 @@ public interface OperationHandler {
      * @param id the id of the entry to be moved
      * @param position the position with which to swap
      */
-    void swapListEntries(int id, int position);
+    void swapListEntries(long id, int position);
 
     /**
      * Update the task with the value provided.
@@ -53,7 +53,7 @@ public interface OperationHandler {
      * @param id the id of the task to be updated
      * @param value the value to update with
      */
-    void updateTask(int id, String value);
+    void updateTask(long id, String value);
 
     /**
      * Update the field with the value provided.
@@ -61,7 +61,7 @@ public interface OperationHandler {
      * @param id the id of the task to be updated
      * @param value the value to update with
      */
-    void updateFocus(int id, int value);
+    void updateFocus(long id, int value);
 
     /**
      * Update the field with the value provided.
@@ -69,7 +69,7 @@ public interface OperationHandler {
      * @param id the id of the task to be updated
      * @param value the value to update with
      */
-    void updateDropped(int id, int value);
+    void updateDropped(long id, int value);
 
     /**
      * Update the list field and the position with the value provided and increment all list items list positions greater than the position.
@@ -79,7 +79,7 @@ public interface OperationHandler {
      * @param value the value to update with
      * @param position position in which to add the item
      */
-    void updateList(int id, String value, int position);
+    void updateList(long id, String value, int position);
 
     /**
      * Update the field with the value provided.
@@ -87,7 +87,7 @@ public interface OperationHandler {
      * @param id the id of the task to be updated
      * @param value the value to update with
      */
-    void updateReminderDate(int id, Long value);
+    void updateReminderDate(long id, Long value);
 
     /**
      * Update the field with the value provided. Also needs to update the reminder date.
@@ -96,7 +96,7 @@ public interface OperationHandler {
      * @param reminderDate the reminder date of the task
      * @param value the value to update with
      */
-    void updateRecurrence(int id, Long reminderDate, String value);
+    void updateRecurrence(long id, Long reminderDate, String value);
 
     /**
      *

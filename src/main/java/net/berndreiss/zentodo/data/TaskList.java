@@ -12,6 +12,9 @@ import jakarta.persistence.Table;
 @Table (name = "lists")
 public class TaskList {
 
+    @Column
+    private Long userId = null;
+
     @Id
     @Column (nullable = false)
     private String list;
@@ -23,6 +26,9 @@ public class TaskList {
     public TaskList(String color){
         this.color = color;
     }
+
+    private Long getUserId(){return userId;}
+    private void setUserId(Long userId){this.userId = userId;}
 
     public String getColor(){return color;}
 
