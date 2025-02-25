@@ -49,6 +49,8 @@ public class TimeDrift implements Comparable<TimeDrift> {
      * @return
      */
     public static Instant parseTimeStamp(String timeStamp){
+        if (timeStamp == null)
+            return null;
         return Instant.parse(timeStamp);
     }
 }

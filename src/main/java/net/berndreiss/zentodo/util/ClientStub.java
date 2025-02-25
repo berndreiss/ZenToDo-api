@@ -1,19 +1,22 @@
 package net.berndreiss.zentodo.util;
 
+import net.berndreiss.zentodo.OperationType;
 import net.berndreiss.zentodo.data.OperationHandler;
 import net.berndreiss.zentodo.data.ClientOperationHandler;
 import net.berndreiss.zentodo.data.Entry;
 import net.berndreiss.zentodo.data.User;
 
+import java.io.BufferedReader;
 import java.io.IOException;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.net.*;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.format.DateTimeParseException;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 /**
@@ -21,17 +24,28 @@ import java.util.function.Supplier;
  */
 public class ClientStub implements OperationHandler {
 
+    public static Consumer<String> consumer;
+
     private final String email;
     private final String userName;
     private final ClientOperationHandler dbHandler;
     private List<ClientOperationHandler> otherHandlers = null;
     private ExceptionHandler exceptionHandler;
-    private final HttpClient client;
-    public static String SERVER = "http://localhost:8080/";
+    public static String SERVER = "10.0.0.6:8080/";
     private  User user;
     private TimeDrift timeDrift;
 
-    public static void main(String[] args) throws IOException, InterruptedException {
+    public static void main(String[] args) throws IOException, InterruptedException, URISyntaxException {
+
+        /*
+        if (consumer == null)
+            consumer  = System.out::println;
+        ZenWebSocketClient client = new ZenWebSocketClient(consumer);
+        Thread thread = new Thread(() -> client.connect(token));
+        thread.setDaemon(true);
+        thread.start();
+        */
+
 
         TestDbHandler dbTestHandler = new TestDbHandler("ZenToDoPU");
 
@@ -45,6 +59,7 @@ public class ClientStub implements OperationHandler {
         }));
         stub.init();
         dbTestHandler.close();
+
     }
 
     public ClientStub(String email, ClientOperationHandler dbHandler){
@@ -54,7 +69,6 @@ public class ClientStub implements OperationHandler {
         this.email = email;
         this.userName = userName;
         this.dbHandler = dbHandler;
-        client = HttpClient.newBuilder().build();
     }
 
     /**
@@ -70,17 +84,18 @@ public class ClientStub implements OperationHandler {
 
                 int attempts = 0;
                 while (attempts++ < 10){
-                    HttpResponse<String> response = sendPostMessage(SERVER + "auth/register", loginRequest);
-                    if (response.statusCode() == 200){
 
-                        if (response.body().equals("enabled")){
+                    HttpURLConnection connection = sendPostMessage("http://" + SERVER + "auth/register", loginRequest);
+                    if (connection.getResponseCode() == 200){
+
+                        if (getBody(connection).equals("enabled")){
                             dbHandler.enableUser(email);
                             break;
                         }
-                        if (response.body().equals("exists")) {
+                        if (getBody(connection).equals("exists")) {
                             return "User already exists, but was not verified. Check your mails.";
                         }
-                        dbHandler.addUser(Long.parseLong(response.body()), email, userName);
+                        dbHandler.addUser(Long.parseLong(getBody(connection)), email, userName);
                         return "User was registered. Check your mails for verification.";
                     }
                 }
@@ -90,9 +105,9 @@ public class ClientStub implements OperationHandler {
             String token = dbHandler.getToken(user.getId());
 
             if (token != null) {
-                HttpResponse<String> response = sendPostMessage(SERVER + "auth/renewToken", getLoginRequest(email, token));
-                if (response.statusCode() == 200) {
-                    dbHandler.setToken(user.getId(), response.body());
+                HttpURLConnection connection = sendPostMessage("http://" + SERVER + "auth/renewToken", getLoginRequest(email, token));
+                if (connection.getResponseCode() == 200) {
+                    dbHandler.setToken(user.getId(), getBody(connection));
                     return "User logged in.";
                 }
             }
@@ -102,9 +117,9 @@ public class ClientStub implements OperationHandler {
 
             int attempts = 0;
             while (attempts++ < 10) {
-                HttpResponse<String> response = sendPostMessage(SERVER + "auth/login", loginRequest);
-                if (response.statusCode() == 200) {
-                    dbHandler.setToken(user.getId(), response.body());
+                HttpURLConnection connection = sendPostMessage("http://" + SERVER + "auth/login", loginRequest);
+                if (connection.getResponseCode() == 200) {
+                    dbHandler.setToken(user.getId(), getBody(connection));
                     return "User logged in.";
                 }
             }
@@ -112,20 +127,6 @@ public class ClientStub implements OperationHandler {
 
             return "Something went wrong. Try logging in later.";
 
-            /**
-             List<Object> arguments = new ArrayList<>();
-             arguments.add(3);
-             arguments.add(1);
-             arguments.add("Test");
-             ZenMessage message = new ZenMessage(OperationType.POST, arguments);
-             String jsonInput = jsonify(message);
-             HttpRequest request = HttpRequest.newBuilder().uri(URI.create(SERVER + "add")).header("Content-Type", "application/json").header("Authorization", "Bearer " + dbHandler.getToken(user.getId())).POST(HttpRequest.BodyPublishers.ofString(jsonInput, StandardCharsets.UTF_8)).build();
-
-             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-
-             System.out.println(response);
-             System.out.println(response.body());
-             */
         } catch (Exception e) {
             if (exceptionHandler != null)
                 exceptionHandler.handle(e);
@@ -136,51 +137,123 @@ public class ClientStub implements OperationHandler {
     /**
      * TODO
      */
-    public void init() throws IOException, InterruptedException {
+    public void init() {
 
-        // Set clock drift
-        for (int i = 0; i < 8; i++)
-            sendAuthGetMessage(SERVER + "test");
+        try {
+            // Set clock drift
+            for (int i = 0; i < 8; i++)
+                sendAuthGetMessage("http://" + SERVER + "test");
 
-        //TODO SEND QUEUE ITEMS TO SERVER
+            //TODO SEND QUEUE ITEMS TO SERVER
+
+            //TODO LISTEN FOR EVENTS
+
+            List<Object> arguments = new ArrayList<>();
+            arguments.add(3);
+            arguments.add(1);
+            arguments.add("Test");
+            arguments.add(4);
+            ZenServerMessage message = new ZenServerMessage(OperationType.POST, arguments);
+            ZenServerMessage message1 = new ZenServerMessage(OperationType.POST, arguments);
+            List<ZenMessage> list = new ArrayList<>();
+
+            list.add(message);
+            list.add(message1);
+            HttpURLConnection connection = sendAuthPostMessage("http://" + SERVER + "add", jsonifyList(list));
+
+            System.out.println(connection.getResponseCode());
+            System.out.println("HEADER:" + connection.getHeaderField("t3"));
+
+            connection = sendAuthPostMessage("http://" + SERVER + "auth/register", getLoginRequest("bd_reiss@gmx.at", "test"));
+
+            System.out.println(connection.getResponseCode());
+            System.out.println("HEADER:" + connection.getHeaderField("t3"));
+            //System.out.println(jsonifyList(list));
+        } catch (Exception e){
+            if (exceptionHandler != null)
+                exceptionHandler.handle(e);
+        }
 
     }
 
+    public static String getBody(HttpURLConnection connection) throws IOException {
+
+        BufferedReader br = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+        String inputLine;
+        StringBuilder response = new StringBuilder();
+
+        while ((inputLine = br.readLine())!=null)
+            response.append(inputLine);
+
+        return response.toString();
+    }
     //TODO COMMENT
-    private HttpResponse<String> sendPostMessage(String uri, String body) throws IOException, InterruptedException {
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(uri))
-                .header("Content-Type", "application/json")
-                .header("t1", TimeDrift.getTimeStamp())
-                .POST(HttpRequest.BodyPublishers.ofString(body, StandardCharsets.UTF_8))
-                .build();
-        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-        processResponse(response);
-        return response;
+    private  HttpURLConnection sendPostMessage(String urlString, String body) throws IOException, URISyntaxException {
+
+        URL url = new URI(urlString).toURL();
+        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+
+        connection.setRequestMethod("POST");
+        connection.setRequestProperty("Content-Type", "application/json");
+        connection.setRequestProperty("t1", TimeDrift.getTimeStamp());
+        connection.setDoOutput(true);
+
+        try (OutputStream os = connection.getOutputStream()) {
+            byte[] input = body.getBytes(StandardCharsets.UTF_8);
+            os.write(input, 0, input.length);
+        }
+        System.out.println(connection.getResponseCode());
+
+        processResponse(connection);
+        return connection;
     }
 
     //TODO
-    private HttpResponse<String> sendAuthGetMessage(String uri) throws IOException, InterruptedException {
+    private HttpURLConnection sendAuthPostMessage(String urlString, String body) throws IOException, InterruptedException, URISyntaxException {
 
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(uri))
-                .header("Content-Type", "application/json")
-                .header("Authorization", "Bearer " + dbHandler.getToken(user.getId()))
-                .header("t1", TimeDrift.getTimeStamp())
-                .GET()
-                .build();
-        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-        processResponse(response);
-        return response;
+        URL url = new URI(urlString).toURL();
+        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+
+        connection.setRequestMethod("POST");
+        connection.setRequestProperty("Content-Type", "application/json");
+        connection.setRequestProperty("Authorization", "Bearer " + dbHandler.getToken(user.getId()));
+        connection.setRequestProperty("t1", TimeDrift.getTimeStamp());
+        connection.setDoOutput(true);
+
+        try (OutputStream os = connection.getOutputStream()) {
+            byte[] input = body.getBytes(StandardCharsets.UTF_8);
+            os.write(input, 0, input.length);
+        }
+        processResponse(connection);
+        return connection;
+    }
+    //TODO
+    private HttpURLConnection sendAuthGetMessage(String urlString) throws IOException, InterruptedException, URISyntaxException {
+
+        URL url = new URI(urlString).toURL();
+        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+
+        connection.setRequestMethod("GET");
+        connection.setRequestProperty("Content-Type", "application/json");
+        connection.setRequestProperty("Authorization", "Bearer " + dbHandler.getToken(user.getId()));
+        connection.setRequestProperty("t1", TimeDrift.getTimeStamp());
+        connection.setDoOutput(true);
+
+        processResponse(connection);
+        return connection;
     }
 
     //TODO
-    private void processResponse(HttpResponse<String> response){
+    private void processResponse(HttpURLConnection connection){
         try {
             Instant t4 = TimeDrift.parseTimeStamp(TimeDrift.getTimeStamp());
-            Instant t1 = TimeDrift.parseTimeStamp(response.headers().firstValue("t1").orElse(""));
-            Instant t2 = TimeDrift.parseTimeStamp(response.headers().firstValue("t2").orElse(""));
-            Instant t3 = TimeDrift.parseTimeStamp(response.headers().firstValue("t3").orElse(""));
+            Instant t1 = TimeDrift.parseTimeStamp(connection.getHeaderField("t1"));
+            Instant t2 = TimeDrift.parseTimeStamp(connection.getHeaderField("t2"));
+            Instant t3 = TimeDrift.parseTimeStamp(connection.getHeaderField("t3"));
+
+            if (t1 == null || t2 == null || t3 == null)
+                return;
+
             TimeDrift td = new TimeDrift(t1, t2, t3, t4);
 
             if (timeDrift == null || td.compareTo(timeDrift) < 0)
@@ -214,29 +287,38 @@ public class ClientStub implements OperationHandler {
         this.exceptionHandler = exceptionHandler;
     }
 
+    /**
+     *
+     * @return
+     */
+    public User getUser(){return user;}
+
     //TODO DESCRIBE
-    private String getAuthHeader(String email, String password){
+    private static String getAuthHeader(String email, String password){
 
         String encodedAuth = Base64.getEncoder().encodeToString((email + ":" + password).getBytes(StandardCharsets.UTF_8));
         return "Basic " + encodedAuth;
     }
 
     //TODO DESCRIBE
-    private String getLoginRequest(String email, String password){
+    private static String getLoginRequest(String email, String password){
         return "{\"email\": \"" + email + "\", \"password\": \"" + password + "\"}";
     }
 
+    public static String jsonifyMessage(ZenMessage message){
+        return jsonifyMessage(message, "");
+    }
     /**
      * TODO DESCRIBE
      * @param message
      * @return
      */
-    public String jsonify(ZenMessage message){
+    public static String jsonifyMessage(ZenMessage message, String whitespace){
         StringBuilder sb = new StringBuilder();
 
-        sb.append("{\n");
-        sb.append("  \"type\": \"").append(message.getType()).append("\",\n");
-        sb.append("  \"arguments\": [");
+        sb.append(whitespace).append("{\n");
+        sb.append(whitespace).append("  \"type\": \"").append(message.getType()).append("\",\n");
+        sb.append(whitespace).append("  \"arguments\": [");
         String prefix = "";
         for(Object argument: message.getArguments()) {
             sb.append(prefix);
@@ -245,15 +327,74 @@ public class ClientStub implements OperationHandler {
 
         }
         sb.append("]");
-        sb.append("}");
+        if (message instanceof ZenServerMessage){
+            sb.append(",\n");
+            sb.append(whitespace).append("  \"timestamp\": \"").append(((ZenServerMessage) message).getTimeStamp().toString()).append("\"");
+        }
+        sb.append("\n");
+        sb.append(whitespace).append("}");
 
         return sb.toString();
     }
 
-    public void receiveMessage(ZenMessage message){
+    /**
+     * TODO
+     * @param list
+     * @return
+     */
+    public static String jsonifyList(List<ZenMessage> list){
+        StringBuilder sb = new StringBuilder();
+
+        sb.append("[");
+
+        String prefix = "\n";
+        for (ZenMessage message: list){
+            sb.append(prefix);
+            prefix = ",\n";
+            sb.append(jsonifyMessage(message, "  "));
+        }
+
+        sb.append("\n]");
+
+        return sb.toString();
+    }
+
+    public static String jsonifyServerList(List<ZenServerMessage> list){
+        StringBuilder sb = new StringBuilder();
+
+        sb.append("[");
+
+        String prefix = "\n";
+        for (ZenMessage message: list){
+            sb.append(prefix);
+            prefix = ",\n";
+            sb.append(jsonifyMessage(message, "  "));
+        }
+
+        sb.append("\n]");
+
+        return sb.toString();
+    }
 
 
+    private void receiveMessage(ZenMessage message){
 
+        switch (message.getType()){
+            case POST -> {}
+            case ADD_NEW_ENTRY -> {}
+            case DELETE -> {}
+            case SWAP -> {}
+            case SWAP_LIST -> {}
+            case UPDATE_LIST -> {}
+            case UPDATE_TASK -> {}
+            case UPDATE_FOCUS -> {}
+            case UPDATE_DROPPED -> {}
+            case UPDATE_RECURRENCE -> {}
+            case UPDATE_REMINDER_DATE -> {}
+            case UPDATE_LIST_COLOR -> {}
+            case UPDATE_MAIL -> {}
+            case UPDATE_USER_NAME -> {}
+        }
     }
 
     @Override
@@ -314,6 +455,17 @@ public class ClientStub implements OperationHandler {
     @Override
     public void updateListColor(String list, String color) {
 
+    }
+
+    @Override
+    public void updateUserName(long id, String name) {
+
+    }
+
+    @Override
+    public boolean updateEmail(long id, String email) {
+
+        return true;
     }
 
 }

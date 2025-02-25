@@ -111,6 +111,16 @@ public class TestDbHandler implements ClientOperationHandler {
     }
 
     @Override
+    public void updateUserName(long id, String name) {
+
+    }
+
+    @Override
+    public boolean updateEmail(long id, String email) {
+        return false;
+    }
+
+    @Override
     public void updateId(long entry, long id) {
 
     }

@@ -107,4 +107,18 @@ public interface OperationHandler {
      */
     void updateListColor(String list, String color);
 
+    /**
+     * TODO
+     * @param id
+     * @param name
+     */
+    void updateUserName(long id, String name);
+
+    /**
+     * TODO
+     * @param id
+     * @param email
+     */
+    boolean updateEmail(long id, String email);
+
 }
