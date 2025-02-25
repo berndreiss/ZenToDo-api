@@ -8,11 +8,9 @@ import net.berndreiss.zentodo.data.ClientOperationHandler;
 import net.berndreiss.zentodo.data.Entry;
 import net.berndreiss.zentodo.data.User;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
 import java.util.List;
 
 /**
@@ -135,7 +133,7 @@ public class TestDbHandler implements ClientOperationHandler {
     @Override
     public String getToken(long user) {
         try {
-            return Files.readString(Path.of(String.valueOf(user) + "_token"));
+            return Files.readString(Path.of(user + "_token"));
         } catch(IOException e){
             return null;
         }
@@ -145,7 +143,7 @@ public class TestDbHandler implements ClientOperationHandler {
     public void setToken(long user, String token) {
          this.token = token;
         try {
-            Files.write(Path.of(String.valueOf(user) + "_token"), token.getBytes());
+            Files.write(Path.of(user + "_token"), token.getBytes());
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

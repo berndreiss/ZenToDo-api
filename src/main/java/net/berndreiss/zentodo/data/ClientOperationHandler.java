@@ -42,14 +42,14 @@ public interface ClientOperationHandler extends OperationHandler {
      * @param user
      * @return
      */
-    String getToken(long user) throws IOException;
+    String getToken(long user);
 
     /**
      * TODO DESCRIBE
      * @param user
      * @param token
      */
-    void setToken(long user, String token) throws IOException;
+    void setToken(long user, String token);
 
 
     /**
