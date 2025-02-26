@@ -6,7 +6,6 @@ import java.net.URI;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
 @ClientEndpoint
@@ -26,7 +25,6 @@ public class ZenWebSocketClient extends Endpoint {
             @Override
             public void onMessage(String message) {
                 messageConsumer.accept(message);
-                System.out.println("Received message: " + message);
             }
         });
     }
@@ -51,7 +49,7 @@ public class ZenWebSocketClient extends Endpoint {
         this.messageConsumer = messageConsumer;
     }
 
-    public void connect(String token) {
+    public void connect(String email, String token, long device) {
         try {
 
             WebSocketContainer container = ContainerProvider.getWebSocketContainer();
@@ -63,6 +61,8 @@ public class ZenWebSocketClient extends Endpoint {
                         @Override
                         public void beforeRequest(Map<String, List<String>> headers){
                             headers.put("Authorization", Collections.singletonList("Bearer " + token));
+                            headers.put("email", Collections.singletonList(email));
+                            headers.put("device", Collections.singletonList(String.valueOf(device)));
                         }
                     })
                     .build();

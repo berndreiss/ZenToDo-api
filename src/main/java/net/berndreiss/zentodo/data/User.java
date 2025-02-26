@@ -21,6 +21,9 @@ public class User {
     @Column
     private boolean enabled = false;
 
+    @Column (nullable = false)
+    private long device;
+
     public User(){}
 
     public User(String email){
@@ -32,11 +35,11 @@ public class User {
         this.userName = userName;
     }
 
-    public User(Long id, String email){
+    public User(Long id, String email, long device){
         this.id = id;
         this.email = email;
     }
-    public User(Long id, String email, String username){
+    public User(Long id, String email, String username, long device){
         this.id = id;
         this.email = email;
         this.userName = username;
@@ -73,4 +76,8 @@ public class User {
     public void setEnabled(boolean enabled){
         this.enabled = enabled;
     }
+
+    public long getDevice(){return device;}
+
+    public void setDevice(long device){this.device = device;}
 }

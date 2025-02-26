@@ -160,9 +160,9 @@ public class TestDbHandler implements ClientOperationHandler {
     }
 
     @Override
-    public void addUser(long id, String email, String userName) {
+    public void addUser(long id, String email, String userName, long device) {
 
-        User user = new User(id, email, userName);
+        User user = new User(id, email, userName, device);
 
         em.getTransaction().begin();
         em.persist(user);
@@ -208,5 +208,16 @@ public class TestDbHandler implements ClientOperationHandler {
                 .setParameter("email", email)
                 .executeUpdate();
         em.getTransaction().commit();
+    }
+
+    @Override
+    public void setDevice(String email, long id) {
+        em.getTransaction().begin();
+        em.createQuery("UPDATE User SET device= :device WHERE email= :email")
+                .setParameter("email", email)
+                .setParameter("device", id)
+                .executeUpdate();
+        em.getTransaction().commit();
+
     }
 }

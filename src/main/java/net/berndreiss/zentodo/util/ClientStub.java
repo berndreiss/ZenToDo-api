@@ -5,17 +5,16 @@ import net.berndreiss.zentodo.data.OperationHandler;
 import net.berndreiss.zentodo.data.ClientOperationHandler;
 import net.berndreiss.zentodo.data.Entry;
 import net.berndreiss.zentodo.data.User;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
+import java.io.*;
 import java.net.*;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.format.DateTimeParseException;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
+import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
@@ -24,7 +23,7 @@ import java.util.function.Supplier;
  */
 public class ClientStub implements OperationHandler {
 
-    public static Consumer<String> consumer;
+    private ZenWebSocketClient client;
 
     private final String email;
     private final String userName;
@@ -36,16 +35,6 @@ public class ClientStub implements OperationHandler {
     private TimeDrift timeDrift;
 
     public static void main(String[] args) throws IOException, InterruptedException, URISyntaxException {
-
-        /*
-        if (consumer == null)
-            consumer  = System.out::println;
-        ZenWebSocketClient client = new ZenWebSocketClient(consumer);
-        Thread thread = new Thread(() -> client.connect(token));
-        thread.setDaemon(true);
-        thread.start();
-        */
-
 
         TestDbHandler dbTestHandler = new TestDbHandler("ZenToDoPU");
 
@@ -79,7 +68,9 @@ public class ClientStub implements OperationHandler {
     public String authenticate(Supplier<String> passwordSupplier){
         try {
             user = dbHandler.getUserByEmail(email);
-            if (user == null || !user.getEnabled()) {
+            System.out.println(user==null);
+            if (user == null) {
+                System.out.println("USER==null");
                 String loginRequest = getLoginRequest(email, passwordSupplier.get());
 
                 int attempts = 0;
@@ -88,23 +79,52 @@ public class ClientStub implements OperationHandler {
                     HttpURLConnection connection = sendPostMessage("http://" + SERVER + "auth/register", loginRequest);
                     if (connection.getResponseCode() == 200){
 
-                        if (getBody(connection).equals("enabled")){
+                        String body = getBody(connection);
+                        String[] ids  = body.split(",");
+                        BufferedReader is = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+                        String line;
+                        while ((line = is.readLine()) != null)
+                            System.out.println(line);
+                        System.out.println(connection.getResponseMessage());
+                        System.out.println(body);
+
+                        if (Integer.parseInt(ids[0]) == 0) {
+                            dbHandler.addUser(Long.parseLong(ids[1]), email, userName, Long.parseLong(ids[2]));
+                            return "User was registered. Check your mails for verification.";
+                        }
+                        if (Integer.parseInt(ids[0]) == 1) {
+                            dbHandler.addUser(Long.parseLong(ids[1]), email, userName, Long.parseLong(ids[2]));
                             dbHandler.enableUser(email);
-                            break;
+                            dbHandler.setDevice(email, Long.parseLong(ids[2]));
+                            user = dbHandler.getUserByEmail(email);
+                            dbHandler.setToken(Long.parseLong(ids[1]), ids[3]);
+                            return "User logged in.";
                         }
-                        if (getBody(connection).equals("exists")) {
-                            return "User already exists, but was not verified. Check your mails.";
-                        }
-                        dbHandler.addUser(Long.parseLong(getBody(connection)), email, userName);
-                        return "User was registered. Check your mails for verification.";
+                        return "User was not registered because return code did not mean anything (code " + ids[0] + ").";
                     }
                 }
             }
 
-            assert user != null;
+            if (!user.getEnabled()){
+                System.out.println("USER!=ENABLED");
+                String loginRequest = getLoginRequest(email, passwordSupplier.get());
+                HttpURLConnection connection = sendPostMessage("http://" + SERVER + "auth/status", loginRequest);
+                String body = getBody(connection);
+                if (body.equals("exists"))
+                    return "User already exists, but was not verified. Check your mails.";
+                else if (body.startsWith("enabled")){
+                    user.setEnabled(true);
+                    dbHandler.enableUser(email);
+                    dbHandler.setToken(user.getId(), body.split(",")[1]);
+                    return "User logged in.";
+                } else
+                    return "Something went wrong when retrieving the status of the user from the server.";
+
+            }
             String token = dbHandler.getToken(user.getId());
 
             if (token != null) {
+                System.out.println("RENEW TOKEN");
                 HttpURLConnection connection = sendPostMessage("http://" + SERVER + "auth/renewToken", getLoginRequest(email, token));
                 if (connection.getResponseCode() == 200) {
                     dbHandler.setToken(user.getId(), getBody(connection));
@@ -112,10 +132,10 @@ public class ClientStub implements OperationHandler {
                 }
             }
 
-
             String loginRequest = getLoginRequest(email, passwordSupplier.get());
 
             int attempts = 0;
+            System.out.println("LOGIN");
             while (attempts++ < 10) {
                 HttpURLConnection connection = sendPostMessage("http://" + SERVER + "auth/login", loginRequest);
                 if (connection.getResponseCode() == 200) {
@@ -141,8 +161,9 @@ public class ClientStub implements OperationHandler {
 
         try {
             // Set clock drift
-            for (int i = 0; i < 8; i++)
+            for (int i = 0; i < 8; i++) {
                 sendAuthGetMessage("http://" + SERVER + "test");
+            }
 
             //TODO SEND QUEUE ITEMS TO SERVER
 
@@ -161,14 +182,33 @@ public class ClientStub implements OperationHandler {
             list.add(message1);
             HttpURLConnection connection = sendAuthPostMessage("http://" + SERVER + "add", jsonifyList(list));
 
+            System.out.println(jsonifyList(list));
             System.out.println(connection.getResponseCode());
             System.out.println("HEADER:" + connection.getHeaderField("t3"));
 
-            connection = sendAuthPostMessage("http://" + SERVER + "auth/register", getLoginRequest("bd_reiss@gmx.at", "test"));
+            client = new ZenWebSocketClient(rawMessage -> {
 
-            System.out.println(connection.getResponseCode());
-            System.out.println("HEADER:" + connection.getHeaderField("t3"));
-            //System.out.println(jsonifyList(list));
+                    String id = getId(rawMessage);
+                    JSONArray parsedMessage  = getMessage(rawMessage);
+
+                try {
+                    HttpURLConnection conn = sendAuthPostMessage("http://" + SERVER + "ackn", "{" +
+                            "\"id\": \"" + id + "\"," +
+                            "\"email\": \"" + email + "\"," +
+                            "\"device\": \"" + user.getDevice() + "\"" +
+                            "}");
+                    if (conn.getResponseCode() != 200)
+                        return;
+                } catch (IOException | InterruptedException | URISyntaxException e) {
+                    throw new RuntimeException(e);
+                }
+
+                for (ZenMessage zm: parseMessage(parsedMessage))
+                        receiveMessage(zm);
+            });
+            Thread thread = new Thread(() -> client.connect(user.getEmail(), dbHandler.getToken(user.getId()), user.getDevice()));
+            thread.start();
+
         } catch (Exception e){
             if (exceptionHandler != null)
                 exceptionHandler.handle(e);
@@ -217,6 +257,8 @@ public class ClientStub implements OperationHandler {
         connection.setRequestMethod("POST");
         connection.setRequestProperty("Content-Type", "application/json");
         connection.setRequestProperty("Authorization", "Bearer " + dbHandler.getToken(user.getId()));
+        connection.setRequestProperty("email", user.getEmail());
+        connection.setRequestProperty("device", String.valueOf(user.getDevice()));
         connection.setRequestProperty("t1", TimeDrift.getTimeStamp());
         connection.setDoOutput(true);
 
@@ -236,6 +278,8 @@ public class ClientStub implements OperationHandler {
         connection.setRequestMethod("GET");
         connection.setRequestProperty("Content-Type", "application/json");
         connection.setRequestProperty("Authorization", "Bearer " + dbHandler.getToken(user.getId()));
+        connection.setRequestProperty("email", user.getEmail());
+        connection.setRequestProperty("device", String.valueOf(user.getDevice()));
         connection.setRequestProperty("t1", TimeDrift.getTimeStamp());
         connection.setDoOutput(true);
 
@@ -376,9 +420,46 @@ public class ClientStub implements OperationHandler {
         return sb.toString();
     }
 
+    public static List<ZenMessage> parseMessage(JSONArray jsonArray) {
+
+
+        List<ZenMessage> list = new ArrayList<>();
+
+        for (int i = 0; i < jsonArray.length(); i++) {
+            JSONObject obj = jsonArray.getJSONObject(i);
+
+            // Convert "type" field to Enum
+            OperationType type = OperationType.valueOf(obj.getString("type"));
+
+            // Extract arguments array
+            JSONArray argumentsObj = obj.getJSONArray("arguments");
+            List<Object> arguments = new ArrayList<>();
+
+            for (int j = 0; j < argumentsObj.length(); j++) {
+                arguments.add(argumentsObj.get(j)); // Extracting JSON values as generic Object
+            }
+
+            // Create ZenMessage instance and add it to the list
+            list.add(new ZenMessage(type, arguments));
+        }
+        return list;
+    }
+
+    public static String getId(String rawMessage){
+        JSONObject obj = new JSONObject(rawMessage);
+        return obj.getString("id");
+    }
+    public static JSONArray getMessage(String rawMessage){
+        JSONObject obj = new JSONObject(rawMessage);
+        return (JSONArray) obj.get("message");
+    }
 
     private void receiveMessage(ZenMessage message){
 
+        System.out.println(message.getType());
+
+        for (Object o: message.getArguments())
+            System.out.println(o);
         switch (message.getType()){
             case POST -> {}
             case ADD_NEW_ENTRY -> {}

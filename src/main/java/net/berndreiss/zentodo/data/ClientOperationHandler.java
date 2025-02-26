@@ -58,7 +58,7 @@ public interface ClientOperationHandler extends OperationHandler {
      * @param email
      * @param userName
      */
-    void addUser(long id, String email, String userName);
+    void addUser(long id, String email, String userName, long device);
 
     /**
      *
@@ -87,4 +87,10 @@ public interface ClientOperationHandler extends OperationHandler {
      */
     void enableUser(String email);
 
+    /**
+     * TODO
+     * @param email
+     * @param id
+     */
+    void setDevice(String email, long id);
 }
