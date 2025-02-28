@@ -2,6 +2,7 @@ package net.berndreiss.zentodo.data;
 
 import net.berndreiss.zentodo.OperationType;
 import net.berndreiss.zentodo.util.ZenMessage;
+import net.berndreiss.zentodo.util.ZenServerMessage;
 
 import java.io.IOException;
 import java.util.List;
@@ -10,6 +11,13 @@ import java.util.List;
  * TODO IMPLEMENT DESCRIPTION
  */
 public interface ClientOperationHandler extends OperationHandler {
+
+    /**
+     * Add a list of entries to the database including all the fields in the entry.
+     *
+     * @param entries the entries to be added
+     */
+    void post(List<Entry> entries);
 
     /**
      * TODO DESCRIBE
@@ -26,16 +34,15 @@ public interface ClientOperationHandler extends OperationHandler {
 
     /**
      * TODO DESCRIBE
-     * @param type
-     * @param arguments
+     * @param message
      */
-    void addToQueue(OperationType type, List<Object> arguments);
+    void addToQueue(long userId, ZenServerMessage message);
 
     /**
      * TODO DESCRIBE
      * @return
      */
-    List<ZenMessage> geQueued();
+    List<ZenServerMessage> getQueued(long userId);
 
     /**
      * TODO DESCRIBE
@@ -58,7 +65,13 @@ public interface ClientOperationHandler extends OperationHandler {
      * @param email
      * @param userName
      */
-    void addUser(long id, String email, String userName, long device);
+    User addUser(long id, String email, String userName, long device);
+
+    /**
+     * TODO
+     * @param id
+     */
+    void removeUser(long id);
 
     /**
      *

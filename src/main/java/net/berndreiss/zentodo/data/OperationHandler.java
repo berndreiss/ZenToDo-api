@@ -8,20 +8,13 @@ import java.util.List;
  */
 public interface OperationHandler {
 
-    /**
-     * Add a list of entries to the database including all the fields in the entry.
-     *
-     * @param entries the entries to be added
-     */
-    void post(List<Entry> entries);
-
 
     /**
      * Add a single new task to the database.
      * @param id the id of the new task as provided by the server
      * @param task the task to be associated with the entry
      */
-    void addNewEntry(long id, String task, Long userId);
+    void addNewEntry(long id, String task, Long userId, int position);
 
     /**
      * Delete entry from database including the local queue(s). All entries with position greater than the deleted

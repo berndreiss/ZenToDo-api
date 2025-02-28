@@ -19,7 +19,7 @@ import net.berndreiss.zentodo.data.OperationField;
 public enum OperationType {
     POST(new OperationField[]{OperationField.ID, OperationField.TASK, OperationField.FOCUS, OperationField.DROPPED,
             OperationField.LIST, OperationField.LIST_POSITION, OperationField.REMINDER_DATE, OperationField.RECURRENCE, OperationField.RECURRENCE}),
-    ADD_NEW_ENTRY(new OperationField[]{OperationField.ID, OperationField.TASK}),
+    ADD_NEW_ENTRY(new OperationField[]{OperationField.ID, OperationField.TASK, OperationField.POSITION}),
     DELETE(new OperationField[]{OperationField.ID}),
     SWAP (new OperationField[]{OperationField.ID, OperationField.POSITION}),
     SWAP_LIST (new OperationField[]{OperationField.ID, OperationField.LIST_POSITION}),

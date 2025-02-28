@@ -2,6 +2,7 @@ package net.berndreiss.zentodo.data;
 
 import jakarta.persistence.*;
 
+import java.time.Instant;
 import java.time.LocalDate;
 
 /**
@@ -37,7 +38,7 @@ public class Entry{
     private Integer listPosition = null;//position in according list
 
     @Column
-    private LocalDate reminderDate = null;//a date, when the task is due -> "yyyyMMdd"
+    private Instant reminderDate = null;//a date, when the task is due -> "yyyyMMdd"
 
     @Column
     private String recurrence = null;//consisting of a String in the form of "y/m/w/d0-90-9" where the
@@ -76,7 +77,7 @@ public class Entry{
 
     public Integer getListPosition(){return listPosition;}
 
-    public LocalDate getReminderDate(){return reminderDate;}
+    public Instant getReminderDate(){return reminderDate;}
 
     public String getRecurrence(){return recurrence;}
 
@@ -93,7 +94,7 @@ public class Entry{
 
     public void setListPosition(Integer listPosition){this.listPosition=listPosition;}
 
-    public void setReminderDate(LocalDate reminderDate){this.reminderDate=reminderDate;}
+    public void setReminderDate(Instant reminderDate){this.reminderDate=reminderDate;}
 
     public void setRecurrence(String recurrence){this.recurrence=recurrence;}
 

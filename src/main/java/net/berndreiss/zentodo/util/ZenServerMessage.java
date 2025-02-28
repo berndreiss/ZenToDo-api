@@ -3,6 +3,8 @@ package net.berndreiss.zentodo.util;
 import net.berndreiss.zentodo.OperationType;
 
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.time.temporal.TemporalUnit;
 import java.util.List;
 
 public class ZenServerMessage extends ZenMessage{
@@ -11,7 +13,7 @@ public class ZenServerMessage extends ZenMessage{
 
     public ZenServerMessage(){
         super();
-        timeStamp = Instant.now();
+        timeStamp = Instant.now().plus(ClientStub.timeDrift.theta, ChronoUnit.MILLIS);
     }
     public ZenServerMessage(OperationType type, List<Object> arguments){
         super(type, arguments);

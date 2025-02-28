@@ -16,6 +16,10 @@ public class TimeDrift implements Comparable<TimeDrift> {
      */
     public final long delta;
 
+    public TimeDrift(){
+        theta = 0L;
+        delta = Long.MAX_VALUE;
+    }
     /**
      * TODO DESCRIBE
      * @param T1

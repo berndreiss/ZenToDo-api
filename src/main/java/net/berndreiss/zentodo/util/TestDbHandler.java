@@ -4,9 +4,7 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityManagerFactory;
 import jakarta.persistence.Persistence;
 import net.berndreiss.zentodo.OperationType;
-import net.berndreiss.zentodo.data.ClientOperationHandler;
-import net.berndreiss.zentodo.data.Entry;
-import net.berndreiss.zentodo.data.User;
+import net.berndreiss.zentodo.data.*;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -48,7 +46,7 @@ public class TestDbHandler implements ClientOperationHandler {
     }
 
     @Override
-    public void addNewEntry(long id, String task, Long userId) {
+    public void addNewEntry(long id, String task, Long userId, int position) {
 
         Integer maxPosition = em.createQuery("SELECT MAX(e.position) FROM Entry e", Integer.class).getSingleResult();
         if (maxPosition == null)
@@ -131,12 +129,24 @@ public class TestDbHandler implements ClientOperationHandler {
     }
 
     @Override
-    public void addToQueue(OperationType type, List<Object> arguments) {
+    public void addToQueue(long userId, ZenServerMessage message) {
 
+        em.getTransaction().begin();
+
+        QueueItem item = new QueueItem();
+        item.setUserId(userId);
+        item.setType(message.getType());
+        item.setTimeStamp(message.getTimeStamp());
+        item.setArguments(message.getArguments());
+        em.persist(item);
+
+        em.getTransaction().commit();
     }
 
     @Override
-    public List<ZenMessage> geQueued() {
+    public List<ZenServerMessage> getQueued(long userId) {
+        em.getTransaction().begin();
+        em.getTransaction().commit();
         return List.of();
     }
 
@@ -160,12 +170,23 @@ public class TestDbHandler implements ClientOperationHandler {
     }
 
     @Override
-    public void addUser(long id, String email, String userName, long device) {
+    public User addUser(long id, String email, String userName, long device) {
 
         User user = new User(id, email, userName, device);
 
         em.getTransaction().begin();
         em.persist(user);
+        em.getTransaction().commit();
+
+        return user;
+    }
+
+    @Override
+    public void removeUser(long id) {
+        em.getTransaction().begin();
+        em.createQuery("DELETE FROM User u WHERE u.id= :id")
+                .setParameter("id", id)
+                .executeUpdate();
         em.getTransaction().commit();
 
     }

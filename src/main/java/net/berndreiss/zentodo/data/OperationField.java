@@ -1,7 +1,5 @@
 package net.berndreiss.zentodo.data;
 
-import jakarta.persistence.criteria.CriteriaBuilder;
-
 import java.lang.reflect.Type;
 import java.time.LocalDate;
 

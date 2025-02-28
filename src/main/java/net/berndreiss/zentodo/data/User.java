@@ -38,11 +38,13 @@ public class User {
     public User(Long id, String email, long device){
         this.id = id;
         this.email = email;
+        this.device = device;
     }
     public User(Long id, String email, String username, long device){
         this.id = id;
         this.email = email;
         this.userName = username;
+        this.device = device;
     }
 
     public Long getId() {

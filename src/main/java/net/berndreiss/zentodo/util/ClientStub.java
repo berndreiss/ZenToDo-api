@@ -30,24 +30,35 @@ public class ClientStub implements OperationHandler {
     private final ClientOperationHandler dbHandler;
     private List<ClientOperationHandler> otherHandlers = null;
     private ExceptionHandler exceptionHandler;
+    private Consumer<String> messagePrinter;
+    public static String PROTOCOL = "http://";
     public static String SERVER = "10.0.0.6:8080/";
     private  User user;
-    private TimeDrift timeDrift;
+    public Status status;
+    public static TimeDrift timeDrift = new TimeDrift();
 
     public static void main(String[] args) throws IOException, InterruptedException, URISyntaxException {
 
         TestDbHandler dbTestHandler = new TestDbHandler("ZenToDoPU");
 
-        ClientStub stub = new ClientStub("bd_reiss@yahoo.de", dbTestHandler);
-        stub.setExceptionHandler(Throwable::printStackTrace);
-        System.out.println(stub.authenticate(() ->{
+        Supplier<String> passwordSupplier = () -> {
             System.out.println("PLEASE ENTER PASSWORD:");
             try (Scanner scanner = new Scanner(System.in)){
                 return scanner.nextLine();
             }
-        }));
+        };
+
+        passwordSupplier = () -> "test";
+
+        ClientStub stub = new ClientStub("bd_reiss@yahoo.de", dbTestHandler);
+        stub.setExceptionHandler(Throwable::printStackTrace);
+        stub.setMessagePrinter(System.out::println);
+        stub.authenticate(passwordSupplier);
         stub.init();
-        dbTestHandler.close();
+
+        //System.out.println("ADDING");
+        //stub.addNewEntry(1, "TEST", 3L, 0);
+        //dbTestHandler.close();
 
     }
 
@@ -65,92 +76,116 @@ public class ClientStub implements OperationHandler {
      * @param passwordSupplier
      * @return
      */
-    public String authenticate(Supplier<String> passwordSupplier){
+    public Status authenticate(Supplier<String> passwordSupplier){
         try {
             user = dbHandler.getUserByEmail(email);
-            System.out.println(user==null);
             if (user == null) {
-                System.out.println("USER==null");
                 String loginRequest = getLoginRequest(email, passwordSupplier.get());
 
                 int attempts = 0;
                 while (attempts++ < 10){
 
-                    HttpURLConnection connection = sendPostMessage("http://" + SERVER + "auth/register", loginRequest);
+                    HttpURLConnection connection = sendPostMessage(PROTOCOL + SERVER + "auth/register", loginRequest);
                     if (connection.getResponseCode() == 200){
 
                         String body = getBody(connection);
+
+                        if (body.equals("exists")){
+                            if (messagePrinter != null)
+                                messagePrinter.accept("User is already registered, but not verified. Check your mail.");
+                            return Status.REGISTERED;
+                        }
+
+
                         String[] ids  = body.split(",");
-                        BufferedReader is = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-                        String line;
-                        while ((line = is.readLine()) != null)
-                            System.out.println(line);
-                        System.out.println(connection.getResponseMessage());
-                        System.out.println(body);
 
                         if (Integer.parseInt(ids[0]) == 0) {
-                            dbHandler.addUser(Long.parseLong(ids[1]), email, userName, Long.parseLong(ids[2]));
-                            return "User was registered. Check your mails for verification.";
+                            user = dbHandler.addUser(Long.parseLong(ids[1]), email, userName, Long.parseLong(ids[2]));
+                            if (messagePrinter != null)
+                                messagePrinter.accept("User was registered. Check your mails for verification.");
+
+                            return Status.REGISTERED;
                         }
                         if (Integer.parseInt(ids[0]) == 1) {
-                            dbHandler.addUser(Long.parseLong(ids[1]), email, userName, Long.parseLong(ids[2]));
+                            user = dbHandler.addUser(Long.parseLong(ids[1]), email, userName, Long.parseLong(ids[2]));
                             dbHandler.enableUser(email);
-                            dbHandler.setDevice(email, Long.parseLong(ids[2]));
-                            user = dbHandler.getUserByEmail(email);
+                            user.setEnabled(true);
                             dbHandler.setToken(Long.parseLong(ids[1]), ids[3]);
-                            return "User logged in.";
+                            if (messagePrinter != null)
+                                 messagePrinter.accept("User logged in.");
+                            return Status.ENABLED;
                         }
-                        return "User was not registered because return code did not mean anything (code " + ids[0] + ").";
+
+                        throw new Exception("User could not be registered.");
                     }
                 }
             }
 
             if (!user.getEnabled()){
-                System.out.println("USER!=ENABLED");
-                String loginRequest = getLoginRequest(email, passwordSupplier.get());
-                HttpURLConnection connection = sendPostMessage("http://" + SERVER + "auth/status", loginRequest);
+                String password = passwordSupplier.get();
+                String loginRequest = getLoginRequest(email, password);
+                HttpURLConnection connection = sendPostMessage(PROTOCOL + SERVER + "auth/status", loginRequest);
                 String body = getBody(connection);
-                if (body.equals("exists"))
-                    return "User already exists, but was not verified. Check your mails.";
+
+                if (body.equals("non")){
+                    dbHandler.removeUser(user.getId());
+                    return Status.DELETED;
+                }
+
+                if (body.equals("exists")) {
+                    if (messagePrinter != null)
+                        messagePrinter.accept("User already exists, but was not verified. Check your mails.");
+                    return Status.REGISTERED;
+                }
                 else if (body.startsWith("enabled")){
                     user.setEnabled(true);
                     dbHandler.enableUser(email);
                     dbHandler.setToken(user.getId(), body.split(",")[1]);
-                    return "User logged in.";
-                } else
-                    return "Something went wrong when retrieving the status of the user from the server.";
+                    //TODO retrieve complete server side db
+                    if (messagePrinter != null)
+                        messagePrinter.accept("User logged in.");
+                    return Status.ENABLED;
+                } else {
+                    if (messagePrinter != null)
+                        messagePrinter.accept("Something went wrong when retrieving the status of the user from the server.");
+                    return Status.ERROR;
+                }
 
             }
             String token = dbHandler.getToken(user.getId());
 
             if (token != null) {
-                System.out.println("RENEW TOKEN");
-                HttpURLConnection connection = sendPostMessage("http://" + SERVER + "auth/renewToken", getLoginRequest(email, token));
+                HttpURLConnection connection = sendPostMessage(PROTOCOL + SERVER + "auth/renewToken", getLoginRequest(email, token));
                 if (connection.getResponseCode() == 200) {
                     dbHandler.setToken(user.getId(), getBody(connection));
-                    return "User logged in.";
+                    if (messagePrinter != null)
+                        messagePrinter.accept("User logged in.");
+                    return Status.ENABLED;
                 }
             }
 
             String loginRequest = getLoginRequest(email, passwordSupplier.get());
 
             int attempts = 0;
-            System.out.println("LOGIN");
             while (attempts++ < 10) {
-                HttpURLConnection connection = sendPostMessage("http://" + SERVER + "auth/login", loginRequest);
+                HttpURLConnection connection = sendPostMessage(PROTOCOL + SERVER + "auth/login", loginRequest);
                 if (connection.getResponseCode() == 200) {
                     dbHandler.setToken(user.getId(), getBody(connection));
-                    return "User logged in.";
+                    if (messagePrinter != null)
+                        messagePrinter.accept("User logged in.");
+                    return Status.ENABLED;
                 }
             }
-
-
-            return "Something went wrong. Try logging in later.";
-
+            throw new Exception("Was not able to login.");
         } catch (Exception e) {
             if (exceptionHandler != null)
                 exceptionHandler.handle(e);
-            return "Something went wrong. Try logging in later.";
+            if (user == null && messagePrinter != null)
+                messagePrinter.accept("There was a problem connecting to the server. Please try again later.");
+            else
+                if (messagePrinter != null)
+                    messagePrinter.accept("Something went wrong. Try logging in later.");
+            return Status.ERROR;
         }
     }
 
@@ -160,9 +195,16 @@ public class ClientStub implements OperationHandler {
     public void init() {
 
         try {
+
+            if (user == null)
+                throw new Exception("User does not exist. Authenticate first!");
+
+            if (!user.getEnabled())
+                throw new Exception("User is not enabled. Make sure, the user is verified.");
+
             // Set clock drift
             for (int i = 0; i < 8; i++) {
-                sendAuthGetMessage("http://" + SERVER + "test");
+                sendAuthGetMessage(PROTOCOL + SERVER + "test");
             }
 
             //TODO SEND QUEUE ITEMS TO SERVER
@@ -180,11 +222,8 @@ public class ClientStub implements OperationHandler {
 
             list.add(message);
             list.add(message1);
-            HttpURLConnection connection = sendAuthPostMessage("http://" + SERVER + "add", jsonifyList(list));
+            //HttpURLConnection connection = sendAuthPostMessage(PROTOCOL + SERVER + "add", jsonifyList(list));
 
-            System.out.println(jsonifyList(list));
-            System.out.println(connection.getResponseCode());
-            System.out.println("HEADER:" + connection.getHeaderField("t3"));
 
             client = new ZenWebSocketClient(rawMessage -> {
 
@@ -192,7 +231,7 @@ public class ClientStub implements OperationHandler {
                     JSONArray parsedMessage  = getMessage(rawMessage);
 
                 try {
-                    HttpURLConnection conn = sendAuthPostMessage("http://" + SERVER + "ackn", "{" +
+                    HttpURLConnection conn = sendAuthPostMessage(PROTOCOL + SERVER + "ackn", "{" +
                             "\"id\": \"" + id + "\"," +
                             "\"email\": \"" + email + "\"," +
                             "\"device\": \"" + user.getDevice() + "\"" +
@@ -242,8 +281,6 @@ public class ClientStub implements OperationHandler {
             byte[] input = body.getBytes(StandardCharsets.UTF_8);
             os.write(input, 0, input.length);
         }
-        System.out.println(connection.getResponseCode());
-
         processResponse(connection);
         return connection;
     }
@@ -253,11 +290,9 @@ public class ClientStub implements OperationHandler {
 
         URL url = new URI(urlString).toURL();
         HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-
         connection.setRequestMethod("POST");
         connection.setRequestProperty("Content-Type", "application/json");
         connection.setRequestProperty("Authorization", "Bearer " + dbHandler.getToken(user.getId()));
-        connection.setRequestProperty("email", user.getEmail());
         connection.setRequestProperty("device", String.valueOf(user.getDevice()));
         connection.setRequestProperty("t1", TimeDrift.getTimeStamp());
         connection.setDoOutput(true);
@@ -278,7 +313,6 @@ public class ClientStub implements OperationHandler {
         connection.setRequestMethod("GET");
         connection.setRequestProperty("Content-Type", "application/json");
         connection.setRequestProperty("Authorization", "Bearer " + dbHandler.getToken(user.getId()));
-        connection.setRequestProperty("email", user.getEmail());
         connection.setRequestProperty("device", String.valueOf(user.getDevice()));
         connection.setRequestProperty("t1", TimeDrift.getTimeStamp());
         connection.setDoOutput(true);
@@ -308,6 +342,13 @@ public class ClientStub implements OperationHandler {
     }
 
     /**
+     *
+     */
+    public void sync(){
+       List<ZenServerMessage> queue = dbHandler.getQueued(user.getId());
+    }
+
+    /**
      * TODO DESCRIBE
      * @param operationHandler
      */
@@ -329,6 +370,14 @@ public class ClientStub implements OperationHandler {
      */
     public void setExceptionHandler(ExceptionHandler exceptionHandler) {
         this.exceptionHandler = exceptionHandler;
+    }
+
+    /**
+     * //TODO
+     * @param messagePrinter
+     */
+    public void setMessagePrinter(Consumer<String> messagePrinter){
+        this.messagePrinter = messagePrinter;
     }
 
     /**
@@ -456,10 +505,12 @@ public class ClientStub implements OperationHandler {
 
     private void receiveMessage(ZenMessage message){
 
+        ZenServerMessage zm = new ZenServerMessage(message.getType(), message.getArguments());
+
+        dbHandler.addToQueue(user.getId(), zm);
         System.out.println(message.getType());
 
-        for (Object o: message.getArguments())
-            System.out.println(o);
+        System.out.println(message.getArguments().get(1));
         switch (message.getType()){
             case POST -> {}
             case ADD_NEW_ENTRY -> {}
@@ -479,12 +530,25 @@ public class ClientStub implements OperationHandler {
     }
 
     @Override
-    public void post(List<Entry> entries) {
+    public void addNewEntry(long id, String task, Long userId, int position) {
 
-    }
+        List<Object> arguments = new ArrayList<>();
+        arguments.add(id);
+        arguments.add(task);
+        arguments.add(userId);
+        arguments.add(position);
+        ZenServerMessage zm = new ZenServerMessage(OperationType.ADD_NEW_ENTRY, arguments);
+        List<ZenServerMessage> list = new ArrayList<>();
+        list.add(zm);
+        try {
+            HttpURLConnection connection = sendAuthPostMessage(PROTOCOL + SERVER + "process", jsonifyServerList(list));
 
-    @Override
-    public void addNewEntry(long id, String task, Long userId) {
+            if (connection.getResponseCode() != 200) {
+                dbHandler.addToQueue(user.getId(), zm);
+            }
+        } catch (IOException | URISyntaxException | InterruptedException e) {
+            dbHandler.addToQueue(user.getId(), zm);
+        }
 
     }
 
