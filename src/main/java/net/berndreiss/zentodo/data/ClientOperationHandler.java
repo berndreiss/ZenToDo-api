@@ -1,6 +1,7 @@
 package net.berndreiss.zentodo.data;
 
 import net.berndreiss.zentodo.OperationType;
+import net.berndreiss.zentodo.util.VectorClock;
 import net.berndreiss.zentodo.util.ZenMessage;
 import net.berndreiss.zentodo.util.ZenServerMessage;
 
@@ -36,13 +37,16 @@ public interface ClientOperationHandler extends OperationHandler {
      * TODO DESCRIBE
      * @param message
      */
-    void addToQueue(long userId, ZenServerMessage message);
+    void addToQueue(User user, ZenServerMessage message);
 
     /**
      * TODO DESCRIBE
      * @return
      */
     List<ZenServerMessage> getQueued(long userId);
+
+
+    void clearQueue();
 
     /**
      * TODO DESCRIBE
@@ -69,9 +73,9 @@ public interface ClientOperationHandler extends OperationHandler {
 
     /**
      * TODO
-     * @param id
+     * @param email
      */
-    void removeUser(long id);
+    void removeUser(String email);
 
     /**
      *
@@ -106,4 +110,12 @@ public interface ClientOperationHandler extends OperationHandler {
      * @param id
      */
     void setDevice(String email, long id);
+
+    /**
+     * TODO
+     * @param email
+     * @param clock
+     */
+    void setClock(String email,VectorClock clock);
+
 }

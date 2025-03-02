@@ -1,5 +1,7 @@
 package net.berndreiss.zentodo.data;
 
+import net.berndreiss.zentodo.util.TypeCaster;
+
 import java.lang.reflect.Type;
 import java.time.LocalDate;
 
@@ -18,10 +20,10 @@ public enum OperationField {
     MAIL(String.class),
     USERNAME(String.class);
 
-    public final Type type;
+    public final TypeCaster<?> typeCaster;
 
-    OperationField(Type type){
-        this.type = type;
+    OperationField(Class<?> cl){
+        typeCaster = new TypeCaster<>(cl);
     }
 
 }

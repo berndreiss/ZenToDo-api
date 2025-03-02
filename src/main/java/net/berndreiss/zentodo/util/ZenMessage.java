@@ -1,23 +1,35 @@
 package net.berndreiss.zentodo.util;
 
+import jdk.dynalink.linker.support.CompositeTypeBasedGuardingDynamicLinker;
 import net.berndreiss.zentodo.OperationType;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class ZenMessage {
 
-    private OperationType type;
-    private List<Object> arguments;
+    public final VectorClock clock;
+    public final OperationType type;
+    public final List<Object> arguments;
 
-    public ZenMessage(){}
-    public ZenMessage(OperationType type, List<Object> arguments){
+    public ZenMessage(OperationType type, List<Object> arguments, VectorClock clock){
         this.type = type;
         this.arguments = arguments;
+        this.clock = clock;
     }
 
-    public OperationType getType(){return type;}
-    public void setType(OperationType type){this.type = type;}
-    public List<Object> getArguments(){return arguments;}
-    public void setArguments(List<Object> arguments){this.arguments = arguments;}
-
+    public static ZenMessage parse(String jsonString) {
+        JSONObject obj = new JSONObject(jsonString);
+        return parse(obj);
+    }
+    public static ZenMessage parse(JSONObject obj){
+        VectorClock clock = new VectorClock(obj.getJSONObject("clock"));
+        OperationType type = OperationType.valueOf(obj.getString("type"));
+        JSONArray array = obj.getJSONArray("arguments");
+        List<Object> arguments = new ArrayList<>();
+        array.forEach(arguments::add);
+        return new ZenMessage(type, arguments, clock);
+    }
 }

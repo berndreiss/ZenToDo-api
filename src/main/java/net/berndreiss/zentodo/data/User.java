@@ -2,6 +2,9 @@ package net.berndreiss.zentodo.data;
 
 import jakarta.persistence.*;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * TODO DESCRIBE
  */
@@ -24,6 +27,18 @@ public class User {
     @Column (nullable = false)
     private long device;
 
+    @Column
+    private String clock;
+
+    @Column
+    private String password;
+
+    @OneToMany (mappedBy = "user", cascade = CascadeType.REMOVE, orphanRemoval = true)
+    private List<Device> devices = new ArrayList<>();
+
+    @OneToMany (mappedBy = "user", cascade = CascadeType.REMOVE, orphanRemoval = true)
+    private List<QueueItem> queueItems = new ArrayList<>();
+
     public User(){}
 
     public User(String email){
@@ -35,13 +50,11 @@ public class User {
         this.userName = userName;
     }
 
-    public User(Long id, String email, long device){
-        this.id = id;
+    public User(String email, long device){
         this.email = email;
         this.device = device;
     }
-    public User(Long id, String email, String username, long device){
-        this.id = id;
+    public User(String email, String username, long device){
         this.email = email;
         this.userName = username;
         this.device = device;
@@ -82,4 +95,22 @@ public class User {
     public long getDevice(){return device;}
 
     public void setDevice(long device){this.device = device;}
+
+    public boolean isEnabled() {return enabled;}
+
+    public String getClock() {return clock;}
+
+    public void setClock(String clock) {this.clock = clock;}
+
+    public String getPassword() {return password;}
+
+    public void setPassword(String password) {this.password = password;}
+
+    public List<Device> getDevices() {return devices;}
+
+    public void setDevices(List<Device> devices) {this.devices = devices;}
+
+    public List<QueueItem> getQueueItems() {return queueItems;}
+
+    public void setQueueItems(List<QueueItem> queueItems) {this.queueItems = queueItems;}
 }

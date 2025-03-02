@@ -2,20 +2,23 @@ package net.berndreiss.zentodo.data;
 
 import jakarta.persistence.*;
 import net.berndreiss.zentodo.OperationType;
+import net.berndreiss.zentodo.util.VectorClock;
 
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 @Entity
 @Table(name="queue")
 public class QueueItem {
+
     @Id
     @GeneratedValue (strategy = GenerationType.IDENTITY)
     private long id;
 
-    @Column (nullable = false)
-    private long userId;
+    @Column
+    private String clock;
 
     @Column
     private OperationType type;
@@ -26,21 +29,15 @@ public class QueueItem {
     @Column
     private Instant timeStamp;
 
-    public long getId() {
-        return id;
-    }
+    @ManyToOne
+    @JoinColumn(name = "user_id",nullable = false)
+    private User user;
 
-    public void setId(long id) {
-        this.id = id;
-    }
+    public long getId(){return id;}
 
-    public long getUserId() {
-        return userId;
-    }
+    public String getClock() {return clock;}
 
-    public void setUserId(long userId) {
-        this.userId = userId;
-    }
+    public void setClock(String clock) {this.clock = clock;}
 
     public QueueItem() {
     }
@@ -71,5 +68,13 @@ public class QueueItem {
 
     public void setTimeStamp(Instant timeStamp) {
         this.timeStamp = timeStamp;
+    }
+
+    public User getUser() {
+        return user;
+    }
+
+    public void setUser(User user) {
+        this.user = user;
     }
 }

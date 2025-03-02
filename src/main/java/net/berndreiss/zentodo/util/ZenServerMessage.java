@@ -1,27 +1,37 @@
 package net.berndreiss.zentodo.util;
 
 import net.berndreiss.zentodo.OperationType;
+import org.json.JSONObject;
 
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
-import java.time.temporal.TemporalUnit;
 import java.util.List;
 
 public class ZenServerMessage extends ZenMessage{
 
-    private final Instant timeStamp;
+    public final Instant timeStamp;
 
-    public ZenServerMessage(){
-        super();
-        timeStamp = Instant.now().plus(ClientStub.timeDrift.theta, ChronoUnit.MILLIS);
-    }
-    public ZenServerMessage(OperationType type, List<Object> arguments){
-        super(type, arguments);
+    public ZenServerMessage(OperationType type, List<Object> arguments, VectorClock clock){
+        super(type, arguments, clock);
         timeStamp = Instant.now();
 
     }
+    public ZenServerMessage(OperationType type, List<Object> arguments, VectorClock clock, Instant timeStamp){
+        super(type, arguments, clock);
+        this.timeStamp = timeStamp;
 
-    public Instant getTimeStamp() {
-        return timeStamp;
     }
+
+    public ZenServerMessage(ZenMessage message){
+        this(message.type, message.arguments, message.clock);
+    }
+    public ZenServerMessage(ZenMessage message, Instant timeStamp){
+        this(message.type, message.arguments, message.clock);
+    }
+
+    public static ZenServerMessage parse(String jsonString){
+        JSONObject obj = new JSONObject(jsonString);
+        Instant timeStamp = Instant.parse(obj.getString("timestamp"));
+        return new ZenServerMessage(ZenMessage.parse(obj), timeStamp);
+    }
+
 }

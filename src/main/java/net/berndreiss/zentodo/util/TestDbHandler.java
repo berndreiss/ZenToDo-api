@@ -9,6 +9,9 @@ import net.berndreiss.zentodo.data.*;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -33,6 +36,11 @@ public class TestDbHandler implements ClientOperationHandler {
         em.close();
         emf.close();
     }
+
+    public List<Entry> getAllEntries(){
+        return em.createQuery("SELECT e FROM Entry e", Entry.class).getResultList();
+    }
+
     @Override
     public void post(List<Entry> entries) {
 
@@ -46,15 +54,16 @@ public class TestDbHandler implements ClientOperationHandler {
     }
 
     @Override
-    public void addNewEntry(long id, String task, Long userId, int position) {
+    public Entry addNewEntry(long id, String task, Long userId, int position) {
 
         Integer maxPosition = em.createQuery("SELECT MAX(e.position) FROM Entry e", Integer.class).getSingleResult();
         if (maxPosition == null)
             maxPosition = -1;
-        Entry entry = new Entry(id, maxPosition+1, task, userId);
+        Entry entry = new Entry(id, task, userId, maxPosition+1);
         em.getTransaction().begin();
         em.merge(entry);
         em.getTransaction().commit();
+        return entry;
 
     }
 
@@ -129,15 +138,16 @@ public class TestDbHandler implements ClientOperationHandler {
     }
 
     @Override
-    public void addToQueue(long userId, ZenServerMessage message) {
+    public void addToQueue(User user, ZenServerMessage message) {
 
         em.getTransaction().begin();
 
         QueueItem item = new QueueItem();
-        item.setUserId(userId);
-        item.setType(message.getType());
-        item.setTimeStamp(message.getTimeStamp());
-        item.setArguments(message.getArguments());
+        item.setClock(message.clock.jsonify());
+        item.setUser(user);
+        item.setType(message.type);
+        item.setTimeStamp(message.timeStamp);
+        item.setArguments(message.arguments);
         em.persist(item);
 
         em.getTransaction().commit();
@@ -145,9 +155,21 @@ public class TestDbHandler implements ClientOperationHandler {
 
     @Override
     public List<ZenServerMessage> getQueued(long userId) {
+        List<ZenServerMessage> result = new ArrayList<>();
+        em.createQuery("SELECT qi FROM QueueItem qi", QueueItem.class).getResultStream().forEach(qi -> {
+            List<Object> args = new ArrayList<>(qi.getArguments());
+            ZenServerMessage zm = new ZenServerMessage(qi.getType(), args, new VectorClock(qi.getClock()), qi.getTimeStamp());
+            result.add(zm);
+        });
+        return result;
+    }
+
+    @Override
+    public void clearQueue() {
+
         em.getTransaction().begin();
+        em.createQuery("DELETE FROM QUEUE").executeUpdate();
         em.getTransaction().commit();
-        return List.of();
     }
 
     @Override
@@ -172,7 +194,12 @@ public class TestDbHandler implements ClientOperationHandler {
     @Override
     public User addUser(long id, String email, String userName, long device) {
 
-        User user = new User(id, email, userName, device);
+        User user = new User(email, userName, device);
+
+        user.setId(id);
+
+        VectorClock clock = new VectorClock(device);
+        user.setClock(clock.jsonify());
 
         em.getTransaction().begin();
         em.persist(user);
@@ -182,10 +209,10 @@ public class TestDbHandler implements ClientOperationHandler {
     }
 
     @Override
-    public void removeUser(long id) {
+    public void removeUser(String email) {
         em.getTransaction().begin();
-        em.createQuery("DELETE FROM User u WHERE u.id= :id")
-                .setParameter("id", id)
+        em.createQuery("DELETE FROM User u WHERE u.email= :email")
+                .setParameter("email", email)
                 .executeUpdate();
         em.getTransaction().commit();
 
@@ -241,4 +268,17 @@ public class TestDbHandler implements ClientOperationHandler {
         em.getTransaction().commit();
 
     }
+
+    @Override
+    public void setClock(String email, VectorClock clock) {
+
+        em.getTransaction().begin();
+        em.createQuery("UPDATE User SET clock= :clock WHERE email= :email")
+                .setParameter("email", email)
+                .setParameter("clock", clock.jsonify())
+                .executeUpdate();
+        em.getTransaction().commit();
+
+    }
+
 }

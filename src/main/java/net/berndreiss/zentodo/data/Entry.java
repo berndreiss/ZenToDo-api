@@ -47,7 +47,7 @@ public class Entry{
 
     public Entry(){}
 
-    public Entry(long id, int position, String task, Long userId){
+    public Entry(long id, String task, Long userId, int position){
         //creates a new instance and initializes the fields of the entry
         this.id = id;
         this.position = position;
@@ -55,12 +55,16 @@ public class Entry{
         this.userId = userId;
     }
 
-    public Entry(int position, String task, Long userId){
+    public Entry(String task, Long userId, int position){
         //creates a new instance and initializes the fields of the entry
         this.position = position;
         this.task=task;
         this.userId = userId;
     }
+
+    public Long getUserId() {return userId;}
+
+    public void setUserId(Long userId) {this.userId = userId;}
 
     //the following functions simply return the different fields of the entry
     public long getId(){return this.id;}
