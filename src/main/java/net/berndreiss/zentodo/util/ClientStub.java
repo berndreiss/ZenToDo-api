@@ -28,13 +28,13 @@ public class ClientStub implements OperationHandler {
 
     private final String email;
     private final String userName;
-    private final ClientOperationHandler dbHandler;
+    public final ClientOperationHandler dbHandler;
     private final List<ClientOperationHandler> otherHandlers = new ArrayList<>();
     private ExceptionHandler exceptionHandler;
     private Consumer<String> messagePrinter;
     public static String PROTOCOL = "http://";
     public static String SERVER = "10.0.0.6:8080/";
-    private  User user;
+    public  User user;
     public Status status;
     private VectorClock vectorClock;
     public static TimeDrift timeDrift = new TimeDrift();
@@ -251,11 +251,7 @@ public class ClientStub implements OperationHandler {
                 return;
             }
 
-
             HttpURLConnection connection = sendAuthPostMessage(PROTOCOL + SERVER + "process", jsonifyServerList(dbHandler.getQueued(user.getId())));
-
-            //System.out.println("QUEUE " + dbHandler.getQueued(user.getId()).size());
-            //System.out.println(jsonifyServerList(dbHandler.getQueued(user.getId())));
 
             if (connection.getResponseCode() != 200){
                 throw new Exception("Something went wrong sending data to server.");
@@ -267,17 +263,36 @@ public class ClientStub implements OperationHandler {
                 String id = getId(rawMessage);
                 JSONArray parsedMessage  = getMessage(rawMessage);
 
+                List<ZenMessage> messages = parseMessage(parsedMessage);
+
+                System.out.println("CLOCK LOCAL: " + vectorClock.jsonify());
+                System.out.println("CLOCK REMOTE: " + messages.getFirst().clock.jsonify());
+                /*
+                if (!messages.isEmpty() && messages.getFirst().clock.changeDifference(vectorClock ) != 1){
+
+                    System.out.println("CLOCK DIFFERENCE != 1 !!! ");
+                    try {
+                        HttpURLConnection conn = sendAuthPostMessage(ClientStub.PROTOCOL + ClientStub.SERVER + "queue", " ");
+                        if (conn.getResponseCode() != 200)
+                            throw new RuntimeException("Could not retrieve data from server.");
+                        //return;
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+*/
+
                 try {
                     HttpURLConnection conn = sendAuthPostMessage(PROTOCOL + SERVER + "ackn", id);
                     if (conn.getResponseCode() != 200)
                         return;
-                } catch (IOException | InterruptedException | URISyntaxException e) {
+                } catch (Exception e) {
                     throw new RuntimeException(e);
                 }
 
-                for (ZenMessage zm: parseMessage(parsedMessage))
+                for (ZenMessage zm: messages)
                     receiveMessage(zm);
-            }, user, dbHandler);
+            }, this);
             Thread thread = new Thread(() -> client.connect(user.getEmail(), dbHandler.getToken(user.getId()), user.getDevice()));
             thread.start();
             // Set clock drift
@@ -303,7 +318,7 @@ public class ClientStub implements OperationHandler {
         return response.toString();
     }
     //TODO COMMENT
-    private  HttpURLConnection sendPostMessage(String urlString, String body) throws IOException, URISyntaxException {
+    public  HttpURLConnection sendPostMessage(String urlString, String body) throws IOException, URISyntaxException {
 
         URL url = new URI(urlString).toURL();
         HttpURLConnection connection = (HttpURLConnection) url.openConnection();
@@ -322,10 +337,21 @@ public class ClientStub implements OperationHandler {
     }
 
     //TODO
-    private HttpURLConnection sendAuthPostMessage(String urlString, String body) throws IOException, InterruptedException, URISyntaxException {
+    public synchronized HttpURLConnection sendAuthPostMessage(String urlString, String body) throws Exception {
+
+        if (status == Status.DIRTY) {
+            status = Status.UPDATED;
+            HttpURLConnection connection = sendAuthPostMessage(PROTOCOL + SERVER + "process", jsonifyServerList(dbHandler.getQueued(user.getId())));
+
+            if (connection.getResponseCode() != 200) {
+                status = Status.DIRTY;
+                throw new Exception("Something went wrong sending data to server.");
+            }
+        }
 
         URL url = new URI(urlString).toURL();
         HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+        connection = (HttpURLConnection) url.openConnection();
         connection.setRequestMethod("POST");
         connection.setRequestProperty("Content-Type", "application/json");
         connection.setRequestProperty("Authorization", "Bearer " + dbHandler.getToken(user.getId()));
@@ -341,7 +367,17 @@ public class ClientStub implements OperationHandler {
         return connection;
     }
     //TODO
-    private HttpURLConnection sendAuthGetMessageBU(String urlString) throws IOException, InterruptedException, URISyntaxException {
+    public synchronized HttpURLConnection sendAuthGetMessageBU(String urlString) throws Exception {
+
+        if (status == Status.DIRTY) {
+            status = Status.UPDATED;
+            HttpURLConnection connection = sendAuthPostMessage(PROTOCOL + SERVER + "process", jsonifyServerList(dbHandler.getQueued(user.getId())));
+
+            if (connection.getResponseCode() != 200) {
+                status = Status.DIRTY;
+                throw new Exception("Something went wrong sending data to server.");
+            }
+        }
 
         URL url = new URI(urlString).toURL();
         HttpURLConnection connection = (HttpURLConnection) url.openConnection();
@@ -544,6 +580,8 @@ public class ClientStub implements OperationHandler {
 
     private void receiveMessage(ZenMessage message){
 
+        System.out.println("RECEIVING");
+
         System.out.println(jsonifyMessage(message));
         switch (message.type){
             case POST -> {}
@@ -580,10 +618,6 @@ public class ClientStub implements OperationHandler {
             case UPDATE_USER_NAME -> {}
         }
 
-        for (Entry entry: ((TestDbHandler) dbHandler).getAllEntries()) {
-            System.out.println(entry.getTask() + entry.getPosition());
-        }
-        System.out.println();
     }
 
     @Override
@@ -602,10 +636,12 @@ public class ClientStub implements OperationHandler {
         List<ZenServerMessage> list = new ArrayList<>();
         list.add(zm);
         try {
+            if (status != Status.UPDATED)
+                throw new Exception("Updates haven't been processed yet.");
+
             HttpURLConnection connection = sendAuthPostMessage(PROTOCOL + SERVER + "process", jsonifyServerList(list));
 
             if (connection.getResponseCode() != 200) {
-                messagePrinter.accept(String.valueOf(connection.getResponseCode()));
                 dbHandler.addToQueue(user, zm);
             }
         } catch (Exception e) {

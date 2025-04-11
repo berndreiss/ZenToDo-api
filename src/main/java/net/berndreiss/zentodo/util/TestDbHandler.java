@@ -168,7 +168,7 @@ public class TestDbHandler implements ClientOperationHandler {
     public void clearQueue() {
 
         em.getTransaction().begin();
-        em.createQuery("DELETE FROM QUEUE").executeUpdate();
+        em.createQuery("DELETE FROM QueueItem qi").executeUpdate();
         em.getTransaction().commit();
     }
 

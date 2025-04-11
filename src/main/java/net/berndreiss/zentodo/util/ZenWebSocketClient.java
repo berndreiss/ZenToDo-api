@@ -20,8 +20,7 @@ public class ZenWebSocketClient extends Endpoint {
 
     private Session session;
     private Consumer<String> messageConsumer;
-    private User user;
-    private ClientOperationHandler dbHandler;
+    private ClientStub clientStub;
 
     @OnOpen
     public void onOpen(Session session, EndpointConfig endpointConfig) {
@@ -35,26 +34,15 @@ public class ZenWebSocketClient extends Endpoint {
             }
         });
         try {
-            URL url = new URI(ClientStub.PROTOCOL + ClientStub.SERVER + "queue").toURL();
-            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-            connection.setRequestMethod("POST");
-            connection.setRequestProperty("Content-Type", "application/json");
-            connection.setRequestProperty("Authorization", "Bearer " + dbHandler.getToken(user.getId()));
-            connection.setRequestProperty("device", String.valueOf(user.getDevice()));
-            connection.setRequestProperty("t1", TimeDrift.getTimeStamp());
-            connection.setDoOutput(true);
-
-            String body = " ";
-            try (OutputStream os = connection.getOutputStream()) {
-                byte[] input = body.getBytes(StandardCharsets.UTF_8);
-                os.write(input, 0, input.length);
-            }
+            HttpURLConnection connection = clientStub.sendAuthPostMessage(ClientStub.PROTOCOL + ClientStub.SERVER + "queue", " ");
             if (connection.getResponseCode() != 200)
                 throw new RuntimeException("Could not retrieve data from server.");
 
-            dbHandler.clearQueue();
+            clientStub.status = Status.UPDATED;
+            clientStub.dbHandler.clearQueue();
 
-        } catch (URISyntaxException | ProtocolException ignored){} catch (IOException e) {
+
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
@@ -75,10 +63,9 @@ public class ZenWebSocketClient extends Endpoint {
         System.err.println("WebSocket error: " + throwable.getMessage());
     }
 
-    public ZenWebSocketClient(Consumer<String> messageConsumer, User user, ClientOperationHandler dbHandler){
+    public ZenWebSocketClient(Consumer<String> messageConsumer, ClientStub clientStub){
         this.messageConsumer = messageConsumer;
-        this.user = user;
-        this.dbHandler = dbHandler;
+        this.clientStub = clientStub;
     }
 
     public void connect(String email, String token, long device) {

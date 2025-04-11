@@ -38,7 +38,11 @@ public class VectorClock implements  Comparable<VectorClock>{
 
     @Override
     public int compareTo(VectorClock other) {
-        return (int) (this.countChanges(identity) - other.countChanges(identity));
+        return -changeDifference(other);
+    }
+
+    public int changeDifference(VectorClock other){
+        return (int) (other.countChanges(identity) - this.countChanges(identity));
     }
 
     private long countChanges(Long identity){

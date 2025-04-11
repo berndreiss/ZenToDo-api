@@ -25,7 +25,7 @@ public class ZenServerMessage extends ZenMessage{
         this(message.type, message.arguments, message.clock);
     }
     public ZenServerMessage(ZenMessage message, Instant timeStamp){
-        this(message.type, message.arguments, message.clock);
+        this(message.type, message.arguments, message.clock, timeStamp);
     }
 
     public static ZenServerMessage parse(String jsonString){
