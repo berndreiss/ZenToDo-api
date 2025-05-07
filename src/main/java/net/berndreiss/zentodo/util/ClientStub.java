@@ -139,7 +139,7 @@ public class ClientStub implements OperationHandler {
                         }
                         if (Integer.parseInt(ids[0]) == 1) {
                             user = dbHandler.addUser(Long.parseLong(ids[1]), email, userName, Long.parseLong(ids[2]));
-                            dbHandler.enableUser(email);
+                            dbHandler.enableUser(user.getId());
                             user.setEnabled(true);
                             dbHandler.setToken(Long.parseLong(ids[1]), ids[3]);
                             if (messagePrinter != null)
@@ -161,7 +161,7 @@ public class ClientStub implements OperationHandler {
                 String body = getBody(connection);
 
                 if (body.equals("non")){
-                    dbHandler.removeUser(user.getEmail());
+                    dbHandler.removeUser(user.getId());
                     return Status.DELETED;
                 }
 
@@ -172,7 +172,7 @@ public class ClientStub implements OperationHandler {
                 }
                 else if (body.startsWith("enabled")){
                     user.setEnabled(true);
-                    dbHandler.enableUser(email);
+                    dbHandler.enableUser(user.getId());
                     dbHandler.setToken(user.getId(), body.split(",")[1]);
                     //TODO retrieve complete server side db
                     if (messagePrinter != null)
@@ -209,7 +209,7 @@ public class ClientStub implements OperationHandler {
                     return Status.ENABLED;
                 }
                 if (connection.getResponseCode() == 404) {
-                    dbHandler.removeUser(email);
+                    dbHandler.removeUser(user.getId());
                     return Status.DELETED;
                 }
             }
@@ -625,7 +625,7 @@ public class ClientStub implements OperationHandler {
 
         System.out.println(user.getEmail());
         vectorClock.increment();
-        dbHandler.setClock(email, vectorClock);
+        dbHandler.setClock(user.getId(), vectorClock);
         //messagePrinter.accept(String.valueOf(vectorClock == null));
         List<Object> arguments = new ArrayList<>();
         arguments.add(id);
@@ -712,4 +712,7 @@ public class ClientStub implements OperationHandler {
         return true;
     }
 
+    public void clearQueue() {
+        dbHandler.clearQueue(user.getId());
+    }
 }

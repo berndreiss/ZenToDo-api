@@ -21,6 +21,7 @@ public class TestDbHandler implements ClientOperationHandler {
     EntityManagerFactory emf;
     EntityManager em;
     String token;
+    long userId;
 
     /**
      * TODO DESCRIBE
@@ -37,8 +38,8 @@ public class TestDbHandler implements ClientOperationHandler {
         emf.close();
     }
 
-    public List<Entry> getAllEntries(){
-        return em.createQuery("SELECT e FROM Entry e", Entry.class).getResultList();
+    public List<Entry> getAllEntries(Long userId){
+        return em.createQuery("SELECT e FROM Entry e WHERE e.userId = :userId", Entry.class).setParameter("userId", userId).getResultList();
     }
 
     @Override
@@ -128,7 +129,7 @@ public class TestDbHandler implements ClientOperationHandler {
     }
 
     @Override
-    public void updateId(long entry, long id) {
+    public void updateId(long userId, long entry, long id) {
 
     }
 
@@ -165,10 +166,10 @@ public class TestDbHandler implements ClientOperationHandler {
     }
 
     @Override
-    public void clearQueue() {
+    public void clearQueue(long userId) {
 
         em.getTransaction().begin();
-        em.createQuery("DELETE FROM QueueItem qi").executeUpdate();
+        em.createQuery("DELETE FROM QueueItem qi WHERE qi.user.userId = :userId").setParameter("userId", userId).executeUpdate();
         em.getTransaction().commit();
     }
 
@@ -209,10 +210,10 @@ public class TestDbHandler implements ClientOperationHandler {
     }
 
     @Override
-    public void removeUser(String email) {
+    public void removeUser(long userId) {
         em.getTransaction().begin();
-        em.createQuery("DELETE FROM User u WHERE u.email= :email")
-                .setParameter("email", email)
+        em.createQuery("DELETE FROM User u WHERE u.userId= :userId")
+                .setParameter("userId", userId)
                 .executeUpdate();
         em.getTransaction().commit();
 
@@ -220,9 +221,6 @@ public class TestDbHandler implements ClientOperationHandler {
 
     @Override
     public User getUserByEmail(String email) {
-
-        if (!userExists(email))
-            return null;
 
         User user = em.createQuery("SELECT u FROM User u WHERE u.email = :email", User.class)
                 .setParameter("email", email)
@@ -232,37 +230,37 @@ public class TestDbHandler implements ClientOperationHandler {
     }
 
     @Override
-    public boolean userExists(String email) {
+    public boolean userExists(long userId) {
         Long count = em.createQuery(
-                        "SELECT COUNT(u) FROM User u WHERE u.email = :email", Long.class)
-                .setParameter("email", email)
+                        "SELECT COUNT(u) FROM User u WHERE u.userId = :userId", Long.class)
+                .setParameter("userId", userId)
                 .getSingleResult();
 
         return count > 0;
     }
 
     @Override
-    public boolean isEnabled(String email) {
-        Boolean enabled = em.createQuery("SELECT enabled FROM User u WHERE u.email = :email", Boolean.class)
-                .setParameter("email", email)
+    public boolean isEnabled(long userId) {
+        Boolean enabled = em.createQuery("SELECT enabled FROM User u WHERE u.userId = :userId", Boolean.class)
+                .setParameter("userId", userId)
                 .getSingleResult();
         return enabled != null && enabled;
     }
 
     @Override
-    public void enableUser(String email) {
+    public void enableUser(long userId) {
         em.getTransaction().begin();
-        em.createQuery("UPDATE User SET enabled=true WHERE email= :email")
-                .setParameter("email", email)
+        em.createQuery("UPDATE User SET enabled=true WHERE userId= :userId")
+                .setParameter("userId", userId)
                 .executeUpdate();
         em.getTransaction().commit();
     }
 
     @Override
-    public void setDevice(String email, long id) {
+    public void setDevice(long userId, long id) {
         em.getTransaction().begin();
-        em.createQuery("UPDATE User SET device= :device WHERE email= :email")
-                .setParameter("email", email)
+        em.createQuery("UPDATE User SET device= :device WHERE userId= :userId")
+                .setParameter("userId", userId)
                 .setParameter("device", id)
                 .executeUpdate();
         em.getTransaction().commit();
@@ -270,11 +268,11 @@ public class TestDbHandler implements ClientOperationHandler {
     }
 
     @Override
-    public void setClock(String email, VectorClock clock) {
+    public void setClock(long userId, VectorClock clock) {
 
         em.getTransaction().begin();
-        em.createQuery("UPDATE User SET clock= :clock WHERE email= :email")
-                .setParameter("email", email)
+        em.createQuery("UPDATE User SET clock= :clock WHERE userId= :userId")
+                .setParameter("userId", userId)
                 .setParameter("clock", clock.jsonify())
                 .executeUpdate();
         em.getTransaction().commit();

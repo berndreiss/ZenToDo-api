@@ -39,7 +39,7 @@ public class ZenWebSocketClient extends Endpoint {
                 throw new RuntimeException("Could not retrieve data from server.");
 
             clientStub.status = Status.UPDATED;
-            clientStub.dbHandler.clearQueue();
+            clientStub.clearQueue();
 
 
         } catch (Exception e) {

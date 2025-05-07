@@ -25,7 +25,7 @@ public interface ClientOperationHandler extends OperationHandler {
      * @param entry
      * @param id
      */
-    void updateId(long entry, long id);
+    void updateId(long userId, long entry, long id);
 
     /**
      * TODO DESCRIBE
@@ -46,21 +46,21 @@ public interface ClientOperationHandler extends OperationHandler {
     List<ZenServerMessage> getQueued(long userId);
 
 
-    void clearQueue();
+    void clearQueue(long userId);
 
     /**
      * TODO DESCRIBE
      * @param user
      * @return
      */
-    String getToken(long user);
+    String getToken(long userId);
 
     /**
      * TODO DESCRIBE
      * @param user
      * @param token
      */
-    void setToken(long user, String token);
+    void setToken(long userId, String token);
 
 
     /**
@@ -69,13 +69,13 @@ public interface ClientOperationHandler extends OperationHandler {
      * @param email
      * @param userName
      */
-    User addUser(long id, String email, String userName, long device);
+    User addUser(long userId, String email, String userName, long device);
 
     /**
      * TODO
      * @param email
      */
-    void removeUser(String email);
+    void removeUser(long userId);
 
     /**
      *
@@ -89,33 +89,33 @@ public interface ClientOperationHandler extends OperationHandler {
      * @param email
      * @return
      */
-    boolean userExists(String email);
+    boolean userExists(long userId);
 
     /**
      * TODO DESCRIBE
      * @param email
      * @return
      */
-    boolean isEnabled(String email);
+    boolean isEnabled(long userId);
 
     /**
      * TODO DESCRIBE
      * @param email
      */
-    void enableUser(String email);
+    void enableUser(long userId);
 
     /**
      * TODO
      * @param email
      * @param id
      */
-    void setDevice(String email, long id);
+    void setDevice(long userId, long id);
 
     /**
      * TODO
      * @param email
      * @param clock
      */
-    void setClock(String email,VectorClock clock);
+    void setClock(long userId,VectorClock clock);
 
 }
