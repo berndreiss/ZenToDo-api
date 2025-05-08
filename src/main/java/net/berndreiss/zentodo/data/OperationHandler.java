@@ -14,7 +14,7 @@ public interface OperationHandler {
      * @param id the id of the new task as provided by the server
      * @param task the task to be associated with the entry
      */
-    Entry addNewEntry(long id, String task, Long userId, int position);
+    Entry addNewEntry(long id, String task, int position);
 
     /**
      * Delete entry from database including the local queue(s). All entries with position greater than the deleted
