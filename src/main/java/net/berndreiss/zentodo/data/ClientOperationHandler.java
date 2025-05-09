@@ -20,6 +20,7 @@ public interface ClientOperationHandler extends OperationHandler {
      */
     void post(List<Entry> entries);
 
+
     /**
      * TODO DESCRIBE
      * @param entry

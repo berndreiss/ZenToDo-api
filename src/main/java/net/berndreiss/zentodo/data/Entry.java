@@ -47,12 +47,12 @@ public class Entry{
 
     public Entry(){}
 
-    public Entry(long id, String task, Long userId, int position){
+    public Entry(Long userId, long id, String task, int position){
         //creates a new instance and initializes the fields of the entry
+        this.userId = userId;
         this.id = id;
         this.position = position;
         this.task=task;
-        this.userId = userId;
     }
 
     public Entry(String task, Long userId, int position){

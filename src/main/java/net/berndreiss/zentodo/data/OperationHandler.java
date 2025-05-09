@@ -1,6 +1,7 @@
 package net.berndreiss.zentodo.data;
 
 import java.util.List;
+import java.util.Optional;
 
 /**
  * This interface represents methods necessary to communicate with the server. If there are necessary side effects,
@@ -9,12 +10,11 @@ import java.util.List;
 public interface OperationHandler {
 
 
-    /**
-     * Add a single new task to the database.
-     * @param id the id of the new task as provided by the server
-     * @param task the task to be associated with the entry
-     */
-    Entry addNewEntry(long id, String task, int position);
+
+    Entry addNewEntry(Entry entry);
+
+    Entry addNewEntry(String task);
+    Entry addNewEntry(String task, int position);
 
     /**
      * Delete entry from database including the local queue(s). All entries with position greater than the deleted
@@ -23,6 +23,10 @@ public interface OperationHandler {
      * @param id the id of the entry to be deleted
      */
     void delete(long id);
+
+    Optional<Entry> getEntry(long id);
+
+    List<Entry> getEntries();
 
     /**
      * Swap entry with id with the entry at position.

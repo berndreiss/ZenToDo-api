@@ -1,6 +1,5 @@
 package net.berndreiss.zentodo.util;
 
-import jakarta.persistence.criteria.CriteriaBuilder;
 import net.berndreiss.zentodo.OperationType;
 import net.berndreiss.zentodo.data.*;
 import org.json.JSONArray;
@@ -15,6 +14,7 @@ import java.util.*;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import java.util.Optional;
 
 /**
  * TODO DESCRIBE
@@ -25,7 +25,8 @@ public class ClientStub implements OperationHandler {
 
     private final String email;
     private final String userName;
-    public final Persistence dbHandler;
+    public final Database dbHandler;
+    public String id;
     private final List<ClientOperationHandler> otherHandlers = new ArrayList<>();
     private ExceptionHandler exceptionHandler;
     private Consumer<String> messagePrinter;
@@ -37,7 +38,7 @@ public class ClientStub implements OperationHandler {
     private VectorClock vectorClock;
     public static TimeDrift timeDrift = new TimeDrift();
 
-    public static void main(String[] args) throws IOException, InterruptedException, URISyntaxException {
+    public static void main(String[] args) {
 
         TestDbHandler dbTestHandler = new TestDbHandler("ZenToDoPU");
 
@@ -57,8 +58,16 @@ public class ClientStub implements OperationHandler {
         System.out.println("TEST");
         stub.init(passwordSupplier);
         System.out.println("TEST");
-        stub.addNewEntry(7L, "TEST", 4);
+        //stub.addNewEntry("TEST", 4);
 
+        List<Entry> allEntries =  dbTestHandler.getEntries(stub.getUser().getId());
+
+        for (Entry e: allEntries)
+            dbTestHandler.delete(e.getUserId(), e.getId());
+        dbTestHandler.clearQueue(stub.user.getId());
+
+
+        stub.addNewEntry("TASK");
         System.exit(0);
 
         VectorClock vc1 = new VectorClock();
@@ -90,10 +99,10 @@ public class ClientStub implements OperationHandler {
 
     }
 
-    public ClientStub(String email, Persistence dbHandler){
+    public ClientStub(String email, Database dbHandler){
         this(email, null, dbHandler);
     }
-    public ClientStub(String email, String userName, Persistence dbHandler){
+    public ClientStub(String email, String userName, Database dbHandler){
         this.email = email;
         this.userName = userName;
         this.dbHandler = dbHandler;
@@ -584,23 +593,24 @@ public class ClientStub implements OperationHandler {
 
     private void receiveMessage(ZenMessage message){
 
-        System.out.println("RECEIVING");
+        System.out.println("RECEIVING FOR " + id);
 
         System.out.println(jsonifyMessage(message));
         switch (message.type){
             case POST -> {}
             case ADD_NEW_ENTRY -> {
                 List<Object> args = message.arguments;
-                dbHandler.addNewEntry(
-                        Long.parseLong(args.get(0).toString()),
-                        Long.parseLong(args.get(1).toString()),
-                        args.get(2).toString(),
-                        Integer.parseInt(args.get(3).toString()));
+                long userId = Long.parseLong(args.get(0).toString());
+                long id = Long.parseLong(args.get(1).toString());
+                String task = args.get(2).toString();
+                int position = Integer.parseInt(args.get(3).toString());
+                System.out.println("HERE");
+                Entry entry = dbHandler.addNewEntry(userId, id, task, position);
+                System.out.println("ENTRY EMPTY:");
+                System.out.println(entry == null);
+                System.out.println("HERE");
                 otherHandlers.forEach(handler ->{
-                    handler.addNewEntry(
-                            Long.parseLong(args.get(1).toString()),
-                            args.get(2).toString(),
-                            Integer.parseInt(args.get(3).toString()));
+                    handler.addNewEntry(entry);
                 });
             }
             case DELETE -> {
@@ -624,18 +634,28 @@ public class ClientStub implements OperationHandler {
     }
 
     @Override
-    public Entry addNewEntry(long id, String task, int position) {
+    public Entry addNewEntry(String task) {
+        Entry entry = dbHandler.addNewEntry(user == null ? null : user.getId(), task);
+        return addNewEntry(entry);
+    }
+    @Override
+    public Entry addNewEntry(String task, int position) {
+        Entry entry = dbHandler.addNewEntry(user.getId(), task, position);
+        return addNewEntry(entry);
+    }
 
-        dbHandler.addNewEntry(user.getId(), id, task, position);
+    @Override
+    public Entry addNewEntry(Entry entry) {
+
         System.out.println(user.getEmail());
         vectorClock.increment();
         dbHandler.setClock(user.getId(), vectorClock);
         //messagePrinter.accept(String.valueOf(vectorClock == null));
         List<Object> arguments = new ArrayList<>();
-        arguments.add(id);
-        arguments.add(task);
         arguments.add(user.getId());
-        arguments.add(position);
+        arguments.add(entry.getId());
+        arguments.add(entry.getTask());
+        arguments.add(entry.getPosition());
         ZenServerMessage zm = new ZenServerMessage(OperationType.ADD_NEW_ENTRY, arguments, vectorClock);
         List<ZenServerMessage> list = new ArrayList<>();
         list.add(zm);
@@ -651,13 +671,23 @@ public class ClientStub implements OperationHandler {
         } catch (Exception e) {
             dbHandler.addToQueue(user, zm);
         }
-        return null;
+        return entry;
 
     }
 
     @Override
     public void delete(long id) {
+        dbHandler.delete(user == null ? null : user.getId(), id);
+    }
 
+    @Override
+    public Optional<Entry> getEntry(long id) {
+        return dbHandler.getEntry(user == null ? null : user.getId(), id);
+    }
+
+    @Override
+    public List<Entry> getEntries() {
+        return dbHandler.getEntries(user == null ? null : user.getId());
     }
 
     @Override

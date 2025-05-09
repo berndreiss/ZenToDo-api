@@ -4,8 +4,9 @@ import net.berndreiss.zentodo.util.VectorClock;
 import net.berndreiss.zentodo.util.ZenServerMessage;
 
 import java.util.List;
+import java.util.Optional;
 
-public interface Persistence {
+public interface Database {
     /**
      * Add a list of entries to the database including all the fields in the entry.
      *
@@ -111,6 +112,14 @@ public interface Persistence {
      */
     void setClock(long userId, VectorClock clock);
 
+    Entry addNewEntry(Long userId, String task);
+    /**
+     * Add a single new task to the database.
+     * @param id the id of the new task as provided by the server
+     * @param task the task to be associated with the entry
+     */
+    Entry addNewEntry(Long userId, String task, int position);
+
     /**
      * Add a single new task to the database.
      * @param id the id of the new task as provided by the server
@@ -215,4 +224,7 @@ public interface Persistence {
      * @param email
      */
     boolean updateEmail(Long userId, long id, String email);
+
+    Optional<Entry> getEntry(Long userId, long id);
+    List<Entry> getEntries(Long userId);
 }
