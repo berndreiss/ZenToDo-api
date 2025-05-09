@@ -29,7 +29,9 @@ public class ZenMessage {
         OperationType type = OperationType.valueOf(obj.getString("type"));
         JSONArray array = obj.getJSONArray("arguments");
         List<Object> arguments = new ArrayList<>();
-        array.forEach(arguments::add);
+        for (int i = 0; i < array.length(); i++){
+            arguments.add(array.get(i));
+        }
         return new ZenMessage(type, arguments, clock);
     }
 }
