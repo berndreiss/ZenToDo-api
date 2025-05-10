@@ -116,15 +116,17 @@ public class ClientStub implements OperationHandler {
     private Status authenticate(Supplier<String> passwordSupplier){
         try {
             user = dbHandler.getUserByEmail(email);
-            System.out.println(user == null);
             if (user == null) {
                 String loginRequest = getLoginRequest(email, passwordSupplier.get());
 
                 int attempts = 0;
                 while (attempts++ < 10){
+                    System.out.println("ATTEMPTING TO LOG IN " + attempts);
 
                     HttpURLConnection connection = sendPostMessage(PROTOCOL + SERVER + "auth/register", loginRequest);
-                    if (connection.getResponseCode() == 200){
+                    int responseCode = connection.getResponseCode();
+                    System.out.println("RETURN CODE: " + connection.getResponseCode());
+                    if (responseCode == 200){
 
                         String body = getBody(connection);
 
@@ -246,6 +248,7 @@ public class ClientStub implements OperationHandler {
 
         try {
 
+            System.out.println("INITIALIZING");
             //Consumer<String> oldMessagePrinter = messagePrinter;
             //messagePrinter = null;
             status= authenticate(passwordSupplier);
@@ -257,6 +260,7 @@ public class ClientStub implements OperationHandler {
 
             //initialize Vector clock
             vectorClock = new VectorClock(user);
+            System.out.println("VECTOR CLOCK == NULL: " + (vectorClock == null));
 
 
             if (status != Status.ENABLED) {
@@ -278,8 +282,9 @@ public class ClientStub implements OperationHandler {
 
                 List<ZenMessage> messages = parseMessage(parsedMessage);
 
-                System.out.println("CLOCK LOCAL: " + vectorClock.jsonify());
-                System.out.println("CLOCK REMOTE: " + messages.getFirst().clock.jsonify());
+                if (!messages.isEmpty()) {
+                    System.out.println("CLOCK LOCAL: " + vectorClock.jsonify());
+                    System.out.println("CLOCK REMOTE: " + messages.getFirst().clock.jsonify());
                 /*
                 if (!messages.isEmpty() && messages.getFirst().clock.changeDifference(vectorClock ) != 1){
 
@@ -294,13 +299,16 @@ public class ClientStub implements OperationHandler {
                     }
                 }
 */
+                }
 
                 try {
                     HttpURLConnection conn = sendAuthPostMessage(PROTOCOL + SERVER + "ackn", id);
                     if (conn.getResponseCode() != 200)
                         return;
                 } catch (Exception e) {
-                    throw new RuntimeException(e);
+                    if (exceptionHandler != null)
+                        exceptionHandler.handle(e);
+
                 }
 
                 for (ZenMessage zm: messages)
@@ -665,10 +673,13 @@ public class ClientStub implements OperationHandler {
 
             HttpURLConnection connection = sendAuthPostMessage(PROTOCOL + SERVER + "process", jsonifyServerList(list));
 
-            if (connection.getResponseCode() != 200) {
+            int responseCode = connection.getResponseCode();
+            System.out.println("ADDING RESPONSE CODE: " + responseCode);
+            if (responseCode != 200) {
                 dbHandler.addToQueue(user, zm);
             }
         } catch (Exception e) {
+            exceptionHandler.handle(e);
             dbHandler.addToQueue(user, zm);
         }
         return entry;
@@ -686,8 +697,33 @@ public class ClientStub implements OperationHandler {
     }
 
     @Override
-    public List<Entry> getEntries() {
+    public List<Entry> loadEntries() {
         return dbHandler.getEntries(user == null ? null : user.getId());
+    }
+
+    @Override
+    public List<Entry> loadFocus() {
+        return new ArrayList<Entry>();
+    }
+
+    @Override
+    public List<Entry> loadDropped() {
+        return new ArrayList<Entry>();
+    }
+
+    @Override
+    public List<Entry> loadList(String list) {
+        return new ArrayList<Entry>();
+    }
+
+    @Override
+    public List<String> loadLists() {
+        return new ArrayList<String>();
+    }
+
+    @Override
+    public Map<String, String> getListColors() {
+        return new  HashMap<String, String>();
     }
 
     @Override

@@ -202,12 +202,12 @@ public class TestDbHandler implements Database {
     }
 
     @Override
-    public void updateUserName(Long userId, long id, String name) {
+    public void updateUserName(Long userId, String name) {
 
     }
 
     @Override
-    public boolean updateEmail(Long userId, long id, String email) {
+    public boolean updateEmail(Long userId, String email) {
         return false;
     }
 

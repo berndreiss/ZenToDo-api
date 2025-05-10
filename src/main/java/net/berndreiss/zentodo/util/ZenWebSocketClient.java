@@ -60,7 +60,7 @@ public class ZenWebSocketClient extends Endpoint {
 
     @OnError
     public void onError(Session session, Throwable throwable) {
-        System.err.println("WebSocket error: " + throwable.getMessage());
+        System.err.println("WebSocket error: " + throwable.getCause());
     }
 
     public ZenWebSocketClient(Consumer<String> messageConsumer, ClientStub clientStub){
@@ -88,11 +88,8 @@ public class ZenWebSocketClient extends Endpoint {
 
             container.connectToServer(this, config, serverUri);
 
-            synchronized (ZenWebSocketClient.class){
-                ZenWebSocketClient.class.wait();
-            }
         } catch (Exception e) {
-            e.printStackTrace();
+            //TODO IMPLEMENT
         }
     }
 }

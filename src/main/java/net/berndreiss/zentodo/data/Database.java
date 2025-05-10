@@ -216,14 +216,14 @@ public interface Database {
      * @param id
      * @param name
      */
-    void updateUserName(Long userId, long id, String name);
+    void updateUserName(Long userId, String name);
 
     /**
      * TODO
      * @param id
      * @param email
      */
-    boolean updateEmail(Long userId, long id, String email);
+    boolean updateEmail(Long userId, String email);
 
     Optional<Entry> getEntry(Long userId, long id);
     List<Entry> getEntries(Long userId);

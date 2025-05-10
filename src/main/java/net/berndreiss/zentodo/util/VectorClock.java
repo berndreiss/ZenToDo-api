@@ -4,8 +4,6 @@ import net.berndreiss.zentodo.data.User;
 import org.json.JSONObject;
 
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentSkipListMap;
 
 public class VectorClock implements  Comparable<VectorClock>{
     public Map<Long, Long> entries = new HashMap<>();

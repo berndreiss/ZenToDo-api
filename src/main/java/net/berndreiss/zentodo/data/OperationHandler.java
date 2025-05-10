@@ -1,6 +1,7 @@
 package net.berndreiss.zentodo.data;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -26,7 +27,13 @@ public interface OperationHandler {
 
     Optional<Entry> getEntry(long id);
 
-    List<Entry> getEntries();
+    List<Entry> loadEntries();
+
+    List<Entry> loadFocus();
+    List<Entry> loadDropped();
+    List<Entry> loadList(String list);
+    List<String> loadLists();
+    Map<String, String> getListColors();
 
     /**
      * Swap entry with id with the entry at position.
