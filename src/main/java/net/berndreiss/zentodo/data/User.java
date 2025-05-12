@@ -27,6 +27,9 @@ public class User {
     @Column (nullable = false)
     private long device;
 
+    @Column (nullable = false)
+    private long profile;
+
     @Column
     private String clock;
 
@@ -95,6 +98,10 @@ public class User {
     public long getDevice(){return device;}
 
     public void setDevice(long device){this.device = device;}
+
+    public long getProfile(){return profile;}
+
+    public void setProfile(long profile){this.profile = profile;}
 
     public boolean isEnabled() {return enabled;}
 

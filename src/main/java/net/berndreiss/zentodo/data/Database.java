@@ -19,7 +19,7 @@ public interface Database {
      * @param entry
      * @param id
      */
-    void updateId(Long userId, long entry, long id);
+    void updateId(Long userId, long profile, long entry, long id);
 
     /**
      * TODO DESCRIBE
@@ -64,19 +64,24 @@ public interface Database {
      * @param userName
      */
     User addUser(long userId, String email, String userName, long device);
+    Profile addProfile(Long userId, String name);
+    Profile addProfile(Long userId);
 
     /**
      * TODO
      * @param email
      */
     void removeUser(long userId);
+    void removeProfile(long profileId);
 
     /**
      *
      * @param email
      * @return
      */
-    User getUserByEmail(String email);
+    Optional<User> getUserByEmail(String email);
+    Optional<User> getUser(long id);
+    Optional<Profile> getProfile(Long userId, long id);
 
     /**
      * TODO DESCRIBE
@@ -112,20 +117,20 @@ public interface Database {
      */
     void setClock(long userId, VectorClock clock);
 
-    Entry addNewEntry(Long userId, String task);
+    Entry addNewEntry(Long userId, long profile, String task);
     /**
      * Add a single new task to the database.
      * @param id the id of the new task as provided by the server
      * @param task the task to be associated with the entry
      */
-    Entry addNewEntry(Long userId, String task, int position);
+    Entry addNewEntry(Long userId, long profile, String task, int position);
 
     /**
      * Add a single new task to the database.
      * @param id the id of the new task as provided by the server
      * @param task the task to be associated with the entry
      */
-    Entry addNewEntry(Long userId, long id, String task, int position);
+    Entry addNewEntry(Long userId, long profile, long id, String task, int position);
 
     /**
      * Delete entry from database including the local queue(s). All entries with position greater than the deleted
@@ -133,7 +138,7 @@ public interface Database {
      *
      * @param id the id of the entry to be deleted
      */
-    void delete(Long userId, long id);
+    void removeEntry(Long userId, long profile, long id);
 
     /**
      * Swap entry with id with the entry at position.
@@ -141,7 +146,7 @@ public interface Database {
      * @param id the id of the entry to be moved
      * @param position the position with which to swap
      */
-    void swapEntries(Long userId, long id, int position);
+    void swapEntries(Long userId, long profile, long id, int position);
 
     /**
      * Swap entry in list with entry at position.
@@ -149,7 +154,7 @@ public interface Database {
      * @param id the id of the entry to be moved
      * @param position the position with which to swap
      */
-    void swapListEntries(Long userId, long id, int position);
+    void swapListEntries(Long userId, long profile, long id, int position);
 
     /**
      * Update the task with the value provided.
@@ -157,7 +162,7 @@ public interface Database {
      * @param id the id of the task to be updated
      * @param value the value to update with
      */
-    void updateTask(Long userId, long id, String value);
+    void updateTask(Long userId, long profile, long id, String value);
 
     /**
      * Update the field with the value provided.
@@ -165,7 +170,7 @@ public interface Database {
      * @param id the id of the task to be updated
      * @param value the value to update with
      */
-    void updateFocus(Long userId, long id, int value);
+    void updateFocus(Long userId, long profile, long id, int value);
 
     /**
      * Update the field with the value provided.
@@ -173,7 +178,7 @@ public interface Database {
      * @param id the id of the task to be updated
      * @param value the value to update with
      */
-    void updateDropped(Long userId, long id, int value);
+    void updateDropped(Long userId, long profile, long id, int value);
 
     /**
      * Update the list field and the position with the value provided and increment all list items list positions greater than the position.
@@ -183,7 +188,7 @@ public interface Database {
      * @param value the value to update with
      * @param position position in which to add the item
      */
-    void updateList(Long userId, long id, String value, int position);
+    void updateList(Long userId, long profile, long id, String value, int position);
 
     /**
      * Update the field with the value provided.
@@ -191,7 +196,7 @@ public interface Database {
      * @param id the id of the task to be updated
      * @param value the value to update with
      */
-    void updateReminderDate(Long userId, long id, Long value);
+    void updateReminderDate(Long userId, long profile, long id, Long value);
 
     /**
      * Update the field with the value provided. Also needs to update the reminder date.
@@ -200,7 +205,7 @@ public interface Database {
      * @param reminderDate the reminder date of the task
      * @param value the value to update with
      */
-    void updateRecurrence(Long userId, long id, Long reminderDate, String value);
+    void updateRecurrence(Long userId, long profile, long id, Long reminderDate, String value);
 
     /**
      *
@@ -209,7 +214,7 @@ public interface Database {
      * @param list the list to change
      * @param color the color to put
      */
-    void updateListColor(Long userId, String list, String color);
+    void updateListColor(Long userId, long profile, String list, String color);
 
     /**
      * TODO
@@ -225,6 +230,9 @@ public interface Database {
      */
     boolean updateEmail(Long userId, String email);
 
-    Optional<Entry> getEntry(Long userId, long id);
-    List<Entry> getEntries(Long userId);
+    List<User> getUsers();
+    List<Profile> getProfiles(Long userId);
+
+    Optional<Entry> getEntry(Long userId, long profile, long id);
+    List<Entry> getEntries(Long userId, long profile);
 }

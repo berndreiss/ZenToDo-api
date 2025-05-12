@@ -33,6 +33,7 @@ public class ClientStub implements OperationHandler {
     public static String PROTOCOL = "http://";
     public static String SERVER = "localhost:8080/";
     public  User user;
+    public int profile;
     public Status status;
     public String tokenDirectory;
     private VectorClock vectorClock;
@@ -60,10 +61,10 @@ public class ClientStub implements OperationHandler {
         System.out.println("TEST");
         //stub.addNewEntry("TEST", 4);
 
-        List<Entry> allEntries =  dbTestHandler.getEntries(stub.getUser().getId());
+        List<Entry> allEntries =  dbTestHandler.getEntries(stub.getUser().getId(), stub.getUser().getProfile());
 
         for (Entry e: allEntries)
-            dbTestHandler.delete(e.getUserId(), e.getId());
+            dbTestHandler.removeEntry(e.getUserId(), e.getProfile(), e.getId());
         dbTestHandler.clearQueue(stub.user.getId());
 
 
@@ -115,7 +116,10 @@ public class ClientStub implements OperationHandler {
      */
     private Status authenticate(Supplier<String> passwordSupplier){
         try {
-            user = dbHandler.getUserByEmail(email);
+            Optional<User> userOpt = dbHandler.getUserByEmail(email);
+
+            userOpt.ifPresent(value -> user = value);
+
             if (user == null) {
                 String loginRequest = getLoginRequest(email, passwordSupplier.get());
 
@@ -623,8 +627,8 @@ public class ClientStub implements OperationHandler {
             }
             case DELETE -> {
                 long id = Long.parseLong(message.arguments.getFirst().toString());
-                dbHandler.delete(user.getId(), id);
-                otherHandlers.forEach(h -> h.delete(id));
+                dbHandler.removeEntry(user.getId(), user.getProfile(), id);
+                otherHandlers.forEach(h -> h.removeEntry(id));
             }
             case SWAP -> {}
             case SWAP_LIST -> {}
@@ -643,12 +647,12 @@ public class ClientStub implements OperationHandler {
 
     @Override
     public Entry addNewEntry(String task) {
-        Entry entry = dbHandler.addNewEntry(user == null ? null : user.getId(), task);
+        Entry entry = dbHandler.addNewEntry(user == null ? null : user.getId(), user == null ? profile : user.getProfile(), task);
         return addNewEntry(entry);
     }
     @Override
     public Entry addNewEntry(String task, int position) {
-        Entry entry = dbHandler.addNewEntry(user.getId(), task, position);
+        Entry entry = dbHandler.addNewEntry(user == null ? null : user.getId(), user == null ? profile : user.getProfile(), task, position);
         return addNewEntry(entry);
     }
 
@@ -687,18 +691,18 @@ public class ClientStub implements OperationHandler {
     }
 
     @Override
-    public void delete(long id) {
-        dbHandler.delete(user == null ? null : user.getId(), id);
+    public void removeEntry(long id) {
+        dbHandler.removeEntry(user == null ? null : user.getId(), user == null ? profile : user.getProfile(), id);
     }
 
     @Override
     public Optional<Entry> getEntry(long id) {
-        return dbHandler.getEntry(user == null ? null : user.getId(), id);
+        return dbHandler.getEntry(user == null ? null : user.getId(), user == null ? profile : user.getProfile(), id);
     }
 
     @Override
     public List<Entry> loadEntries() {
-        return dbHandler.getEntries(user == null ? null : user.getId());
+        return dbHandler.getEntries(user == null ? null : user.getId(), user == null ? profile : user.getProfile());
     }
 
     @Override

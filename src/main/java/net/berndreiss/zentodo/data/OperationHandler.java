@@ -23,7 +23,7 @@ public interface OperationHandler {
      *
      * @param id the id of the entry to be deleted
      */
-    void delete(long id);
+    void removeEntry(long id);
 
     Optional<Entry> getEntry(long id);
 
