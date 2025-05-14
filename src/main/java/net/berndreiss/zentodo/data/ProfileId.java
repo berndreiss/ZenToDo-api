@@ -1,6 +1,9 @@
 package net.berndreiss.zentodo.data;
 
 import jakarta.persistence.Embeddable;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.MapsId;
 
 import java.io.Serializable;
 import java.util.Objects;
@@ -8,16 +11,21 @@ import java.util.Objects;
 @Embeddable
 public class ProfileId implements Serializable {
     private int id;
-    private long userId;
+
+    @ManyToOne
+    //@MapsId("user")
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
+
     public ProfileId() {}
-    public ProfileId(int id, long userId){
+    public ProfileId(int id, User user){
         this.id = id;
-        this.userId = userId;
+        this.user = user;
     }
     public int getId(){return id;}
-    public long getUserId(){return userId;}
+    public User getUser(){return user;}
     public void setId(int id){this.id = id;}
-    public void setUserId(long userId){this.userId = userId;}
+    public void setUser(User user){this.user = user;}
 
     @Override
     public boolean equals(Object o){
@@ -25,11 +33,11 @@ public class ProfileId implements Serializable {
         if (!(o instanceof ProfileId)) return false;
 
         ProfileId that = (ProfileId) o;
-        return id == that.id && userId == that.userId;
+        return id == that.id && Objects.equals(user, that.user);
     }
     @Override
     public int hashCode(){
-        return Objects.hash(userId, id);
+        return Objects.hash(user, id);
     }
 
 }

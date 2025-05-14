@@ -86,11 +86,6 @@ public class EntryTest {
         Assert.assertNull("Reminder date needs to be initialized with null for custom id.", entry3Returned.get().getReminderDate());
         Assert.assertEquals("New entry was not assigned right position for custom id.", 3, entry3Returned.get().getPosition());
 
-        Entry entryNoUser = entryManager.addNewEntry(null, 0L, "NULL");
-        Assert.assertNull("User id is not null for entry without user.", entryNoUser.getUserId());
-        Optional<Entry> entryNoUserReturned = entryManager.getEntry(null, 0L, entryNoUser.getId());
-        Assert.assertTrue("Entry without user was not added.", entryNoUserReturned.isPresent());
-        Assert.assertNull("User id is not null for entry without user.", entryNoUserReturned.get().getUserId());
     }
 
     @Test

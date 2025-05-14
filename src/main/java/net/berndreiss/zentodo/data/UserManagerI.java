@@ -14,8 +14,8 @@ public interface UserManagerI {
      * @param userName
      */
     User addUser(long userId, String email, String userName, long device);
-    Profile addProfile(Long userId, String name);
-    Profile addProfile(Long userId);
+    Profile addProfile(long userId, String name);
+    Profile addProfile(long userId);
 
     /**
      * TODO
@@ -31,7 +31,7 @@ public interface UserManagerI {
      */
     Optional<User> getUserByEmail(String email);
     Optional<User> getUser(long id);
-    Optional<Profile> getProfile(Long userId, long id);
+    Optional<Profile> getProfile(long userId, long id);
 
     /**
      * TODO DESCRIBE
@@ -112,6 +112,6 @@ public interface UserManagerI {
 
 
     List<User> getUsers();
-    List<Profile> getProfiles(Long userId);
+    List<Profile> getProfiles(long userId);
 
 }

@@ -3,10 +3,7 @@ package net.berndreiss.zentodo.persistence;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityManagerFactory;
 import jakarta.persistence.Persistence;
-import net.berndreiss.zentodo.data.Profile;
-import net.berndreiss.zentodo.data.QueueItem;
-import net.berndreiss.zentodo.data.User;
-import net.berndreiss.zentodo.data.UserManagerI;
+import net.berndreiss.zentodo.data.*;
 import net.berndreiss.zentodo.util.VectorClock;
 import net.berndreiss.zentodo.util.ZenServerMessage;
 
@@ -49,17 +46,13 @@ public class UserManager implements UserManagerI {
     }
 
     @Override
-    public List<Profile> getProfiles(Long userId) {
+    public List<Profile> getProfiles(long userId) {
         EntityManagerFactory emf = Persistence.createEntityManagerFactory(persistenceUnit);
         EntityManager em = emf.createEntityManager();
         List<Profile> profiles;
-        if (userId == null) {
-            profiles = em.createQuery("SELECT p FROM Profile p WHERE p.profileId.userId = -1", Profile.class).getResultList();
-        } else {
-            profiles = em.createQuery("SELECT p FROM Profile p WHERE p.profileId.userId = :userId", Profile.class)
+            profiles = em.createQuery("SELECT p FROM Profile p WHERE p.profileId.user.id = :userId", Profile.class)
                     .setParameter("userId", userId)
                     .getResultList();
-        }
         return profiles;
     }
 
@@ -70,9 +63,11 @@ public class UserManager implements UserManagerI {
         EntityManagerFactory emf = Persistence.createEntityManagerFactory(persistenceUnit);
         EntityManager em = emf.createEntityManager();
         em.getTransaction().begin();
-        Profile profile = new Profile(0, null, id);
         User user = new User(email, userName, device);
         user.setId(id);
+        ProfileId profileId = new ProfileId(0, user);
+        Profile profile = new Profile();
+        profile.setProfileId(profileId);
         VectorClock clock = new VectorClock(device);
         user.setClock(clock.jsonify());
         //user.setProfile(profile.getId());
@@ -87,29 +82,27 @@ public class UserManager implements UserManagerI {
     }
 
     @Override
-    public Profile addProfile(Long userId) {
+    public Profile addProfile(long userId) {
         return addProfile(userId, null);
 
     }
 
     @Override
-    public Profile addProfile(Long userId, String name) {
+    public Profile addProfile(long userId, String name) {
         EntityManagerFactory emf = Persistence.createEntityManagerFactory(persistenceUnit);
         EntityManager em = emf.createEntityManager();
         em.getTransaction().begin();
-        User user = null;
-        long count;
-        if (userId != null) {
-            user = em.createQuery("SELECT u FROM User u WHERE u.id = :userId", User.class)
+        User user = em.createQuery("SELECT u FROM User u WHERE u.id = :userId", User.class)
                     .setParameter("userId", userId)
                     .getSingleResult();
-            count = em.createQuery("SELECT COUNT(p) FROM Profile p WHERE p.profileId.userId = userId", Long.class).setParameter("userId", userId).getSingleResult();
-        }
-        else
-            count = em.createQuery("SELECT COUNT(p) FROM Profile p WHERE p.profileId.userId = -1", Long.class).getSingleResult();
+        long count = em.createQuery("SELECT COUNT(p) FROM Profile p WHERE p.profileId.user.id = :userId", Long.class)
+                .setParameter("userId", userId)
+                .getSingleResult();
         System.out.println("ADDING PROFILE FOR " + userId + " COUNT " + count);
-        Profile profile = new Profile((int) count, name, user == null ? null : user.getId());
-        System.out.println("PROFILE " + profile.getId() + " USER " + profile.getUser());
+        Profile profile = new Profile();
+        ProfileId profileId = new ProfileId((int) count, user);
+        profile.setProfileId(profileId);
+
         em.persist(profile);
         em.getTransaction().commit();
         em.close();
@@ -165,25 +158,27 @@ public class UserManager implements UserManagerI {
 
     @Override
     public Optional<User> getUser(long id) {
-        return Optional.empty();
-    }
-
-    @Override
-    public Optional<Profile> getProfile(Long userId, long id) {
         EntityManagerFactory emf = Persistence.createEntityManagerFactory(persistenceUnit);
         EntityManager em = emf.createEntityManager();
 
-        List<Profile> results;
-        if (userId == null) {
-            results = em.createQuery("SELECT p FROM Profile p WHERE p.profileId.userId = -1 IS NULL AND p.profileId.id = :id", Profile.class)
-                    .setParameter("id", id)
-                    .getResultList();
-        } else {
-            results = em.createQuery("SELECT p FROM Profile p WHERE p.profileId.userId = :userId AND p.profileId.id = :id", Profile.class)
+        List<User> users = em.createQuery("SELECT u FROM User u WHERE u.id = :id", User.class)
+                .setParameter("id", id)
+                .getResultList();
+
+        em.close();
+        emf.close();
+        return users.isEmpty() ? Optional.empty() : Optional.of(users.getFirst());
+    }
+
+    @Override
+    public Optional<Profile> getProfile(long userId, long id) {
+        EntityManagerFactory emf = Persistence.createEntityManagerFactory(persistenceUnit);
+        EntityManager em = emf.createEntityManager();
+
+        List<Profile> results = em.createQuery("SELECT p FROM Profile p WHERE p.profileId.user.id = :userId AND p.profileId.id = :id", Profile.class)
                     .setParameter("userId", userId)
                     .setParameter("id", id)
                     .getResultList();
-        }
         em.close();
         emf.close();
 

@@ -16,21 +16,20 @@ public class Profile {
 
     public Profile(){}
 
-    public Profile(int id, String name, Long user) {
-        this.profileId = new ProfileId(id, user == null ? -1 : user);
-        this.name = Objects.requireNonNullElseGet(name, () -> "Profile " + id);
-    }
 
-    public int getId() {
+    public int getId(){
         return profileId.getId();
     }
 
-    public void setId(int id) {
+    public User getUser(){
+        return profileId.getUser();
+    }
+    public ProfileId getProfileId(){
+        return profileId;
     }
 
-    public Long getUser() {
-        //return profileId.getUserId() == -1 ? null : profileId.getUserId();
-        return profileId.getUserId();
+    public void setProfileId(ProfileId profileId){
+        this.profileId = profileId;
     }
 
     public String getName() {

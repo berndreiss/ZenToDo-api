@@ -28,7 +28,7 @@ public class User {
     private long device;
 
     @Column (nullable = false)
-    private long profile;
+    private int profile;
 
     @Column
     private String clock;
@@ -36,10 +36,13 @@ public class User {
     @Column
     private String password;
 
-    @OneToMany (mappedBy = "user", cascade = CascadeType.REMOVE, orphanRemoval = true)
+    @OneToMany (mappedBy = "user", cascade = CascadeType.REMOVE, orphanRemoval = true,  fetch = FetchType.EAGER)
     private List<Device> devices = new ArrayList<>();
 
-    @OneToMany (mappedBy = "user", cascade = CascadeType.REMOVE, orphanRemoval = true)
+    @OneToMany (mappedBy = "profileId.user", cascade = CascadeType.REMOVE, orphanRemoval = true,  fetch = FetchType.EAGER)
+    private List<Profile> profiles = new ArrayList<>();
+
+    @OneToMany (mappedBy = "user", cascade = CascadeType.REMOVE, orphanRemoval = true,  fetch = FetchType.EAGER)
     private List<QueueItem> queueItems = new ArrayList<>();
 
     public User(){}
@@ -99,9 +102,9 @@ public class User {
 
     public void setDevice(long device){this.device = device;}
 
-    public long getProfile(){return profile;}
+    public int getProfile(){return profile;}
 
-    public void setProfile(long profile){this.profile = profile;}
+    public void setProfile(int profile){this.profile = profile;}
 
     public boolean isEnabled() {return enabled;}
 
@@ -116,6 +119,10 @@ public class User {
     public List<Device> getDevices() {return devices;}
 
     public void setDevices(List<Device> devices) {this.devices = devices;}
+
+    public List<Profile> getProfiles() {return profiles;}
+
+    public void setProfiles(List<Profile> profiles) {this.profiles = profiles;}
 
     public List<QueueItem> getQueueItems() {return queueItems;}
 
