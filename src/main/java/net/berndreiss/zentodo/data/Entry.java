@@ -3,7 +3,6 @@ package net.berndreiss.zentodo.data;
 import jakarta.persistence.*;
 
 import java.time.Instant;
-import java.time.LocalDate;
 
 /**
  * TODO ADD DESCRIPTION

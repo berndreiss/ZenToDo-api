@@ -2,12 +2,10 @@ package net.berndreiss.zentodo.data;
 
 import jakarta.persistence.*;
 import net.berndreiss.zentodo.OperationType;
-import net.berndreiss.zentodo.util.VectorClock;
 
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 @Entity
 @Table(name="queue")

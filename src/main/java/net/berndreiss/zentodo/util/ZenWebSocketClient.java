@@ -1,13 +1,8 @@
 package net.berndreiss.zentodo.util;
 
 import jakarta.websocket.*;
-import net.berndreiss.zentodo.data.ClientOperationHandler;
-import net.berndreiss.zentodo.data.User;
 
-import java.io.IOException;
-import java.io.OutputStream;
 import java.net.*;
-import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;

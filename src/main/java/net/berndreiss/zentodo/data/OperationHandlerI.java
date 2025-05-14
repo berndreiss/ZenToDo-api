@@ -8,7 +8,7 @@ import java.util.Optional;
  * This interface represents methods necessary to communicate with the server. If there are necessary side effects,
  * they are described in the methods documentation below. THESE SIDE EFFECTS ARE NECESSARY TO GUARANTEE CONSISTENCY.
  */
-public interface OperationHandler {
+public interface OperationHandlerI {
 
 
 

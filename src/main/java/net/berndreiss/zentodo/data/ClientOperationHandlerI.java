@@ -1,17 +1,14 @@
 package net.berndreiss.zentodo.data;
 
-import net.berndreiss.zentodo.OperationType;
 import net.berndreiss.zentodo.util.VectorClock;
-import net.berndreiss.zentodo.util.ZenMessage;
 import net.berndreiss.zentodo.util.ZenServerMessage;
 
-import java.io.IOException;
 import java.util.List;
 
 /**
  * TODO IMPLEMENT DESCRIPTION
  */
-public interface ClientOperationHandler extends OperationHandler {
+public interface ClientOperationHandlerI extends OperationHandlerI {
 
     /**
      * Add a list of entries to the database including all the fields in the entry.
@@ -26,7 +23,7 @@ public interface ClientOperationHandler extends OperationHandler {
      * @param entry
      * @param id
      */
-    void updateId(long userId, long entry, long id);
+    void updateId(long userId, long profile, long entry, long id);
 
     /**
      * TODO DESCRIBE

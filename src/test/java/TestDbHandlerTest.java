@@ -1,10 +1,14 @@
-import net.berndreiss.zentodo.data.Database;
-import net.berndreiss.zentodo.util.DatabaseTest;
-import net.berndreiss.zentodo.util.TestDbHandler;
+import net.berndreiss.zentodo.tests.DatabaseTestSuite;
+import net.berndreiss.zentodo.persistence.TestDbHandler;
+import org.junit.BeforeClass;
 
-public class TestDbHandlerTest extends DatabaseTest {
-    @Override
-    protected Database createDatabase() {
-        return new TestDbHandler("ZenToDoPU");
+public class TestDbHandlerTest extends DatabaseTestSuite {
+    @BeforeClass
+    public static void initDB() {
+            DatabaseTestSuite.databaseSupplier =
+                    () -> {
+                        return new TestDbHandler("ZenToDoPU", null);
+                    };
     }
+
 }

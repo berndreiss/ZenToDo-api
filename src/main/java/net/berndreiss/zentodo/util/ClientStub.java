@@ -1,6 +1,7 @@
 package net.berndreiss.zentodo.util;
 
 import net.berndreiss.zentodo.OperationType;
+import net.berndreiss.zentodo.persistence.TestDbHandler;
 import net.berndreiss.zentodo.data.*;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -19,7 +20,7 @@ import java.util.Optional;
 /**
  * TODO DESCRIBE
  */
-public class ClientStub implements OperationHandler {
+public class ClientStub implements OperationHandlerI {
 
     private ZenWebSocketClient client;
 
@@ -27,7 +28,7 @@ public class ClientStub implements OperationHandler {
     private final String userName;
     public final Database dbHandler;
     public String id;
-    private final List<ClientOperationHandler> otherHandlers = new ArrayList<>();
+    private final List<ClientOperationHandlerI> otherHandlers = new ArrayList<>();
     private ExceptionHandler exceptionHandler;
     private Consumer<String> messagePrinter;
     public static String PROTOCOL = "http://";
@@ -41,7 +42,7 @@ public class ClientStub implements OperationHandler {
 
     public static void main(String[] args) {
 
-        TestDbHandler dbTestHandler = new TestDbHandler("ZenToDoPU");
+        TestDbHandler dbTestHandler = new TestDbHandler("ZenToDoPU", null);
 
         Supplier<String> passwordSupplier = () -> {
             System.out.println("PLEASE ENTER PASSWORD:");
@@ -61,11 +62,11 @@ public class ClientStub implements OperationHandler {
         System.out.println("TEST");
         //stub.addNewEntry("TEST", 4);
 
-        List<Entry> allEntries =  dbTestHandler.getEntries(stub.getUser().getId(), stub.getUser().getProfile());
+        List<Entry> allEntries =  dbTestHandler.getEntryManager().getEntries(stub.getUser().getId(), stub.getUser().getProfile());
 
         for (Entry e: allEntries)
-            dbTestHandler.removeEntry(e.getUserId(), e.getProfile(), e.getId());
-        dbTestHandler.clearQueue(stub.user.getId());
+            dbTestHandler.getEntryManager().removeEntry(e.getUserId(), e.getProfile(), e.getId());
+        dbTestHandler.getUserManager().clearQueue(stub.user.getId());
 
 
         stub.addNewEntry("TASK");
@@ -116,7 +117,8 @@ public class ClientStub implements OperationHandler {
      */
     private Status authenticate(Supplier<String> passwordSupplier){
         try {
-            Optional<User> userOpt = dbHandler.getUserByEmail(email);
+            UserManagerI userManager = dbHandler.getUserManager();
+            Optional<User> userOpt = userManager.getUserByEmail(email);
 
             userOpt.ifPresent(value -> user = value);
 
@@ -137,7 +139,7 @@ public class ClientStub implements OperationHandler {
                         if (body.startsWith("exists")){
 
                             String[] ids = body.split(",");
-                            dbHandler.addUser(Long.parseLong(ids[1]), email, userName, Long.parseLong(ids[2]));
+                            userManager.addUser(Long.parseLong(ids[1]), email, userName, Long.parseLong(ids[2]));
 
                             if (messagePrinter != null)
                                 messagePrinter.accept("User is already registered, but not verified. Check your mail.");
@@ -148,17 +150,17 @@ public class ClientStub implements OperationHandler {
                         String[] ids  = body.split(",");
 
                         if (Integer.parseInt(ids[0]) == 0) {
-                            user = dbHandler.addUser(Long.parseLong(ids[1]), email, userName, Long.parseLong(ids[2]));
+                            user = userManager.addUser(Long.parseLong(ids[1]), email, userName, Long.parseLong(ids[2]));
                             if (messagePrinter != null)
                                 messagePrinter.accept("User was registered. Check your mails for verification.");
 
                             return Status.REGISTERED;
                         }
                         if (Integer.parseInt(ids[0]) == 1) {
-                            user = dbHandler.addUser(Long.parseLong(ids[1]), email, userName, Long.parseLong(ids[2]));
-                            dbHandler.enableUser(user.getId());
+                            user = userManager.addUser(Long.parseLong(ids[1]), email, userName, Long.parseLong(ids[2]));
+                            userManager.enableUser(user.getId());
                             user.setEnabled(true);
-                            dbHandler.setToken(Long.parseLong(ids[1]), ids[3]);
+                            userManager.setToken(Long.parseLong(ids[1]), ids[3]);
                             if (messagePrinter != null)
                                  messagePrinter.accept("User logged in.");
                             return Status.ENABLED;
@@ -180,7 +182,7 @@ public class ClientStub implements OperationHandler {
 
                 if (body.equals("non")){
                     //TODO ASK WHEHTER USER SHOULD BE DELETED!
-                    dbHandler.removeUser(user.getId());
+                    userManager.removeUser(user.getId());
                     return Status.DELETED;
                 }
 
@@ -191,8 +193,8 @@ public class ClientStub implements OperationHandler {
                 }
                 else if (body.startsWith("enabled")){
                     user.setEnabled(true);
-                    dbHandler.enableUser(user.getId());
-                    dbHandler.setToken(user.getId(), body.split(",")[1]);
+                    userManager.enableUser(user.getId());
+                    userManager.setToken(user.getId(), body.split(",")[1]);
                     //TODO retrieve complete server side db
                     if (messagePrinter != null)
                         messagePrinter.accept("User logged in.");
@@ -204,12 +206,12 @@ public class ClientStub implements OperationHandler {
                 }
 
             }
-            String token = dbHandler.getToken(user.getId());
+            String token = userManager.getToken(user.getId());
 
             if (token != null) {
                 HttpURLConnection connection = sendPostMessage(PROTOCOL + SERVER + "auth/renewToken", getLoginRequest(email, token));
                 if (connection.getResponseCode() == 200) {
-                    dbHandler.setToken(user.getId(), getBody(connection));
+                    userManager.setToken(user.getId(), getBody(connection));
                     if (messagePrinter != null)
                         messagePrinter.accept("User logged in.");
                     return Status.ENABLED;
@@ -222,13 +224,13 @@ public class ClientStub implements OperationHandler {
             while (attempts++ < 10) {
                 HttpURLConnection connection = sendPostMessage(PROTOCOL + SERVER + "auth/login", loginRequest);
                 if (connection.getResponseCode() == 200) {
-                    dbHandler.setToken(user.getId(), getBody(connection));
+                    userManager.setToken(user.getId(), getBody(connection));
                     if (messagePrinter != null)
                         messagePrinter.accept("User logged in.");
                     return Status.ENABLED;
                 }
                 if (connection.getResponseCode() == 404) {
-                    dbHandler.removeUser(user.getId());
+                    userManager.removeUser(user.getId());
                     return Status.DELETED;
                 }
             }
@@ -272,7 +274,7 @@ public class ClientStub implements OperationHandler {
                 return;
             }
 
-            HttpURLConnection connection = sendAuthPostMessage(PROTOCOL + SERVER + "process", jsonifyServerList(dbHandler.getQueued(user.getId())));
+            HttpURLConnection connection = sendAuthPostMessage(PROTOCOL + SERVER + "process", jsonifyServerList(dbHandler.getUserManager().getQueued(user.getId())));
 
             if (connection.getResponseCode() != 200){
                 throw new Exception("Something went wrong sending data to server.");
@@ -318,7 +320,7 @@ public class ClientStub implements OperationHandler {
                 for (ZenMessage zm: messages)
                     receiveMessage(zm);
             }, this);
-            Thread thread = new Thread(() -> client.connect(user.getEmail(), dbHandler.getToken(user.getId()), user.getDevice()));
+            Thread thread = new Thread(() -> client.connect(user.getEmail(), dbHandler.getUserManager().getToken(user.getId()), user.getDevice()));
             thread.start();
             // Set clock drift
             for (int i = 0; i < 8; i++)
@@ -366,7 +368,7 @@ public class ClientStub implements OperationHandler {
 
         if (status == Status.DIRTY) {
             status = Status.UPDATED;
-            HttpURLConnection connection = sendAuthPostMessage(PROTOCOL + SERVER + "process", jsonifyServerList(dbHandler.getQueued(user.getId())));
+            HttpURLConnection connection = sendAuthPostMessage(PROTOCOL + SERVER + "process", jsonifyServerList(dbHandler.getUserManager().getQueued(user.getId())));
 
             if (connection.getResponseCode() != 200) {
                 status = Status.DIRTY;
@@ -379,7 +381,7 @@ public class ClientStub implements OperationHandler {
         connection = (HttpURLConnection) url.openConnection();
         connection.setRequestMethod("POST");
         connection.setRequestProperty("Content-Type", "application/json");
-        connection.setRequestProperty("Authorization", "Bearer " + dbHandler.getToken(user.getId()));
+        connection.setRequestProperty("Authorization", "Bearer " + dbHandler.getUserManager().getToken(user.getId()));
         connection.setRequestProperty("device", String.valueOf(user.getDevice()));
         connection.setRequestProperty("t1", TimeDrift.getTimeStamp());
         connection.setDoOutput(true);
@@ -396,7 +398,7 @@ public class ClientStub implements OperationHandler {
 
         if (status == Status.DIRTY) {
             status = Status.UPDATED;
-            HttpURLConnection connection = sendAuthPostMessage(PROTOCOL + SERVER + "process", jsonifyServerList(dbHandler.getQueued(user.getId())));
+            HttpURLConnection connection = sendAuthPostMessage(PROTOCOL + SERVER + "process", jsonifyServerList(dbHandler.getUserManager().getQueued(user.getId())));
 
             if (connection.getResponseCode() != 200) {
                 status = Status.DIRTY;
@@ -409,7 +411,7 @@ public class ClientStub implements OperationHandler {
 
         connection.setRequestMethod("GET");
         connection.setRequestProperty("Content-Type", "application/json");
-        connection.setRequestProperty("Authorization", "Bearer " + dbHandler.getToken(user.getId()));
+        connection.setRequestProperty("Authorization", "Bearer " + dbHandler.getUserManager().getToken(user.getId()));
         connection.setRequestProperty("device", String.valueOf(user.getDevice()));
         connection.setRequestProperty("t1", TimeDrift.getTimeStamp());
         connection.setDoOutput(true);
@@ -442,14 +444,14 @@ public class ClientStub implements OperationHandler {
      *
      */
     public void sync(){
-       List<ZenServerMessage> queue = dbHandler.getQueued(user.getId());
+       List<ZenServerMessage> queue = dbHandler.getUserManager().getQueued(user.getId());
     }
 
     /**
      * TODO DESCRIBE
      * @param operationHandler
      */
-    public void addOperationHandler(ClientOperationHandler operationHandler){
+    public void addOperationHandler(ClientOperationHandlerI operationHandler){
         this.otherHandlers.add(operationHandler);
     }
 
@@ -457,7 +459,7 @@ public class ClientStub implements OperationHandler {
      * TODO DESCRIBE
      * @param operationHandler
      */
-    public void removeOperationHandler(ClientOperationHandler operationHandler){
+    public void removeOperationHandler(ClientOperationHandlerI operationHandler){
         this.otherHandlers.remove(operationHandler);
     }
 
@@ -617,7 +619,7 @@ public class ClientStub implements OperationHandler {
                 String task = args.get(2).toString();
                 int position = Integer.parseInt(args.get(3).toString());
                 System.out.println("HERE");
-                Entry entry = dbHandler.addNewEntry(userId, id, task, position);
+                Entry entry = dbHandler.getEntryManager().addNewEntry(userId, id, task, position);
                 System.out.println("ENTRY EMPTY:");
                 System.out.println(entry == null);
                 System.out.println("HERE");
@@ -627,7 +629,7 @@ public class ClientStub implements OperationHandler {
             }
             case DELETE -> {
                 long id = Long.parseLong(message.arguments.getFirst().toString());
-                dbHandler.removeEntry(user.getId(), user.getProfile(), id);
+                dbHandler.getEntryManager().removeEntry(user.getId(), user.getProfile(), id);
                 otherHandlers.forEach(h -> h.removeEntry(id));
             }
             case SWAP -> {}
@@ -647,12 +649,12 @@ public class ClientStub implements OperationHandler {
 
     @Override
     public Entry addNewEntry(String task) {
-        Entry entry = dbHandler.addNewEntry(user == null ? null : user.getId(), user == null ? profile : user.getProfile(), task);
+        Entry entry = dbHandler.getEntryManager().addNewEntry(user == null ? null : user.getId(), user == null ? profile : user.getProfile(), task);
         return addNewEntry(entry);
     }
     @Override
     public Entry addNewEntry(String task, int position) {
-        Entry entry = dbHandler.addNewEntry(user == null ? null : user.getId(), user == null ? profile : user.getProfile(), task, position);
+        Entry entry = dbHandler.getEntryManager().addNewEntry(user == null ? null : user.getId(), user == null ? profile : user.getProfile(), task, position);
         return addNewEntry(entry);
     }
 
@@ -661,7 +663,7 @@ public class ClientStub implements OperationHandler {
 
         System.out.println(user.getEmail());
         vectorClock.increment();
-        dbHandler.setClock(user.getId(), vectorClock);
+        dbHandler.getUserManager().setClock(user.getId(), vectorClock);
         //messagePrinter.accept(String.valueOf(vectorClock == null));
         List<Object> arguments = new ArrayList<>();
         arguments.add(user.getId());
@@ -680,11 +682,11 @@ public class ClientStub implements OperationHandler {
             int responseCode = connection.getResponseCode();
             System.out.println("ADDING RESPONSE CODE: " + responseCode);
             if (responseCode != 200) {
-                dbHandler.addToQueue(user, zm);
+                dbHandler.getUserManager().addToQueue(user, zm);
             }
         } catch (Exception e) {
             exceptionHandler.handle(e);
-            dbHandler.addToQueue(user, zm);
+            dbHandler.getUserManager().addToQueue(user, zm);
         }
         return entry;
 
@@ -692,17 +694,17 @@ public class ClientStub implements OperationHandler {
 
     @Override
     public void removeEntry(long id) {
-        dbHandler.removeEntry(user == null ? null : user.getId(), user == null ? profile : user.getProfile(), id);
+        dbHandler.getEntryManager().removeEntry(user == null ? null : user.getId(), user == null ? profile : user.getProfile(), id);
     }
 
     @Override
     public Optional<Entry> getEntry(long id) {
-        return dbHandler.getEntry(user == null ? null : user.getId(), user == null ? profile : user.getProfile(), id);
+        return dbHandler.getEntryManager().getEntry(user == null ? null : user.getId(), user == null ? profile : user.getProfile(), id);
     }
 
     @Override
     public List<Entry> loadEntries() {
-        return dbHandler.getEntries(user == null ? null : user.getId(), user == null ? profile : user.getProfile());
+        return dbHandler.getEntryManager().getEntries(user == null ? null : user.getId(), user == null ? profile : user.getProfile());
     }
 
     @Override
@@ -787,6 +789,6 @@ public class ClientStub implements OperationHandler {
     }
 
     public void clearQueue() {
-        dbHandler.clearQueue(user.getId());
+        dbHandler.getUserManager().clearQueue(user.getId());
     }
 }
