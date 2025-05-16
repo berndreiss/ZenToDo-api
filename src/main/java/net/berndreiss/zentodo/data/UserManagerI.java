@@ -13,7 +13,7 @@ public interface UserManagerI {
      * @param email
      * @param userName
      */
-    User addUser(long userId, String email, String userName, long device);
+    User addUser(long userId, String email, String userName, long device) throws DuplicateIdException, InvalidActionException;
     Profile addProfile(long userId, String name);
     Profile addProfile(long userId);
 
@@ -21,8 +21,8 @@ public interface UserManagerI {
      * TODO
      * @param email
      */
-    void removeUser(long userId);
-    void removeProfile(long profileId);
+    void removeUser(long userId) throws InvalidActionException;
+    void removeProfile(long userId, long profileId) throws InvalidActionException;
 
     /**
      *
@@ -32,20 +32,6 @@ public interface UserManagerI {
     Optional<User> getUserByEmail(String email);
     Optional<User> getUser(long id);
     Optional<Profile> getProfile(long userId, long id);
-
-    /**
-     * TODO DESCRIBE
-     * @param email
-     * @return
-     */
-    boolean userExists(long userId);
-
-    /**
-     * TODO DESCRIBE
-     * @param email
-     * @return
-     */
-    boolean isEnabled(long userId);
 
     /**
      * TODO DESCRIBE

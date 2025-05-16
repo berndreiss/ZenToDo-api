@@ -1,236 +1,209 @@
 package net.berndreiss.zentodo.persistence;
 
 import jakarta.persistence.EntityManager;
-import jakarta.persistence.EntityManagerFactory;
-import jakarta.persistence.Persistence;
-import net.berndreiss.zentodo.data.Entry;
-import net.berndreiss.zentodo.data.EntryManagerI;
+import net.berndreiss.zentodo.data.*;
 
-import java.util.List;
-import java.util.Optional;
-import java.util.Random;
+import java.time.Instant;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class EntryManager implements EntryManagerI {
 
 
-    private final String persistenceUnit;
+    private final EntityManager em;
 
-    public EntryManager(String persistenceUnit){
-        this.persistenceUnit = persistenceUnit;
+    public EntryManager(EntityManager entityManager){
+        this.em = entityManager;
     }
 
-    @Override
-    public void post(List<Entry> entries) {
-
-        EntityManagerFactory emf = Persistence.createEntityManagerFactory(persistenceUnit);
-        EntityManager em = emf.createEntityManager();
-        em.getTransaction().begin();
-        for (Entry e : entries) {
-            em.merge(e);
-        }
-
-        em.getTransaction().commit();
+    void close(){
         em.close();
-        emf.close();
-
     }
 
     @Override
-    public void updateId(Long userId, long profile, long entry, long id) {
-
-    }
-
-    @Override
-    public Optional<Entry> getEntry(Long userId, long profile, long id) {
-        EntityManagerFactory emf = Persistence.createEntityManagerFactory(persistenceUnit);
-        EntityManager em = emf.createEntityManager();
+    public Optional<Entry> getEntry(long userId, long profile, long id) {
         Optional<Entry> entry;
-        if (userId == null){
-            entry = em.createQuery("SELECT e FROM Entry e WHERE e.userId IS NULL AND profile = :profile AND e.id = :id", Entry.class)
-                    .setParameter("profile", profile)
-                    .setParameter("id", id)
-                    .getResultStream().findFirst();
-        } else {
-            entry = em.createQuery("SELECT e FROM Entry e WHERE e.userId = :userId  AND profile = :profile AND e.id = :id", Entry.class)
-                    .setParameter("userId", userId)
-                    .setParameter("profile", profile)
-                    .setParameter("id", id)
-                    .getResultStream().findFirst();
-        }
-        em.close();
-        emf.close();
+        entry = em.createQuery("SELECT e FROM Entry e WHERE e.userId = :userId  AND profile = :profile AND e.id = :id", Entry.class)
+                .setParameter("userId", userId)
+                .setParameter("profile", profile)
+                .setParameter("id", id)
+                .getResultStream().findFirst();
         return entry;
     }
 
     @Override
-    public List<Entry> getEntries(Long userId, long profile) {
-        EntityManagerFactory emf = Persistence.createEntityManagerFactory(persistenceUnit);
-        EntityManager em = emf.createEntityManager();
+    public List<Entry> getEntries(long userId, long profile) {
         List<Entry> list;
-        if (userId == null){
-            list = em.createQuery("SELECT e FROM Entry e WHERE e.userId IS NULL AND e.profile = :profile", Entry.class)
-                    .setParameter("profile", profile)
-                    .getResultList();
-        } else {
-            list = em.createQuery("SELECT e FROM Entry e WHERE e.userId = :userId AND e.profile = :profile", Entry.class)
-                    .setParameter("userId", userId)
-                    .setParameter("profile", profile)
-                    .getResultList();
-        }
-        em.close();
-        emf.close();
-        return  list;
+        list = em.createQuery("SELECT e FROM Entry e WHERE e.userId = :userId AND e.profile = :profile", Entry.class)
+                .setParameter("userId", userId)
+                .setParameter("profile", profile)
+                .getResultList();
+        return list.stream().sorted(Comparator.comparing(Entry::getPosition)).toList();
     }
 
     @Override
-    public Entry addNewEntry (Long userId, long profile, String task) {
-        long position = 0;
-
-        EntityManagerFactory emf = Persistence.createEntityManagerFactory(persistenceUnit);
-        EntityManager em = emf.createEntityManager();
-
-        if (userId == null){
-            position = em.createQuery("SELECT COUNT (e) FROM Entry e WHERE e.userId IS NULL AND e.profile = :profile", Long.class)
-                    .setParameter("profile", profile)
-                    .getSingleResult();
-
-        } else {
-            position = em.createQuery("SELECT COUNT (e) FROM Entry e WHERE e.userId = :userId AND e.profile = :profile", Long.class)
-                    .setParameter("userId", userId)
-                    .setParameter("profile", profile)
-                    .getSingleResult();
-        }
-        em.close();
-        emf.close();
-        return addNewEntry(userId, profile, task, (int) position);
+    public synchronized Entry addNewEntry (long userId, long profile, String task) {
+        List<Entry> entries = getEntries(userId, profile);
+        Entry entry = null;
+        try {
+            entry = addNewEntry(userId, profile, task, entries.size());
+        } catch (PositionOutOfBoundException _) {}
+        return entry;
     }
     @Override
-    public Entry addNewEntry (Long userId, long profile, String task,int position) {
+    public synchronized Entry addNewEntry (long userId, long profile, String task,int position) throws PositionOutOfBoundException{
 
+        List<Entry> entries = getEntries(userId, profile);
+        if (position > entries.size())
+            throw new PositionOutOfBoundException("Position is out of bounds: position " + position);
+        Set<Long> ids = entries.stream().map(Entry::getId).collect(Collectors.toSet());
         long id;
         Random random = new Random();
-        boolean idExists;
-        EntityManagerFactory emf = Persistence.createEntityManagerFactory(persistenceUnit);
-        EntityManager em = emf.createEntityManager();
         do {
             id = random.nextLong();
-            Long count;
-            if (userId == null){
-                count = em.createQuery(
-                                "SELECT COUNT(e) FROM Entry e WHERE e.userId IS NULL AND e.profile = :profile AND e.id = :id", Long.class)
-                        .setParameter("profile", profile)
-                        .setParameter("id", id)
-                        .getSingleResult();
-            }else {
-                count = em.createQuery(
-                                "SELECT COUNT(e) FROM Entry e WHERE e.userId = :userId AND e.profile = :profile AND e.id = :id", Long.class)
-                        .setParameter("userId", userId)
-                        .setParameter("profile", profile)
-                        .setParameter("id", id)
-                        .getSingleResult();
-            }
-            idExists = count > 0;
-
         }
-        while (idExists);
-        em.close();
-        emf.close();
-        return addNewEntry(userId, profile, id, task, position);
+        while (ids.contains(id));
+        Entry entry = null;
+        try {
+            entry = addNewEntry(userId, profile, id, task, position);
+        } catch(DuplicateIdException _){}
+        return entry;
     }
 
 
     @Override
-    public Entry addNewEntry(Long userId, long profile, long id, String task, int position) {
+    public synchronized Entry addNewEntry(long userId, long profile, long id, String task, int position) throws DuplicateIdException, PositionOutOfBoundException {
 
+        List<Entry> entries = getEntries(userId, profile);
+        if (position > entries.size())
+            throw new PositionOutOfBoundException("Position is out of bounds: position " + position);
+
+        Optional<Entry> existingEntry = getEntry(userId, profile, id);
+        if (existingEntry.isPresent())
+            throw new DuplicateIdException("Entry with id already exists: id " + id);
         Entry entry = new Entry(userId, profile, id, task, position);
-        System.out.println(entry.getUserId());
-        EntityManagerFactory emf = Persistence.createEntityManagerFactory(persistenceUnit);
-        EntityManager em = emf.createEntityManager();
         em.getTransaction().begin();
-        if (userId == null){
-            em.createQuery("UPDATE Entry e SET e.position = e.position + 1 WHERE e.position >= :pos AND e.userId IS NULL AND e.profile = :profile")
-                    .setParameter("pos", position)
-                    .setParameter("profile", profile)
-                    .executeUpdate();
-        } else {
-            em.createQuery("UPDATE Entry e SET e.position = e.position + 1 WHERE e.position >= :pos AND e.userId = :userId AND e.profile = :profile")
-                    .setParameter("pos", position)
-                    .setParameter("userId", userId)
-                    .setParameter("profile", profile)
-                    .executeUpdate();
+        for (Entry e: entries){
+            if (e.getPosition() >= position) {
+                e.setPosition(e.getPosition() + 1);
+                em.merge(e);
+            }
         }
         em.merge(entry);
         em.getTransaction().commit();
-        em.close();
-        emf.close();
         return entry;
     }
 
     @Override
-    public void removeEntry(Long userId, long profile, long id) {
+    public synchronized void removeEntry(long userId, long profile, long id) {
 
-        EntityManagerFactory emf = Persistence.createEntityManagerFactory(persistenceUnit);
-        EntityManager em = emf.createEntityManager();
         em.getTransaction().begin();
-        if (userId == null){
-            em.createQuery("DELETE FROM Entry e WHERE e.id = :id AND e.userId IS NULL AND e.profile = :profile")
-                    .setParameter("profile", profile)
-                    .setParameter("id", id)
-                    .executeUpdate();
-        }else {
-            em.createQuery("DELETE FROM Entry e WHERE e.id = :id AND e.userId = :userId AND e.profile = :profile")
-                    .setParameter("userId", userId)
-                    .setParameter("profile", profile)
-                    .setParameter("id", id)
-                    .executeUpdate();
-        }
+        em.createQuery("DELETE FROM Entry e WHERE e.id = :id AND e.userId = :userId AND e.profile = :profile")
+                .setParameter("userId", userId)
+                .setParameter("profile", profile)
+                .setParameter("id", id)
+                .executeUpdate();
         em.getTransaction().commit();
-        em.close();
-        emf.close();
+    }
+    @Override
+    public synchronized void updateId(long userId, long profile, long id, long newId) throws DuplicateIdException {
+        Optional<Entry> entry = getEntry(userId, profile, newId);
+        if (entry.isPresent())
+            throw new DuplicateIdException("Id for entry already exists: id " + newId);
+        em.getTransaction().begin();
+        em.createQuery("UPDATE Entry e SET e.id = :newId WHERE e.id = :id AND e.userId = :userId AND e.profile = :profile")
+                .setParameter("newId", newId)
+                .setParameter("id", id)
+                .setParameter("profile", profile)
+                .setParameter("userId", userId)
+                .executeUpdate();
+        em.getTransaction().commit();
     }
 
     @Override
-    public void swapEntries(Long userId, long profile, long id, int position) {
+    public synchronized void swapEntries(long userId, long profile, long id, int position) throws PositionOutOfBoundException {
 
+
+        List<Entry> entries = getEntries(userId, profile);
+        if (entries.size() <= position)
+            throw new PositionOutOfBoundException("Cannot insert into position because list of entries is too small: number of items " + entries.size());
+        Optional<Entry> entry0Opt = entries.stream().filter(e -> e.getId() == id).findFirst();
+        if (entry0Opt.isEmpty())
+            return;
+        Entry entry0 = entry0Opt.get();
+        Optional<Entry> entry1Opt = entries.stream().findFirst().filter(e -> e.getPosition() == position);
+        if (entry1Opt.isEmpty())
+            return;
+        Entry entry1 = entry1Opt.get();
+        em.getTransaction().begin();
+
+        entry1.setPosition(entry0.getPosition());
+        entry0.setPosition(position);
+
+        em.merge(entry0);
+        em.merge(entry1);
+        em.getTransaction().commit();
+    }
+
+
+    @Override
+    public synchronized void updateTask(long userId, long profile, long id, String value) {
+        if (value == null)
+            return;
+        Optional<Entry> entry = getEntry(userId, profile, id);
+        if (entry.isEmpty())
+            return;
+        entry.get().setTask(value);
+        em.getTransaction().begin();
+        em.merge(entry.get());
+        em.getTransaction().commit();
     }
 
     @Override
-    public void swapListEntries(Long userId, long profile, long id, int position) {
+    public synchronized void updateFocus(long userId, long profile, long id, boolean value) {
 
+        Optional<Entry> entry = getEntry(userId, profile, id);
+        if (entry.isEmpty())
+            return;
+        entry.get().setFocus(value);
+        entry.get().setDropped(false);
+        em.getTransaction().begin();
+        em.merge(entry.get());
+        em.getTransaction().commit();
     }
 
     @Override
-    public void updateTask(Long userId, long profile, long id, String value) {
-
+    public synchronized void updateDropped(long userId, long profile, long id, boolean value) {
+        Optional<Entry> entry = getEntry(userId, profile, id);
+        if (entry.isEmpty())
+            return;
+        entry.get().setDropped(value);
+        em.getTransaction().begin();
+        em.merge(entry.get());
+        em.getTransaction().commit();
     }
 
     @Override
-    public void updateFocus(Long userId, long profile, long id, int value) {
-
+    public synchronized void updateReminderDate(long userId, long profile, long id, Instant value) {
+        Optional<Entry> entry = getEntry(userId, profile, id);
+        if (entry.isEmpty())
+            return;
+        entry.get().setReminderDate(value);
+        em.getTransaction().begin();
+        em.merge(entry.get());
+        em.getTransaction().commit();
     }
 
     @Override
-    public void updateDropped(Long userId, long profile, long id, int value) {
+    public synchronized void updateRecurrence(long userId, long profile, long id, String value) {
 
+        Optional<Entry> entry = getEntry(userId, profile, id);
+        if (entry.isEmpty())
+            return;
+        entry.get().setRecurrence(value);
+        em.getTransaction().begin();
+        em.merge(entry.get());
+        em.getTransaction().commit();
     }
 
-    @Override
-    public void updateList(Long userId, long profile, long id, String value, int position) {
-
-    }
-
-    @Override
-    public void updateReminderDate(Long userId, long profile, long id, Long value) {
-
-    }
-
-    @Override
-    public void updateRecurrence(Long userId, long profile, long id, Long reminderDate, String value) {
-
-    }
-
-    @Override
-    public void updateListColor(Long userId, long profile, String list, String color) {
-
-    }
 }

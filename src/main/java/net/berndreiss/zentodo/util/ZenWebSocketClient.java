@@ -36,7 +36,6 @@ public class ZenWebSocketClient extends Endpoint {
             clientStub.status = Status.UPDATED;
             clientStub.clearQueue();
 
-
         } catch (Exception e) {
             e.printStackTrace();
         }

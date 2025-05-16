@@ -13,7 +13,6 @@ public class ProfileId implements Serializable {
     private int id;
 
     @ManyToOne
-    //@MapsId("user")
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 

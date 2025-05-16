@@ -21,6 +21,9 @@ public class Profile {
         return profileId.getId();
     }
 
+    public long getUserId(){
+        return profileId.getUser().getId();
+    }
     public User getUser(){
         return profileId.getUser();
     }

@@ -16,29 +16,43 @@ import java.util.function.Supplier;
 @Suite.SuiteClasses({
         DatabaseTest.class,
         EntryTest.class,
-        UserTest.class
+        UserTest.class,
+        ListTest.class
 })
 public class DatabaseTestSuite {
     public static Supplier<Database> databaseSupplier;
-    public static Database database;
     public static User user;
     public static Profile profile;
 
-    public static void clearDatabase(Database database) {
+    public static void clearDatabase(Database database) throws InvalidActionException {
         UserManagerI userManager = database.getUserManager();
         EntryManagerI entryManager = database.getEntryManager();
         for (User u : userManager.getUsers()) {
+            if (u.getId() == 0) {
+                continue;
+            }
             for (Profile p : userManager.getProfiles(u.getId())) {
                 for (Entry e : entryManager.getEntries(u.getId(), p.getId()))
                     entryManager.removeEntry(e.getUserId(), p.getId(), e.getId());
                 Assert.assertTrue(entryManager.getEntries(u.getId(), p.getId()).isEmpty());
-                userManager.removeProfile(p.getId());
+                try {
+                    userManager.removeProfile(u.getId(), p.getId());
+                } catch (InvalidActionException _){}
             }
             userManager.removeUser(u.getId());
         }
+
+        for (Profile p: userManager.getProfiles(0)) {
+            List<Entry> entries = entryManager.getEntries(0, p.getId());
+            for (Entry e : entries)
+                entryManager.removeEntry(0, 0, e.getId());
+            if (p.getId() != 0)
+                userManager.removeProfile(0, p.getId());
+        }
+        database.close();
     }
 
-    public static void prepare() {
+    public static void prepare() throws InvalidActionException {
         Database database = databaseSupplier.get();
         clearDatabase(database);
         database = databaseSupplier.get();
@@ -49,10 +63,11 @@ public class DatabaseTestSuite {
         Assert.assertFalse("PREPARE: Default profile for default user was not created.", profiles.isEmpty());
         Assert.assertEquals("PREPARE: Default profile was not assigned to user.", profiles.getFirst().getProfileId().getId(), user.getProfile());
         profile = profiles.getFirst();
+        database.close();
 
     }
 
-    public static void cleanup() {
+    public static void cleanup() throws InvalidActionException {
         clearDatabase(databaseSupplier.get());
     }
 

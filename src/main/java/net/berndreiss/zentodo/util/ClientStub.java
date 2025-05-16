@@ -1,7 +1,9 @@
 package net.berndreiss.zentodo.util;
 
+import jakarta.persistence.EntityManagerFactory;
+import jakarta.persistence.Persistence;
 import net.berndreiss.zentodo.OperationType;
-import net.berndreiss.zentodo.persistence.TestDbHandler;
+import net.berndreiss.zentodo.persistence.DbHandler;
 import net.berndreiss.zentodo.data.*;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -42,10 +44,10 @@ public class ClientStub implements OperationHandlerI {
 
     public static void main(String[] args) {
 
-        TestDbHandler dbTestHandler = new TestDbHandler("ZenToDoPU", null);
+        EntityManagerFactory emf = Persistence.createEntityManagerFactory("ZenToDoPU");
+        DbHandler dbTestHandler = new DbHandler(emf, null);
 
         Supplier<String> passwordSupplier = () -> {
-            System.out.println("PLEASE ENTER PASSWORD:");
             try (Scanner scanner = new Scanner(System.in)){
                 return scanner.nextLine();
             }
@@ -57,9 +59,7 @@ public class ClientStub implements OperationHandlerI {
 
         stub.setExceptionHandler(Throwable::printStackTrace);
         stub.setMessagePrinter(System.out::println);
-        System.out.println("TEST");
         stub.init(passwordSupplier);
-        System.out.println("TEST");
         //stub.addNewEntry("TEST", 4);
 
         List<Entry> allEntries =  dbTestHandler.getEntryManager().getEntries(stub.getUser().getId(), stub.getUser().getProfile());
@@ -70,6 +70,7 @@ public class ClientStub implements OperationHandlerI {
 
 
         stub.addNewEntry("TASK");
+        dbTestHandler.close();
         System.exit(0);
 
         VectorClock vc1 = new VectorClock();
@@ -108,6 +109,10 @@ public class ClientStub implements OperationHandlerI {
         this.email = email;
         this.userName = userName;
         this.dbHandler = dbHandler;
+        Optional<User> user = dbHandler.getUserManager().getUser(0);
+        if (user.isEmpty())
+            throw new RuntimeException("No default user has been found.");
+        this.user = user.get();
     }
 
     /**
@@ -127,11 +132,9 @@ public class ClientStub implements OperationHandlerI {
 
                 int attempts = 0;
                 while (attempts++ < 10){
-                    System.out.println("ATTEMPTING TO LOG IN " + attempts);
 
                     HttpURLConnection connection = sendPostMessage(PROTOCOL + SERVER + "auth/register", loginRequest);
                     int responseCode = connection.getResponseCode();
-                    System.out.println("RETURN CODE: " + connection.getResponseCode());
                     if (responseCode == 200){
 
                         String body = getBody(connection);
@@ -174,7 +177,6 @@ public class ClientStub implements OperationHandlerI {
             }
 
             if (!user.getEnabled()){
-                System.out.println(user.getId());
                 String password = passwordSupplier.get();
                 String loginRequest = getLoginRequest(email, password);
                 HttpURLConnection connection = sendPostMessage(PROTOCOL + SERVER + "auth/status", loginRequest);
@@ -254,7 +256,6 @@ public class ClientStub implements OperationHandlerI {
 
         try {
 
-            System.out.println("INITIALIZING");
             //Consumer<String> oldMessagePrinter = messagePrinter;
             //messagePrinter = null;
             status= authenticate(passwordSupplier);
@@ -266,7 +267,6 @@ public class ClientStub implements OperationHandlerI {
 
             //initialize Vector clock
             vectorClock = new VectorClock(user);
-            System.out.println("VECTOR CLOCK == NULL: " + (vectorClock == null));
 
 
             if (status != Status.ENABLED) {
@@ -289,12 +289,9 @@ public class ClientStub implements OperationHandlerI {
                 List<ZenMessage> messages = parseMessage(parsedMessage);
 
                 if (!messages.isEmpty()) {
-                    System.out.println("CLOCK LOCAL: " + vectorClock.jsonify());
-                    System.out.println("CLOCK REMOTE: " + messages.getFirst().clock.jsonify());
                 /*
                 if (!messages.isEmpty() && messages.getFirst().clock.changeDifference(vectorClock ) != 1){
 
-                    System.out.println("CLOCK DIFFERENCE != 1 !!! ");
                     try {
                         HttpURLConnection conn = sendAuthPostMessage(ClientStub.PROTOCOL + ClientStub.SERVER + "queue", " ");
                         if (conn.getResponseCode() != 200)
@@ -607,9 +604,7 @@ public class ClientStub implements OperationHandlerI {
 
     private void receiveMessage(ZenMessage message){
 
-        System.out.println("RECEIVING FOR " + id);
 
-        System.out.println(jsonifyMessage(message));
         switch (message.type){
             case POST -> {}
             case ADD_NEW_ENTRY -> {
@@ -618,13 +613,15 @@ public class ClientStub implements OperationHandlerI {
                 long id = Long.parseLong(args.get(1).toString());
                 String task = args.get(2).toString();
                 int position = Integer.parseInt(args.get(3).toString());
-                System.out.println("HERE");
-                Entry entry = dbHandler.getEntryManager().addNewEntry(userId, id, task, position);
-                System.out.println("ENTRY EMPTY:");
-                System.out.println(entry == null);
-                System.out.println("HERE");
+                Entry entry = null;
+                try {
+                        entry =dbHandler.getEntryManager().addNewEntry(userId, id, task, position);
+                } catch (PositionOutOfBoundException e){
+
+                }
+                Entry finalEntry = entry;
                 otherHandlers.forEach(handler ->{
-                    handler.addNewEntry(entry);
+                        handler.addNewEntry(finalEntry);
                 });
             }
             case DELETE -> {
@@ -649,19 +646,18 @@ public class ClientStub implements OperationHandlerI {
 
     @Override
     public Entry addNewEntry(String task) {
-        Entry entry = dbHandler.getEntryManager().addNewEntry(user == null ? null : user.getId(), user == null ? profile : user.getProfile(), task);
-        return addNewEntry(entry);
+        Entry entry = dbHandler.getEntryManager().addNewEntry(user == null ? 0 : user.getId(), user == null ? profile : user.getProfile(), task);
+        return entry == null ? null : addNewEntry(entry);
     }
     @Override
-    public Entry addNewEntry(String task, int position) {
-        Entry entry = dbHandler.getEntryManager().addNewEntry(user == null ? null : user.getId(), user == null ? profile : user.getProfile(), task, position);
+    public Entry addNewEntry(String task, int position) throws PositionOutOfBoundException {
+        Entry entry = dbHandler.getEntryManager().addNewEntry(user == null ? 0 : user.getId(), user == null ? profile : user.getProfile(), task, position);
         return addNewEntry(entry);
     }
 
     @Override
     public Entry addNewEntry(Entry entry) {
 
-        System.out.println(user.getEmail());
         vectorClock.increment();
         dbHandler.getUserManager().setClock(user.getId(), vectorClock);
         //messagePrinter.accept(String.valueOf(vectorClock == null));
@@ -680,7 +676,6 @@ public class ClientStub implements OperationHandlerI {
             HttpURLConnection connection = sendAuthPostMessage(PROTOCOL + SERVER + "process", jsonifyServerList(list));
 
             int responseCode = connection.getResponseCode();
-            System.out.println("ADDING RESPONSE CODE: " + responseCode);
             if (responseCode != 200) {
                 dbHandler.getUserManager().addToQueue(user, zm);
             }
@@ -694,17 +689,17 @@ public class ClientStub implements OperationHandlerI {
 
     @Override
     public void removeEntry(long id) {
-        dbHandler.getEntryManager().removeEntry(user == null ? null : user.getId(), user == null ? profile : user.getProfile(), id);
+        dbHandler.getEntryManager().removeEntry(user == null ? 0 : user.getId(), user == null ? profile : user.getProfile(), id);
     }
 
     @Override
     public Optional<Entry> getEntry(long id) {
-        return dbHandler.getEntryManager().getEntry(user == null ? null : user.getId(), user == null ? profile : user.getProfile(), id);
+        return dbHandler.getEntryManager().getEntry(user == null ? 0 : user.getId(), user == null ? profile : user.getProfile(), id);
     }
 
     @Override
     public List<Entry> loadEntries() {
-        return dbHandler.getEntryManager().getEntries(user == null ? null : user.getId(), user == null ? profile : user.getProfile());
+        return dbHandler.getEntryManager().getEntries(user == null ? 0 : user.getId(), user == null ? profile : user.getProfile());
     }
 
     @Override

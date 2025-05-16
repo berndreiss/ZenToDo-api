@@ -14,8 +14,8 @@ public interface OperationHandlerI {
 
     Entry addNewEntry(Entry entry);
 
-    Entry addNewEntry(String task);
-    Entry addNewEntry(String task, int position);
+    Entry addNewEntry(String task) throws PositionOutOfBoundException;
+    Entry addNewEntry(String task, int position) throws PositionOutOfBoundException;
 
     /**
      * Delete entry from database including the local queue(s). All entries with position greater than the deleted

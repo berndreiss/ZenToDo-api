@@ -1,6 +1,7 @@
 package net.berndreiss.zentodo.tests;
 
 import net.berndreiss.zentodo.data.Database;
+import net.berndreiss.zentodo.data.InvalidActionException;
 import net.berndreiss.zentodo.data.Profile;
 import net.berndreiss.zentodo.data.User;
 import org.junit.After;
@@ -13,10 +14,10 @@ import java.util.Optional;
 
 public class DatabaseTest {
     @Before
-    public void prepare(){DatabaseTestSuite.prepare();}
+    public void prepare() throws InvalidActionException {DatabaseTestSuite.prepare();}
 
     @After
-    public void cleanUp(){DatabaseTestSuite.cleanup();}
+    public void cleanUp() throws InvalidActionException {DatabaseTestSuite.cleanup();}
 
     @Test
     public void setup() {
@@ -26,5 +27,6 @@ public class DatabaseTest {
         Assert.assertTrue("Default user was not created.", user.isPresent());
         Assert.assertFalse("Default profile for default user was not created.", profiles.isEmpty());
         Assert.assertEquals("Default profile was not assigned to user.", profiles.getFirst().getProfileId().getId(), user.get().getProfile());
+        database.close();
     }
 }

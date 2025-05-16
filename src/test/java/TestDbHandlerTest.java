@@ -1,5 +1,7 @@
+import jakarta.persistence.EntityManagerFactory;
+import jakarta.persistence.Persistence;
 import net.berndreiss.zentodo.tests.DatabaseTestSuite;
-import net.berndreiss.zentodo.persistence.TestDbHandler;
+import net.berndreiss.zentodo.persistence.DbHandler;
 import org.junit.BeforeClass;
 
 public class TestDbHandlerTest extends DatabaseTestSuite {
@@ -7,7 +9,8 @@ public class TestDbHandlerTest extends DatabaseTestSuite {
     public static void initDB() {
             DatabaseTestSuite.databaseSupplier =
                     () -> {
-                        return new TestDbHandler("ZenToDoPU", null);
+                        EntityManagerFactory emf = Persistence.createEntityManagerFactory("ZenToDoPU");
+                        return new DbHandler(emf, null);
                     };
     }
 
