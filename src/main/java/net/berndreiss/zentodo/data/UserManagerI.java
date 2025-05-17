@@ -19,7 +19,6 @@ public interface UserManagerI {
 
     /**
      * TODO
-     * @param email
      */
     void removeUser(long userId) throws InvalidActionException;
     void removeProfile(long userId, long profileId) throws InvalidActionException;
@@ -35,7 +34,6 @@ public interface UserManagerI {
 
     /**
      * TODO DESCRIBE
-     * @param email
      */
     void enableUser(long userId);
 
@@ -58,7 +56,7 @@ public interface UserManagerI {
      * @param id
      * @param email
      */
-    boolean updateEmail(Long userId, String email);
+    void updateEmail(Long userId, String email) throws  InvalidActionException;
 
     /**
      * TODO

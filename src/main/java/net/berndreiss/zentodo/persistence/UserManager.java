@@ -10,7 +10,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 import java.util.Optional;
 
 public class UserManager implements UserManagerI {
@@ -29,18 +28,37 @@ public class UserManager implements UserManagerI {
 
     @Override
     public synchronized void updateUserName(Long userId, String name) {
+        Optional<User> user = getUser(userId);
+
+        if (user.isEmpty() ||
+                user.get().getUserName() == null && name == null ||
+                user.get().getUserName() != null && user.get().getUserName().equals(name))
+            return;
+        user.get().setUserName(name);
+        em.getTransaction().begin();
+        em.merge(user.get());
+        em.getTransaction().commit();
     }
 
     @Override
-    public synchronized boolean updateEmail(Long userId, String email) {
-        return false;
+    public synchronized void updateEmail(Long userId, String email) throws InvalidActionException {
+        Optional<User> user = getUser(userId);
+
+        if (user.isEmpty() || user.get().getEmail().equals(email))
+            return;
+        Optional<User> userWithMail = getUserByEmail(email);
+        if (userWithMail.isPresent())
+            throw new InvalidActionException("User with mail address already exists: mail " + email);
+        user.get().setEmail(email);
+        em.getTransaction().begin();
+        em.merge(user.get());
+        em.getTransaction().commit();
     }
 
     @Override
     public List<User> getUsers() {
-        List<User> users = em.createQuery("SELECT u FROM User u", User.class)
+        return em.createQuery("SELECT u FROM User u", User.class)
                 .getResultList();
-        return users;
     }
 
     @Override

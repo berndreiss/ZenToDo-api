@@ -28,6 +28,7 @@ public class DatabaseTestSuite {
         UserManagerI userManager = database.getUserManager();
         EntryManagerI entryManager = database.getEntryManager();
         for (User u : userManager.getUsers()) {
+            userManager.clearQueue(u.getId());
             if (u.getId() == 0) {
                 continue;
             }

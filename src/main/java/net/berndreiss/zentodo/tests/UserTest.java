@@ -1,21 +1,25 @@
 package net.berndreiss.zentodo.tests;
 
 import jakarta.persistence.criteria.CriteriaBuilder;
+import net.berndreiss.zentodo.OperationType;
 import net.berndreiss.zentodo.data.*;
 import net.berndreiss.zentodo.util.VectorClock;
+import net.berndreiss.zentodo.util.ZenMessage;
 import net.berndreiss.zentodo.util.ZenServerMessage;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Queue;
 
 public class UserTest {
-    static final String mail0 = "adfaefawe@apvfoafap098aadfaafhaweihuaf.asfihuawefiuh";
-    static final String mail1 = "adfaefawe@apvfoafap098aadfaafhaweihuaf.asfihuawefiui";
-    static final String mail2 = "adfaefawe@apvfoafap098aadfaafhaweihuaf.asfihuawefiui";
+    static final String mail0 = "adfaefawe@apvfoafap098aadfaafhaweihuaf.asfihuawefiuh000";
+    static final String mail1 = "adfaefawe@apvfoafap098aadfaafhaweihuaf.asfihuawefiui111";
+    static final String mail2 = "adfaefawe@apvfoafap098aadfaafhaweihuaf.asfihuawefiuj222";
     @Before
     public void prepare() throws InvalidActionException {
         DatabaseTestSuite.prepare();}
@@ -182,8 +186,12 @@ public class UserTest {
         Database database = DatabaseTestSuite.databaseSupplier.get();
         UserManagerI userManager = database.getUserManager();
         User user = userManager.addUser(1,mail1, null, 0);
+        VectorClock clock = new VectorClock();
+        userManager.setClock(user.getId(), clock);
+        Optional<User> userReturned = userManager.getUser(user.getId());
+        Assert.assertTrue(userReturned.isPresent());
+        Assert.assertEquals("Clock was not saved properly", clock.jsonify(), userReturned.get().getClock());
         database.close();
-
     }
 
     @Test
@@ -191,8 +199,16 @@ public class UserTest {
         Database database = DatabaseTestSuite.databaseSupplier.get();
         UserManagerI userManager = database.getUserManager();
         User user = userManager.addUser(1,mail1, null, 0);
+        userManager.updateEmail(user.getId(), mail2);
+        Optional<User> userReturned = userManager.getUser(user.getId());
+        Assert.assertTrue(userReturned.isPresent());
+        Assert.assertEquals("Mail was not updated", mail2, userReturned.get().getEmail());
+        userManager.addUser(2, mail1, null, 0);
+        try{
+            userManager.updateEmail(user.getId(), mail1);
+            Assert.fail("Updating user with existing mail did not trigger exception.");
+        } catch(InvalidActionException _){}
         database.close();
-
     }
 
     @Test
@@ -200,6 +216,10 @@ public class UserTest {
         Database database = DatabaseTestSuite.databaseSupplier.get();
         UserManagerI userManager = database.getUserManager();
         User user = userManager.addUser(1,mail1, null, 0);
+        userManager.updateUserName(user.getId(), "NAME");
+        Optional<User> userReturned = userManager.getUser(user.getId());
+        Assert.assertTrue(userReturned.isPresent());
+        Assert.assertEquals("User name was not updated", "NAME", userReturned.get().getUserName());
         database.close();
 
     }
@@ -207,7 +227,21 @@ public class UserTest {
     public void addToQueue() throws DuplicateIdException, InvalidActionException {
         Database database = DatabaseTestSuite.databaseSupplier.get();
         UserManagerI userManager = database.getUserManager();
+        EntryManagerI entryManager = database.getEntryManager();
         User user = userManager.addUser(1,mail1, null, 0);
+        List<Object> entries = new ArrayList<>();
+        entries.add(entryManager.addNewEntry(user.getId(), user.getProfile(), "TASK0"));
+        entries.add(entryManager.addNewEntry(user.getId(), user.getProfile(), "TASK1"));
+        ZenServerMessage message = new ZenServerMessage(OperationType.ADD_NEW_ENTRY, entries, new VectorClock(user.getClock()));
+        userManager.addToQueue(user, message);
+        userManager.addToQueue(user, message);
+        List<ZenServerMessage> messages = userManager.getQueued(user.getId());
+        Assert.assertEquals(2, messages.size());
+        Assert.assertEquals("Queue was not updated properly", message.type, messages.get(0).type);
+        Assert.assertEquals("Queue was not updated properly", message.clock.jsonify(), messages.get(0).clock.jsonify());
+        Assert.assertEquals("Queue was not updated properly", message.timeStamp, messages.get(0).timeStamp);
+        Assert.assertEquals("Queue was not updated properly", ((Entry) message.arguments.get(0)).getTask(), "TASK0");
+        Assert.assertEquals("Queue was not updated properly", ((Entry) message.arguments.get(1)).getTask(), "TASK1");
         database.close();
 
     }
@@ -216,7 +250,16 @@ public class UserTest {
     public void clearQueue() throws DuplicateIdException, InvalidActionException {
         Database database = DatabaseTestSuite.databaseSupplier.get();
         UserManagerI userManager = database.getUserManager();
+        EntryManagerI entryManager = database.getEntryManager();
         User user = userManager.addUser(1,mail1, null, 0);
+        List<Object> entries = new ArrayList<>();
+        entries.add(entryManager.addNewEntry(user.getId(), user.getProfile(), "TASK0"));
+        entries.add(entryManager.addNewEntry(user.getId(), user.getProfile(), "TASK1"));
+        ZenServerMessage message = new ZenServerMessage(OperationType.ADD_NEW_ENTRY, entries, new VectorClock(user.getClock()));
+        userManager.addToQueue(user, message);
+        userManager.clearQueue(user.getId());
+        List<ZenServerMessage> messages = userManager.getQueued(user.getId());
+        Assert.assertTrue("Queue has not been cleared.", messages.isEmpty());
         database.close();
 
     }
@@ -226,6 +269,7 @@ public class UserTest {
         Database database = DatabaseTestSuite.databaseSupplier.get();
         UserManagerI userManager = database.getUserManager();
         User user = userManager.addUser(1,mail1, null, 0);
+        Assert.fail();
         database.close();
 
     }
@@ -234,6 +278,7 @@ public class UserTest {
         Database database = DatabaseTestSuite.databaseSupplier.get();
         UserManagerI userManager = database.getUserManager();
         User user = userManager.addUser(1,mail1, null, 0);
+        Assert.fail();
         database.close();
 
     }
