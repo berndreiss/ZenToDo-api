@@ -11,10 +11,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.Queue;
+import java.util.*;
 
 public class UserTest {
     static final String mail0 = "adfaefawe@apvfoafap098aadfaafhaweihuaf.asfihuawefiuh000";
@@ -85,7 +82,7 @@ public class UserTest {
         userManager.removeUser(user.getId());
 
         List<User> users = userManager.getUsers();
-        Assert.assertEquals((users.size() > 1 ? "User still in list of users after deletion." : "Default user has been deleted as well."), 1, users.size());
+        Assert.assertTrue("User still in list of users after deletion.", users.isEmpty());
         Optional<User> userReturned = userManager.getUser(1);
         Assert.assertTrue("User was not removed.", userReturned.isEmpty());
         List<Profile> profiles1 = userManager.getProfiles(1);
@@ -269,7 +266,9 @@ public class UserTest {
         Database database = DatabaseTestSuite.databaseSupplier.get();
         UserManagerI userManager = database.getUserManager();
         User user = userManager.addUser(1,mail1, null, 0);
-        Assert.fail();
+        userManager.setToken(user.getId(),"TOKEN");
+        String token = userManager.getToken(user.getId());
+        Assert.assertEquals("Returned token was wrong.", "TOKEN", token);
         database.close();
 
     }
@@ -277,8 +276,13 @@ public class UserTest {
     public void getUsers() throws DuplicateIdException, InvalidActionException {
         Database database = DatabaseTestSuite.databaseSupplier.get();
         UserManagerI userManager = database.getUserManager();
-        User user = userManager.addUser(1,mail1, null, 0);
-        Assert.fail();
+        User user0 = userManager.addUser(1,mail1, null, 0);
+        User user1 = userManager.addUser(2,mail2, null, 0);
+        List<User> users = userManager.getUsers();
+        Assert.assertTrue("Default use was returned.", users.stream().noneMatch(u -> u.getId() == 0));
+        Assert.assertEquals("Wrong number of users returned.", 2, users.size());
+        Assert.assertTrue("User0 was not returned.", users.stream().anyMatch(u -> Objects.equals(u.getId(), user0.getId())));
+        Assert.assertTrue("User1 was not returned.", users.stream().anyMatch(u -> Objects.equals(u.getId(), user1.getId())));
         database.close();
 
     }

@@ -13,7 +13,7 @@ import java.time.Instant;
 public class Entry{
 
     @Column
-    private Long userId = null;
+    private long userId;
 
     @Column
     private long profile = 0;
@@ -34,7 +34,7 @@ public class Entry{
     private Boolean dropped = true;//true if task has been dropped and not been used in brainstorm and pick
 
     @Column
-    private String list = null;//a list to which the task belongs to
+    private Long list = null;//a list to which the task belongs to
 
     @Column
     private Integer listPosition = null;//position in according list
@@ -49,7 +49,7 @@ public class Entry{
 
     public Entry(){}
 
-    public Entry(Long userId, long profile, long id, String task, int position){
+    public Entry(long userId, long profile, long id, String task, int position){
         //creates a new instance and initializes the fields of the entry
         this.userId = userId;
         this.profile = profile;
@@ -58,7 +58,7 @@ public class Entry{
         this.task=task;
     }
 
-    public Entry(Long userId, long profile, String task, int position){
+    public Entry(long userId, long profile, String task, int position){
         //creates a new instance and initializes the fields of the entry
         this.userId = userId;
         this.profile = profile;
@@ -83,7 +83,7 @@ public class Entry{
 
     public Boolean getDropped(){return dropped;}
 
-    public String getList(){return list;}
+    public Long getList(){return list;}
 
     public Integer getListPosition(){return listPosition;}
 
@@ -100,7 +100,7 @@ public class Entry{
 
     public void setDropped(Boolean dropped){this.dropped = dropped;}
 
-    public void setList(String list){this.list=list;}
+    public void setList(Long list){this.list=list;}
 
     public void setListPosition(Integer listPosition){this.listPosition=listPosition;}
 

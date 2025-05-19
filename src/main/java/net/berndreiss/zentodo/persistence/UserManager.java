@@ -57,8 +57,9 @@ public class UserManager implements UserManagerI {
 
     @Override
     public List<User> getUsers() {
-        return em.createQuery("SELECT u FROM User u", User.class)
+        List<User> users = em.createQuery("SELECT u FROM User u", User.class)
                 .getResultList();
+        return users.stream().filter(u -> u.getId() != 0).toList();
     }
 
     @Override

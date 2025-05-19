@@ -1,9 +1,9 @@
 package net.berndreiss.zentodo.data;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * TODO DESCRIBE
@@ -12,28 +12,50 @@ import jakarta.persistence.Table;
 @Table (name = "lists")
 public class TaskList {
 
-    @Column
-    private Long userId = null;
-
     @Id
-    @Column (nullable = false)
-    private String list;
+    @GeneratedValue
+    long id;
 
-    @Column (nullable = false)
-    private String color ;
+    @Column
+    private String name;
 
-    public TaskList(){};
-    public TaskList(String color){
+    @Column
+    private String color;
+
+    @ManyToMany(mappedBy = "lists")
+    List<Profile> profiles = new ArrayList<>();
+
+    public TaskList() {
+    }
+
+    ;
+
+    public TaskList(String name, String color) {
+        this.name = name;
         this.color = color;
     }
 
-    private Long getUserId(){return userId;}
-    private void setUserId(Long userId){this.userId = userId;}
+    public String getColor() {
+        return color;
+    }
 
-    public String getColor(){return color;}
-
-    public void setColor(String color){
+    public void setColor(String color) {
         this.color = color;
     }
 
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public long getId() {
+        return id;
+    }
+
+    public List<Profile> getProfiles() {
+        return profiles;
+    }
 }

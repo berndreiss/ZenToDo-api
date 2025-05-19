@@ -27,6 +27,9 @@ public class DatabaseTestSuite {
     public static void clearDatabase(Database database) throws InvalidActionException {
         UserManagerI userManager = database.getUserManager();
         EntryManagerI entryManager = database.getEntryManager();
+        ListManagerI listManager = database.getListManager();
+        for (TaskList l: listManager.getLists())
+            listManager.removeList(l.getId());
         for (User u : userManager.getUsers()) {
             userManager.clearQueue(u.getId());
             if (u.getId() == 0) {
@@ -39,6 +42,7 @@ public class DatabaseTestSuite {
                 try {
                     userManager.removeProfile(u.getId(), p.getId());
                 } catch (InvalidActionException _){}
+
             }
             userManager.removeUser(u.getId());
         }
