@@ -1,6 +1,7 @@
 package net.berndreiss.zentodo.persistence;
 
 import jakarta.persistence.EntityManager;
+import jakarta.persistence.criteria.CriteriaBuilder;
 import net.berndreiss.zentodo.data.*;
 import net.berndreiss.zentodo.util.VectorClock;
 import net.berndreiss.zentodo.util.ZenServerMessage;
@@ -72,7 +73,7 @@ public class UserManager implements UserManagerI {
     }
 
     @Override
-    public synchronized User addUser(long id, String email, String userName, long device) throws DuplicateIdException, InvalidActionException{
+    public synchronized User addUser(long id, String email, String userName, int device) throws DuplicateIdException, InvalidActionException{
 
         Optional<User> userOpt = getUser(id);
         if (userOpt.isPresent())
@@ -98,13 +99,15 @@ public class UserManager implements UserManagerI {
     }
 
     @Override
-    public synchronized Profile addProfile(long userId) {
+    public synchronized Profile addProfile(long userId) throws InvalidActionException {
         return addProfile(userId, null);
 
     }
 
     @Override
-    public synchronized Profile addProfile(long userId, String name) {
+    public synchronized Profile addProfile(long userId, String name) throws InvalidActionException {
+        if (getUser(userId).isEmpty())
+            throw new InvalidActionException("User does not exist");
         em.getTransaction().begin();
         User user = em.createQuery("SELECT u FROM User u WHERE u.id = :userId", User.class)
                     .setParameter("userId", userId)
@@ -209,7 +212,7 @@ public class UserManager implements UserManagerI {
         em.getTransaction().commit();
     }
     @Override
-    public synchronized void setDevice(long userId, long id) {
+    public synchronized void setDevice(long userId, int id) {
         Optional<User> user = getUser(userId);
         if (user.isEmpty())
             return;

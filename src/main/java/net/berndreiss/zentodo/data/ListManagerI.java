@@ -12,7 +12,7 @@ public interface ListManagerI {
      *
      */
     TaskList addList(long id, String name, String color);
-    void addUserProfileToList(long userId, int profile, long list);
+    void addUserProfileToList(long userId, int profile, long list) throws InvalidActionException;
     void removeUserProfileFromList(long userId, int profile, long list);
     void  removeList(long id);
     void updateList(long userId, int profile, long entryId, Long listId);
@@ -22,6 +22,7 @@ public interface ListManagerI {
     void updateListColor(long listId, String color);
     List<Entry> getListEntries(long userId, int profile, Long listId);
     Optional<TaskList> getList(long id);
+    Optional<TaskList> getListByName(long userId, int profile, String name);
     List<TaskList> getListsForUser(long userId, int profile);
     List<TaskList> getLists();
     /**

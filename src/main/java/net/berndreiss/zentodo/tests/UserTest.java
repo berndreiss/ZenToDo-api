@@ -107,6 +107,11 @@ public class UserTest {
         profileReturned = userManager.getProfile(user.getId(), profile.getId());
         Assert.assertTrue("Profile without name was not added.", profileReturned.isPresent());
         Assert.assertNull("Profile name for profile without name is not null.", profileReturned.get().getName());
+
+        try{
+            userManager.addProfile(42);
+            Assert.fail("Profile without user was added.");
+        }catch (InvalidActionException _){}
         database.close();
     }
     @Test
@@ -173,7 +178,7 @@ public class UserTest {
         userManager.setDevice(user.getId(), 1);
         Optional<User> userReturned = userManager.getUser(user.getId());
         Assert.assertTrue(userReturned.isPresent());
-        Assert.assertEquals("Device was not set for user.", 1, user.getDevice());
+        Assert.assertEquals("Device was not set for user.", 1, userReturned.get().getDevice());
         database.close();
 
     }
@@ -279,7 +284,7 @@ public class UserTest {
         User user0 = userManager.addUser(1,mail1, null, 0);
         User user1 = userManager.addUser(2,mail2, null, 0);
         List<User> users = userManager.getUsers();
-        Assert.assertTrue("Default use was returned.", users.stream().noneMatch(u -> u.getId() == 0));
+        Assert.assertTrue("Default user was returned.", users.stream().noneMatch(u -> u.getId() == 0));
         Assert.assertEquals("Wrong number of users returned.", 2, users.size());
         Assert.assertTrue("User0 was not returned.", users.stream().anyMatch(u -> Objects.equals(u.getId(), user0.getId())));
         Assert.assertTrue("User1 was not returned.", users.stream().anyMatch(u -> Objects.equals(u.getId(), user1.getId())));

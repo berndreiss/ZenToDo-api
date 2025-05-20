@@ -75,16 +75,16 @@ public class ClientStub implements OperationHandlerI {
 
         VectorClock vc1 = new VectorClock();
 
-        vc1.entries.put(0L, 0L);
-        vc1.entries.put(1L, 1L);
-        vc1.entries.put(2L, 2L);
+        vc1.entries.put(0, 0L);
+        vc1.entries.put(1, 1L);
+        vc1.entries.put(2, 2L);
 
 
         VectorClock vc2 = new VectorClock();
 
-        vc2.entries.put(0L, 1000L);
-        vc2.entries.put(1L, 0L);
-        vc2.entries.put(2L, 0L);
+        vc2.entries.put(0, 1000L);
+        vc2.entries.put(1, 0L);
+        vc2.entries.put(2, 0L);
 
 
 
@@ -142,7 +142,7 @@ public class ClientStub implements OperationHandlerI {
                         if (body.startsWith("exists")){
 
                             String[] ids = body.split(",");
-                            userManager.addUser(Long.parseLong(ids[1]), email, userName, Long.parseLong(ids[2]));
+                            userManager.addUser(Long.parseLong(ids[1]), email, userName, Integer.parseInt(ids[2]));
 
                             if (messagePrinter != null)
                                 messagePrinter.accept("User is already registered, but not verified. Check your mail.");
@@ -153,14 +153,14 @@ public class ClientStub implements OperationHandlerI {
                         String[] ids  = body.split(",");
 
                         if (Integer.parseInt(ids[0]) == 0) {
-                            user = userManager.addUser(Long.parseLong(ids[1]), email, userName, Long.parseLong(ids[2]));
+                            user = userManager.addUser(Long.parseLong(ids[1]), email, userName, Integer.parseInt(ids[2]));
                             if (messagePrinter != null)
                                 messagePrinter.accept("User was registered. Check your mails for verification.");
 
                             return Status.REGISTERED;
                         }
                         if (Integer.parseInt(ids[0]) == 1) {
-                            user = userManager.addUser(Long.parseLong(ids[1]), email, userName, Long.parseLong(ids[2]));
+                            user = userManager.addUser(Long.parseLong(ids[1]), email, userName, Integer.parseInt(ids[2]));
                             userManager.enableUser(user.getId());
                             user.setEnabled(true);
                             userManager.setToken(Long.parseLong(ids[1]), ids[3]);
@@ -713,18 +713,23 @@ public class ClientStub implements OperationHandlerI {
     }
 
     @Override
-    public List<Entry> loadList(String list) {
+    public List<Entry> loadList(Long list) {
         return new ArrayList<Entry>();
     }
 
     @Override
-    public List<String> loadLists() {
-        return new ArrayList<String>();
+    public List<TaskList> loadLists() {
+        return new ArrayList<TaskList>();
     }
 
     @Override
-    public Map<String, String> getListColors() {
-        return new  HashMap<String, String>();
+    public Map<Long, String> getListColors() {
+        return new  HashMap<Long, String>();
+    }
+
+    @Override
+    public Optional<TaskList> getListByName(String name) {
+        return Optional.empty();
     }
 
     @Override
@@ -768,7 +773,7 @@ public class ClientStub implements OperationHandlerI {
     }
 
     @Override
-    public void updateListColor(String list, String color) {
+    public void updateListColor(long list, String color) {
 
     }
 

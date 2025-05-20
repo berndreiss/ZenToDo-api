@@ -6,12 +6,12 @@ import org.json.JSONObject;
 import java.util.*;
 
 public class VectorClock implements  Comparable<VectorClock>{
-    public Map<Long, Long> entries = new HashMap<>();
+    public Map<Integer, Long> entries = new HashMap<>();
 
-    public Long identity = null;
+    public Integer identity = null;
 
     public VectorClock(){}
-    public VectorClock(Long identity){
+    public VectorClock(Integer identity){
         this.identity = identity;
         entries.put(identity, 0L);
     }
@@ -29,7 +29,7 @@ public class VectorClock implements  Comparable<VectorClock>{
         //DO NOT USE toMap() HERE, ANDROID DOESN'T LIKE THAT
         for (Iterator<String> it = clock.keys(); it.hasNext(); ) {
             String key = it.next();
-            entries.put(Long.parseLong(key), Long.parseLong(clock.getString(key)));
+            entries.put(Integer.parseInt(key), Long.parseLong(clock.getString(key)));
         }
 
     }
@@ -43,9 +43,9 @@ public class VectorClock implements  Comparable<VectorClock>{
         return (int) (other.countChanges(identity) - this.countChanges(identity));
     }
 
-    private long countChanges(Long identity){
+    private long countChanges(Integer identity){
         Long changes = 0L;
-        for (Long key: entries.keySet()) {
+        for (Integer key: entries.keySet()) {
             if (Objects.equals(key, identity))
                 continue;
             changes += entries.get(key);
@@ -59,13 +59,13 @@ public class VectorClock implements  Comparable<VectorClock>{
         entries.put(identity, entries.get(identity)+1);
     }
 
-    public void increment(long device){
+    public void increment(int device){
         if (entries.get(device) == null)
             return;
         entries.put(device, entries.get(device) + 1);
     }
 
-    public void addDevice(long device){
+    public void addDevice(int device){
         entries.put(device, 0L);
     }
 
@@ -75,7 +75,7 @@ public class VectorClock implements  Comparable<VectorClock>{
         StringBuilder sb = new StringBuilder();
         sb.append("{\n");
         String prefix = "  ";
-        for (Long key: entries.keySet()){
+        for (Integer key: entries.keySet()){
             sb.append(prefix).append("\"").append(key).append("\": \"").append(entries.get(key)).append("\"");
             prefix = ",\n  ";
         }

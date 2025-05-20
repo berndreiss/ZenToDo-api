@@ -24,8 +24,10 @@ public class DbHandler extends Database implements  AutoCloseable {
         Optional<User> user = getUserManager().getUser(0L);
         if (user.isPresent()) {
             List<Profile> profiles = getUserManager().getProfiles(0);
-            if (profiles.isEmpty())
-                getUserManager().addProfile(0);
+            if (profiles.isEmpty()) {
+                try{
+                getUserManager().addProfile(0);}catch (InvalidActionException _){}//should never occur
+            }
             return;
         }
         try {

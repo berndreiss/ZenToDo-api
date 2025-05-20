@@ -124,7 +124,7 @@ public class ListTest {
     }
 
     @Test
-    public void swapListEntries() throws PositionOutOfBoundException {
+    public void swapListEntries() throws PositionOutOfBoundException, InvalidActionException {
         User user = DatabaseTestSuite.user;
         Database database = DatabaseTestSuite.databaseSupplier.get();
         EntryManagerI entryManager = database.getEntryManager();
@@ -194,7 +194,7 @@ public class ListTest {
     }
 
     @Test
-    public void addUserProfileToList() {
+    public void addUserProfileToList() throws InvalidActionException {
         User user = DatabaseTestSuite.user;
         int profile = user.getProfile();
         Database database = DatabaseTestSuite.databaseSupplier.get();
@@ -213,13 +213,18 @@ public class ListTest {
         Assert.assertTrue("List0 is not in the returned list.", lists.contains(list0));
         Assert.assertTrue("List1 is not in the returned list.", lists.contains(list1));
 
+        try{
+            TaskList listDupl = listManager.addList(((ListManager) listManager).getUniqueUserId(), "LIST0", null);
+            listManager.addUserProfileToList(user.getId(), user.getProfile(), listDupl.getId());
+            Assert.fail("List with existing name was added for user.");
+        } catch (InvalidActionException _){}
         database.close();
 
 
     }
 
     @Test
-    public void removeUserProfileFromList() {
+    public void removeUserProfileFromList() throws InvalidActionException {
         User user = DatabaseTestSuite.user;
         int profile = user.getProfile();
         Database database = DatabaseTestSuite.databaseSupplier.get();
@@ -261,7 +266,7 @@ public class ListTest {
         Assert.assertEquals("Not all lists were returned", 2, listsAll.size());
     }
     @Test
-    public void updateId(){
+    public void updateId() throws InvalidActionException {
         Database database = DatabaseTestSuite.databaseSupplier.get();
         User user = DatabaseTestSuite.user;
         ListManagerI listManager = database.getListManager();
@@ -297,5 +302,23 @@ public class ListTest {
         Assert.assertTrue("List does not exist anymore.", listChanged.isPresent());
         Assert.assertNotEquals("List id has not changed.", 1 , listChanged.get().getId());
         Assert.assertEquals("Wrong id was returned when update id.", listChanged.get().getId(), (long) newId);
+    }
+    @Test
+    public void getListByName() throws InvalidActionException {
+        Database database = DatabaseTestSuite.databaseSupplier.get();
+        User user = DatabaseTestSuite.user;
+        ListManagerI listManager = database.getListManager();
+        UserManagerI userManager = database.getUserManager();
+        TaskList list0 = listManager.addList(((ListManager) listManager).getUniqueUserId(), "LIST0", null);
+        TaskList list1 = listManager.addList(((ListManager) listManager).getUniqueUserId(), "LIST1", null);
+
+        Optional<TaskList> listReturned = listManager.getListByName(user.getId(), user.getProfile(), "LIST0");
+        Assert.assertTrue("List for user was returned without assigning it.", listReturned.isEmpty());
+
+        listManager.addUserProfileToList(user.getId(), user.getProfile(), list0.getId());
+
+        listReturned = listManager.getListByName(user.getId(), user.getProfile(), "LIST0");
+        Assert.assertTrue("List for user was not returned after assigning it.", listReturned.isPresent());
+
     }
 }

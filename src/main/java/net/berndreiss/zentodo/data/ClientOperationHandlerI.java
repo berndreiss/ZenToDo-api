@@ -48,14 +48,12 @@ public interface ClientOperationHandlerI extends OperationHandlerI {
 
     /**
      * TODO DESCRIBE
-     * @param user
      * @return
      */
     String getToken(long userId);
 
     /**
      * TODO DESCRIBE
-     * @param user
      * @param token
      */
     void setToken(long userId, String token);
@@ -63,7 +61,6 @@ public interface ClientOperationHandlerI extends OperationHandlerI {
 
     /**
      * TODO DESCRIBE
-     * @param id
      * @param email
      * @param userName
      */
@@ -71,7 +68,6 @@ public interface ClientOperationHandlerI extends OperationHandlerI {
 
     /**
      * TODO
-     * @param email
      */
     void removeUser(long userId);
 
@@ -84,34 +80,29 @@ public interface ClientOperationHandlerI extends OperationHandlerI {
 
     /**
      * TODO DESCRIBE
-     * @param email
      * @return
      */
     boolean userExists(long userId);
 
     /**
      * TODO DESCRIBE
-     * @param email
      * @return
      */
     boolean isEnabled(long userId);
 
     /**
      * TODO DESCRIBE
-     * @param email
      */
     void enableUser(long userId);
 
     /**
      * TODO
-     * @param email
      * @param id
      */
     void setDevice(long userId, long id);
 
     /**
      * TODO
-     * @param email
      * @param clock
      */
     void setClock(long userId,VectorClock clock);

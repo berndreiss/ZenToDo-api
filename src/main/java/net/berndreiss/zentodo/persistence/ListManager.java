@@ -28,7 +28,7 @@ public class ListManager implements ListManagerI {
     }
 
     @Override
-    public synchronized void addUserProfileToList(long userId, int profileId, long listId) {
+    public synchronized void addUserProfileToList(long userId, int profileId, long listId) throws InvalidActionException {
 
         TaskList list = em.find(TaskList.class, listId);
         if (list == null)
@@ -39,6 +39,8 @@ public class ListManager implements ListManagerI {
         Profile profile = em.find(Profile.class, new ProfileId(profileId, user));
         if (profile == null)
             return;
+        if (getListByName(userId, profileId, list.getName()).isPresent())
+            throw new InvalidActionException("List with the same name already exists for user");
         profile.getLists().add(list);
         list.getProfiles().add(profile);
 
@@ -208,6 +210,22 @@ public class ListManager implements ListManagerI {
     public Optional<TaskList> getList(long id) {
         TaskList result = em.find(TaskList.class, id);
         return result == null ? Optional.empty() : Optional.of(result);
+    }
+
+    @Override
+    public Optional<TaskList> getListByName(long userId, int profile, String name) {
+        try {
+            long id = (long) em.createNativeQuery("SELECT id FROM lists JOIN profile_list ON list_id = id WHERE profile_id = :profile AND profile_user_id = :userId AND name = :name")
+                    .setParameter("profile", profile)
+                    .setParameter("userId", userId)
+                    .setParameter("name", name)
+                    .getSingleResult();
+
+            return getList(id);
+        } catch (NoResultException _){
+            return Optional.empty();
+        }
+
     }
 
     @Override

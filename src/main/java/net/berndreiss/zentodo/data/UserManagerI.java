@@ -13,9 +13,9 @@ public interface UserManagerI {
      * @param email
      * @param userName
      */
-    User addUser(long userId, String email, String userName, long device) throws DuplicateIdException, InvalidActionException;
-    Profile addProfile(long userId, String name);
-    Profile addProfile(long userId);
+    User addUser(long userId, String email, String userName, int device) throws DuplicateIdException, InvalidActionException;
+    Profile addProfile(long userId, String name) throws InvalidActionException;
+    Profile addProfile(long userId) throws InvalidActionException;
 
     /**
      * TODO
@@ -42,7 +42,7 @@ public interface UserManagerI {
      * @param email
      * @param id
      */
-    void setDevice(long userId, long id);
+    void setDevice(long userId, int id);
 
     /**
      * TODO

@@ -31,9 +31,10 @@ public interface OperationHandlerI {
 
     List<Entry> loadFocus();
     List<Entry> loadDropped();
-    List<Entry> loadList(String list);
-    List<String> loadLists();
-    Map<String, String> getListColors();
+    List<Entry> loadList(Long list);
+    List<TaskList> loadLists();
+    Map<Long, String> getListColors();
+    Optional<TaskList> getListByName(String name);
 
     /**
      * Swap entry with id with the entry at position.
@@ -109,7 +110,7 @@ public interface OperationHandlerI {
      * @param list the list to change
      * @param color the color to put
      */
-    void updateListColor(String list, String color);
+    void updateListColor(long list, String color);
 
     /**
      * TODO
