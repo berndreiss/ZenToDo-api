@@ -13,7 +13,6 @@ import java.util.List;
 public class TaskList {
 
     @Id
-    @GeneratedValue
     long id;
 
     @Column
@@ -28,9 +27,8 @@ public class TaskList {
     public TaskList() {
     }
 
-    ;
-
-    public TaskList(String name, String color) {
+    public TaskList(long id, String name, String color) {
+        this.id = id;
         this.name = name;
         this.color = color;
     }
@@ -49,6 +47,10 @@ public class TaskList {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public void setId(long id) {
+        this.id = id;
     }
 
     public long getId() {

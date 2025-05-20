@@ -11,11 +11,12 @@ public interface ListManagerI {
      * If the old list is not null decrement all old list items positions greater than the old position.
      *
      */
-    TaskList addList(String name, String color);
+    TaskList addList(long id, String name, String color);
     void addUserProfileToList(long userId, int profile, long list);
     void removeUserProfileFromList(long userId, int profile, long list);
     void  removeList(long id);
     void updateList(long userId, int profile, long entryId, Long listId);
+    Long updateId(long list, long id);
 
     void updateListName(long listId, String name);
     void updateListColor(long listId, String color);

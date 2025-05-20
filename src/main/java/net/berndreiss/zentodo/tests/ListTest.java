@@ -1,12 +1,14 @@
 package net.berndreiss.zentodo.tests;
 
 import net.berndreiss.zentodo.data.*;
+import net.berndreiss.zentodo.persistence.ListManager;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 public class ListTest {
@@ -36,8 +38,17 @@ public class ListTest {
         Assert.assertFalse("Did not return entries without a list.", entriesNoList.isEmpty());
         Assert.assertEquals("Returned wrong amount of entries without a list.", 3, entriesNoList.size());
 
-        TaskList list0 = listManager.addList("LIST0", null);
-        TaskList list1 = listManager.addList("LIST1", null);
+        TaskList list0 = listManager.addList(((ListManager) listManager).getUniqueUserId(), "LIST0", null);
+        TaskList listNullId = listManager.addList(list0.getId(), "LIST NULL", null);
+        Assert.assertNull("List returned for identical ids was not null.", listNullId);
+        List<TaskList> listsDuplId = listManager.getLists();
+        Assert.assertTrue("List with identical id was added.", listsDuplId.stream()
+                .noneMatch(l -> {
+                    if(l.getName() == null)
+                        return false;
+                    return l.getName().equals("LIST NULL");
+                }));
+        TaskList list1 = listManager.addList(((ListManager) listManager).getUniqueUserId(), "LIST1", null);
         listManager.updateList(user.getId(), profile, entry0.getId(), list0.getId());
         listManager.updateList(user.getId(), profile, entry1.getId(), list1.getId());
         listManager.updateList(user.getId(), profile, entry2.getId(), list1.getId());
@@ -79,10 +90,10 @@ public class ListTest {
         Database database = DatabaseTestSuite.databaseSupplier.get();
         ListManagerI listManager = database.getListManager();
 
-        TaskList list = listManager.addList("NAME", "GREEN");
+        TaskList list = listManager.addList(((ListManager) listManager).getUniqueUserId(),"NAME", "GREEN");
         Assert.assertEquals("List has wrong name.", "NAME", list.getName());
         Assert.assertEquals("List has wrong color.", "GREEN", list.getColor());
-        TaskList listNull = listManager.addList(null, null);
+        TaskList listNull = listManager.addList(((ListManager) listManager).getUniqueUserId(), null, null);
         Assert.assertNull("List has wrong name.", listNull.getName());
         Assert.assertNull("List has wrong color.", listNull.getColor());
 
@@ -103,7 +114,7 @@ public class ListTest {
         Database database = DatabaseTestSuite.databaseSupplier.get();
         ListManagerI listManager = database.getListManager();
 
-        TaskList list = listManager.addList("NAME", "GREEN");
+        TaskList list = listManager.addList(((ListManager) listManager).getUniqueUserId(), "NAME", "GREEN");
         listManager.removeList(list.getId());
         Optional<TaskList> listReturned = listManager.getList(list.getId());
         Assert.assertTrue("List was not removed.", listReturned.isEmpty());
@@ -122,7 +133,7 @@ public class ListTest {
         Entry entry1 = entryManager.addNewEntry(user.getId(), DatabaseTestSuite.user.getProfile(), "TASK1");
         Entry entry2 = entryManager.addNewEntry(user.getId(), DatabaseTestSuite.user.getProfile(), "TASK2");
 
-        TaskList list = listManager.addList(null, null);
+        TaskList list = listManager.addList(((ListManager) listManager).getUniqueUserId(), null, null);
 
         listManager.addUserProfileToList(user.getId(), user.getProfile(), list.getId());
         listManager.updateList(user.getId(), user.getProfile(), entry0.getId(), list.getId());
@@ -145,7 +156,7 @@ public class ListTest {
         Database database = DatabaseTestSuite.databaseSupplier.get();
         ListManagerI listManager = database.getListManager();
 
-        TaskList list = listManager.addList(null, null);
+        TaskList list = listManager.addList(((ListManager) listManager).getUniqueUserId(), null, null);
         listManager.updateListName(list.getId(), "NAME");
         Optional<TaskList> listReturned = listManager.getList(list.getId());
         Assert.assertTrue(listReturned.isPresent());
@@ -166,7 +177,7 @@ public class ListTest {
         ListManagerI listManager = database.getListManager();
 
 
-        TaskList list = listManager.addList(null, null);
+        TaskList list = listManager.addList(((ListManager) listManager).getUniqueUserId(), null, null);
         listManager.updateListColor(list.getId(), "COLOR");
         Optional<TaskList> listReturned = listManager.getList(list.getId());
         Assert.assertTrue(listReturned.isPresent());
@@ -190,8 +201,8 @@ public class ListTest {
         EntryManagerI entryManager = database.getEntryManager();
         ListManagerI listManager = database.getListManager();
 
-        TaskList list0 = listManager.addList("LIST0", null);
-        TaskList list1 = listManager.addList("LIST1", null);
+        TaskList list0 = listManager.addList(((ListManager) listManager).getUniqueUserId(), "LIST0", null);
+        TaskList list1 = listManager.addList(((ListManager) listManager).getUniqueUserId(), "LIST1", null);
 
         listManager.addUserProfileToList(user.getId(), profile, list0.getId());
         listManager.addUserProfileToList(user.getId(), profile, list1.getId());
@@ -215,7 +226,7 @@ public class ListTest {
         EntryManagerI entryManager = database.getEntryManager();
         ListManagerI listManager = database.getListManager();
 
-        TaskList list0 = listManager.addList("LIST0", null);
+        TaskList list0 = listManager.addList(((ListManager) listManager).getUniqueUserId(), "LIST0", null);
 
         listManager.addUserProfileToList(user.getId(), profile, list0.getId());
 
@@ -232,8 +243,8 @@ public class ListTest {
         ListManagerI listManager = database.getListManager();
         UserManagerI userManager = database.getUserManager();
         User user = userManager.addUser(2, "sdlfkhasdflkhasdfladkjshf@asdklfjhasdflkjadhsfaksdjfh.net", null, 0);
-        TaskList list0 = listManager.addList("LIST0", null);
-        TaskList list1 = listManager.addList("LIST1", null);
+        TaskList list0 = listManager.addList(((ListManager) listManager).getUniqueUserId(), "LIST0", null);
+        TaskList list1 = listManager.addList(((ListManager) listManager).getUniqueUserId(), "LIST1", null);
 
         listManager.addUserProfileToList(DatabaseTestSuite.user.getId(), DatabaseTestSuite.user.getProfile(), list0.getId());
         listManager.addUserProfileToList(user.getId(), user.getProfile(), list1.getId());
@@ -248,5 +259,43 @@ public class ListTest {
 
         List<TaskList> listsAll = listManager.getLists();
         Assert.assertEquals("Not all lists were returned", 2, listsAll.size());
+    }
+    @Test
+    public void updateId(){
+        Database database = DatabaseTestSuite.databaseSupplier.get();
+        User user = DatabaseTestSuite.user;
+        ListManagerI listManager = database.getListManager();
+        EntryManagerI entryManager = database.getEntryManager();
+
+        TaskList list0 = listManager.addList(0, "LIST0", null);
+        TaskList list1 = listManager.addList(1, "LIST1", null);
+        TaskList list2 = listManager.addList(2, "LIST2", null);
+        Entry entry = entryManager.addNewEntry(user.getId(), user.getProfile(), "TASK");
+        listManager.addUserProfileToList(user.getId(), user.getProfile(), list0.getId());
+        listManager.updateList(user.getId(), user.getProfile(), entry.getId(), list0.getId());
+        Long newId = listManager.updateId(list0.getId(), 3);
+        Assert.assertNull("Id was returned.", newId);
+        Optional<TaskList> listReturned = listManager.getList(3);
+        Assert.assertTrue("List id was not updated.", listReturned.isPresent());
+        Assert.assertEquals("List id was updated for wrong list.", "LIST0", listReturned.get().getName());
+
+        List<TaskList> listsUser = listManager.getListsForUser(user.getId(), user.getProfile());
+        Assert.assertFalse("List was not moved to new list id for user profile.", listsUser.isEmpty());
+        Assert.assertEquals("Wrong list was returned.", 3, listsUser.get(0).getId());
+
+        List<Entry> entries = listManager.getListEntries(user.getId(), user.getProfile(), 3L);
+        Assert.assertFalse("Entry was not moved to new list id.", entries.isEmpty());
+
+        listReturned = listManager.getList(1);
+        newId = listManager.updateId(3, 1);
+        listReturned = listManager.getList(1);
+        Assert.assertTrue("List id was not updated.", listReturned.isPresent());
+        Assert.assertEquals("List id was updated for wrong list.", "LIST0", listReturned.get().getName());
+
+        List<TaskList> lists = listManager.getLists();
+        Optional<TaskList> listChanged = lists.stream().filter(l -> l.getName().equals("LIST1")).findFirst();
+        Assert.assertTrue("List does not exist anymore.", listChanged.isPresent());
+        Assert.assertNotEquals("List id has not changed.", 1 , listChanged.get().getId());
+        Assert.assertEquals("Wrong id was returned when update id.", listChanged.get().getId(), (long) newId);
     }
 }

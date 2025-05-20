@@ -4,10 +4,7 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.NoResultException;
 import net.berndreiss.zentodo.data.*;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 public class ListManager implements ListManagerI {
     private EntityManager em;
@@ -20,8 +17,10 @@ public class ListManager implements ListManagerI {
     }
 
     @Override
-    public synchronized TaskList addList(String name, String color) {
-        TaskList list = new TaskList(name, color);
+    public synchronized TaskList addList(long id, String name, String color) {
+        if (getList(id).isPresent())
+            return null;
+        TaskList list = new TaskList(id, name, color);
         em.getTransaction().begin();
         em.persist(list);
         em.getTransaction().commit();
@@ -129,6 +128,41 @@ public class ListManager implements ListManagerI {
     }
 
     @Override
+    public synchronized Long updateId(long listId, long id) {
+        Optional<TaskList> list = getList(listId);
+        if (list.isEmpty())
+            return null;
+        Optional<TaskList> existingList = getList(id);
+        Long newId = null;
+        if (existingList.isPresent()) {
+            newId = getUniqueUserId();
+            updateId(existingList.get().getId(), newId);
+        }
+
+        //THIS IS VERY DIRTY NEED A BETTER WAY TO DO THIS
+        //STILL WE NEED TO BE ABLE TO UPDATE THE ID ON LISTS
+        em.getTransaction().begin();
+        em.createNativeQuery("ALTER TABLE profile_list DISABLE TRIGGER ALL").executeUpdate();
+        em.createNativeQuery("UPDATE profile_list SET list_id = :id WHERE list_id = :listId")
+                .setParameter("id", id)
+                .setParameter("listId", listId)
+                .executeUpdate();
+        em.createNativeQuery("ALTER TABLE profile_list ENABLE TRIGGER ALL");
+        em.createNativeQuery("UPDATE entries SET list = :id WHERE list = :listId")
+                .setParameter("id", id)
+                .setParameter("listId", listId)
+                .executeUpdate();
+        em.createNativeQuery("UPDATE lists SET id = :id WHERE id = :listId")
+                .setParameter("id", id)
+                .setParameter("listId", listId)
+                .executeUpdate();
+        em.getTransaction().commit();
+        em.clear();
+        return newId;
+
+    }
+
+    @Override
     public synchronized void updateListName(long listId, String name) {
         Optional<TaskList> list = getList(listId);
         if (list.isEmpty())
@@ -172,16 +206,8 @@ public class ListManager implements ListManagerI {
 
     @Override
     public Optional<TaskList> getList(long id) {
-
-        try {
-            TaskList result = em.createQuery(
-                            "SELECT l FROM TaskList l WHERE l.id = :id", TaskList.class)
-                    .setParameter("id", id)
-                    .getSingleResult();
-            return Optional.of(result);
-        } catch (NoResultException e) {
-            return Optional.empty();
-        }
+        TaskList result = em.find(TaskList.class, id);
+        return result == null ? Optional.empty() : Optional.of(result);
     }
 
     @Override
@@ -218,4 +244,11 @@ public class ListManager implements ListManagerI {
 
     }
 
+    public long getUniqueUserId(){
+        Random random = new Random();
+        long id = random.nextLong();
+        while (getList(id).isPresent())
+            id++;
+        return id;
+    }
 }
