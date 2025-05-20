@@ -122,10 +122,21 @@ public class ListTest {
         Entry entry1 = entryManager.addNewEntry(user.getId(), DatabaseTestSuite.user.getProfile(), "TASK1");
         Entry entry2 = entryManager.addNewEntry(user.getId(), DatabaseTestSuite.user.getProfile(), "TASK2");
 
-        Assert.fail();
+        TaskList list = listManager.addList(null, null);
+
+        listManager.addUserProfileToList(user.getId(), user.getProfile(), list.getId());
+        listManager.updateList(user.getId(), user.getProfile(), entry0.getId(), list.getId());
+        listManager.updateList(user.getId(), user.getProfile(), entry1.getId(), list.getId());
+        listManager.updateList(user.getId(), user.getProfile(), entry2.getId(), list.getId());
+
+        listManager.swapListEntries(user.getId(), user.getProfile(), list.getId(), entry2.getId(), 0);
+        List<Entry> listReturned = listManager.getListEntries(user.getId(), user.getProfile(), list.getId());
+        Assert.assertEquals(3, listReturned.size());
+        Assert.assertEquals("List position for swapped item was not updated.", 0, (int) listReturned.get(0).getListPosition());
+        Assert.assertEquals("List position for swapped item was not updated.", 2, (int) listReturned.get(2).getListPosition());
+        Assert.assertEquals("List position for other item was has been changed.", 1, (int) listReturned.get(1).getListPosition());
+
         database.close();
-
-
     }
 
 
@@ -221,8 +232,8 @@ public class ListTest {
         ListManagerI listManager = database.getListManager();
         UserManagerI userManager = database.getUserManager();
         User user = userManager.addUser(2, "sdlfkhasdflkhasdfladkjshf@asdklfjhasdflkjadhsfaksdjfh.net", null, 0);
-        TaskList list0 = new TaskList("LIST0", null);
-        TaskList list1 = new TaskList("LIST1", null);
+        TaskList list0 = listManager.addList("LIST0", null);
+        TaskList list1 = listManager.addList("LIST1", null);
 
         listManager.addUserProfileToList(DatabaseTestSuite.user.getId(), DatabaseTestSuite.user.getProfile(), list0.getId());
         listManager.addUserProfileToList(user.getId(), user.getProfile(), list1.getId());

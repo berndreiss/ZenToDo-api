@@ -5,6 +5,7 @@ import jakarta.persistence.NoResultException;
 import net.berndreiss.zentodo.data.*;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 
@@ -44,6 +45,7 @@ public class ListManager implements ListManagerI {
 
         em.getTransaction().begin();
         em.persist(profile);
+        em.persist(list);
         em.getTransaction().commit();
     }
 
@@ -163,7 +165,9 @@ public class ListManager implements ListManagerI {
                     .setParameter("profile", profile)
                     .getResultList();
         }
-        return entries;
+        if (list == null)
+            return  entries;
+        return entries.stream().sorted(Comparator.comparing(Entry::getListPosition)).toList();
     }
 
     @Override
@@ -195,7 +199,22 @@ public class ListManager implements ListManagerI {
     }
 
     @Override
-    public synchronized void swapListEntries(long userId, long profile, long entryId, int position) {
+    public synchronized void swapListEntries(long userId, int profile, long list, long entryId, int position) {
+        List<Entry> entries = getListEntries(userId, profile, list);
+        if (position >= entries.size())
+            return;
+        Optional<Entry> entry = entries.stream().filter(e -> e.getId() == entryId).findFirst();
+        if (entry.isEmpty())
+            return;
+        Entry other = entries.get(position);
+
+        other.setListPosition(entry.get().getListPosition());
+        entry.get().setListPosition(position);
+
+        em.getTransaction().begin();
+        em.merge(entry.get());
+        em.merge(other);
+        em.getTransaction().commit();
 
     }
 

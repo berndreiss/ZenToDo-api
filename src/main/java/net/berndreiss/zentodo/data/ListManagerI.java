@@ -28,7 +28,7 @@ public interface ListManagerI {
      *
      * @param position the position with which to swap
      */
-    void swapListEntries(long userId, long profile, long entryId, int position);
+    void swapListEntries(long userId, int profile, long list, long entryId, int position);
 
 
 

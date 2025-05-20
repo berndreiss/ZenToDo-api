@@ -4,7 +4,7 @@ import net.berndreiss.zentodo.tests.DatabaseTestSuite;
 import net.berndreiss.zentodo.persistence.DbHandler;
 import org.junit.BeforeClass;
 
-public class TestDbHandlerTest extends DatabaseTestSuite {
+public class DbHandlerTest extends DatabaseTestSuite {
     @BeforeClass
     public static void initDB() {
             DatabaseTestSuite.databaseSupplier =
