@@ -5,6 +5,7 @@ import jakarta.persistence.NoResultException;
 import net.berndreiss.zentodo.data.*;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class ListManager implements ListManagerI {
     private EntityManager em;
@@ -213,7 +214,7 @@ public class ListManager implements ListManagerI {
                     .getResultList();
         }
         if (list == null)
-            return  entries;
+            return  entries.stream().sorted(Comparator.comparing(Entry::getPosition)).toList();
         return entries.stream().sorted(Comparator.comparing(Entry::getListPosition)).toList();
     }
 
@@ -254,10 +255,10 @@ public class ListManager implements ListManagerI {
     }
 
     @Override
-    public synchronized void swapListEntries(long userId, int profile, long list, long entryId, int position) {
+    public synchronized void swapListEntries(long userId, int profile, long list, long entryId, int position) throws PositionOutOfBoundException {
         List<Entry> entries = getListEntries(userId, profile, list);
         if (position >= entries.size())
-            return;
+            throw new PositionOutOfBoundException("List position is too big.");
         Optional<Entry> entry = entries.stream().filter(e -> e.getId() == entryId).findFirst();
         if (entry.isEmpty())
             return;

@@ -1,5 +1,7 @@
 package net.berndreiss.zentodo.data;
 
+import java.io.IOException;
+import java.net.URISyntaxException;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -43,7 +45,7 @@ public interface OperationHandlerI {
      * @param id the id of the entry to be moved
      * @param position the position with which to swap
      */
-    void swapEntries(long id, int position);
+    void swapEntries(long id, int position) throws PositionOutOfBoundException;
 
     /**
      * Swap entry in list with entry at position.
@@ -51,7 +53,7 @@ public interface OperationHandlerI {
      * @param id the id of the entry to be moved
      * @param position the position with which to swap
      */
-    void swapListEntries(long id, int position);
+    void swapListEntries(long list, long id, int position) throws PositionOutOfBoundException;
 
     /**
      * Update the task with the value provided.
@@ -82,8 +84,6 @@ public interface OperationHandlerI {
      * If the old list is not null decrement all old list items positions greater than the old position.
      *
      * @param id the id of the task to be updated
-     * @param value the value to update with
-     * @param position position in which to add the item
      */
     void updateList(long id, Long newId);
 
@@ -123,6 +123,6 @@ public interface OperationHandlerI {
      * TODO
      * @param email
      */
-    void updateEmail(String email) throws InvalidActionException;
+    void updateEmail(String email) throws InvalidActionException, IOException, URISyntaxException;
 
 }

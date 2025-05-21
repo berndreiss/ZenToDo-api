@@ -1,5 +1,6 @@
 package net.berndreiss.zentodo.util;
 
+import com.sun.istack.NotNull;
 import jakarta.persistence.EntityManagerFactory;
 import jakarta.persistence.Persistence;
 import net.berndreiss.zentodo.OperationType;
@@ -47,17 +48,17 @@ public class ClientStub implements OperationHandlerI {
         ClientStub stub = new ClientStub(dbHandler);
 
         stub.init("test@test.net", null, () -> "Test1234!?");
-        stub.addNewEntry("TEST", 0);
+        Entry entry = stub.addNewEntry("TEST", 0);
 
         dbHandler.close();
         emf.close();
     }
-    public ClientStub(String email, String userName, Supplier<String> passwordSupplier, Database dbHandler){
+    public ClientStub(String email, String userName, Supplier<String> passwordSupplier, @NotNull Database dbHandler){
         this.dbHandler = dbHandler;
         this.passwordSupplier = passwordSupplier;
         init(email, userName, passwordSupplier);
     }
-    public ClientStub(Database dbHandler){
+    public ClientStub(@NotNull Database dbHandler){
         this.dbHandler = dbHandler;
         Optional<User> user = dbHandler.getUserManager().getUser(0);
         if (user.isEmpty())
@@ -692,55 +693,100 @@ public class ClientStub implements OperationHandlerI {
     }
 
     @Override
-    public synchronized void swapEntries(long id, int position) {
-        //TODO SEND TO SERVER
-
+    public synchronized void swapEntries(long id, int position) throws PositionOutOfBoundException {
+        dbHandler.getEntryManager().swapEntries(user.getId(), user.getProfile(), id, position);
+        List<Object> arguments = new ArrayList<>();
+        arguments.add(user.getId());
+        arguments.add(user.getProfile());
+        arguments.add(id);
+        arguments.add(position);
+        sendUpdate(OperationType.SWAP, arguments);
     }
 
     @Override
-    public synchronized void swapListEntries(long id, int position) {
-        //TODO SEND TO SERVER
+    public synchronized void swapListEntries(long list, long id, int position) throws PositionOutOfBoundException {
+        dbHandler.getListManager().swapListEntries(user.getId(), user.getProfile(), list, id, position);
+        List<Object> arguments = new ArrayList<>();
+        arguments.add(user.getId());
+        arguments.add(user.getProfile());
+        arguments.add(id);
+        arguments.add(position);
+        sendUpdate(OperationType.SWAP_LIST, arguments);
     }
 
     @Override
     public synchronized void updateTask(long id, String value) {
-        //TODO SEND TO SERVER
+        List<Object> arguments = new ArrayList<>();
+        arguments.add(user.getId());
+        arguments.add(user.getProfile());
+        arguments.add(id);
+        arguments.add(value);
+        sendUpdate(OperationType.UPDATE_LIST, arguments);
         dbHandler.getEntryManager().updateTask(user.getId(), user.getProfile(), id, value);
     }
 
     @Override
     public synchronized void updateFocus(long id, boolean value) {
-        //TODO SEND TO SERVER
+        List<Object> arguments = new ArrayList<>();
+        arguments.add(user.getId());
+        arguments.add(user.getProfile());
+        arguments.add(id);
+        arguments.add(value);
+        sendUpdate(OperationType.UPDATE_LIST, arguments);
         dbHandler.getEntryManager().updateFocus(user.getId(), user.getProfile(), id, value);
     }
 
     @Override
     public synchronized void updateDropped(long id, boolean value) {
-        //TODO SEND TO SERVER
+        List<Object> arguments = new ArrayList<>();
+        arguments.add(user.getId());
+        arguments.add(user.getProfile());
+        arguments.add(id);
+        arguments.add(value);
+        sendUpdate(OperationType.UPDATE_LIST, arguments);
         dbHandler.getEntryManager().updateDropped(user.getId(), user.getProfile(), id, value);
     }
 
     @Override
     public synchronized void updateList(long id, Long newId) {
-        //TODO SEND TO SERVER
+        List<Object> arguments = new ArrayList<>();
+        arguments.add(user.getId());
+        arguments.add(user.getProfile());
+        arguments.add(id);
+        arguments.add(newId);
+        sendUpdate(OperationType.UPDATE_LIST, arguments);
         dbHandler.getListManager().updateList(user.getId(), user.getProfile(), id, newId);
     }
 
     @Override
     public synchronized void updateReminderDate(long id, Instant value) {
-        //TODO SEND TO SERVER
+        List<Object> arguments = new ArrayList<>();
+        arguments.add(user.getId());
+        arguments.add(user.getProfile());
+        arguments.add(id);
+        arguments.add(value);
+        sendUpdate(OperationType.UPDATE_REMINDER_DATE, arguments);
         dbHandler.getEntryManager().updateReminderDate(user.getId(), user.getProfile(), id, value);
     }
 
     @Override
     public synchronized void updateRecurrence(long id, Long reminderDate, String value) {
-        //TODO SEND TO SERVER
+        List<Object> arguments = new ArrayList<>();
+        arguments.add(user.getId());
+        arguments.add(user.getProfile());
+        arguments.add(id);
+        arguments.add(reminderDate);
+        arguments.add(value);
+        sendUpdate(OperationType.UPDATE_RECURRENCE, arguments);
         dbHandler.getEntryManager().updateRecurrence(user.getId(), user.getProfile(), id, value);
     }
 
     @Override
     public synchronized void updateListColor(long list, String color) {
-        //TODO SEND TO SERVER
+        List<Object> arguments = new ArrayList<>();
+        arguments.add(list);
+        arguments.add(color);
+        sendUpdate(OperationType.UPDATE_LIST_COLOR, arguments);
         dbHandler.getListManager().updateListColor(list, color);
     }
 
@@ -748,16 +794,30 @@ public class ClientStub implements OperationHandlerI {
     public synchronized void updateUserName(String name) {
         if (user.getId() == 0)
             return;
-        //TODO SEND TO SERVER
+        List<Object> arguments = new ArrayList<>();
+        arguments.add(user.getId());
+        arguments.add(name);
+        sendUpdate(OperationType.UPDATE_USER_NAME, arguments);
         dbHandler.getUserManager().updateUserName(user.getId(), name);
         user.setUserName(name);
     }
 
     @Override
-    public synchronized void updateEmail(String email) throws InvalidActionException {
+    public synchronized void updateEmail(String email) throws InvalidActionException, IOException {
         if (user.getId() == 0)
             return;
-        //TODO SEND TO AND CONFIRM WITH SERVER
+        String password = passwordSupplier.get();
+        String loginRequest = getLoginRequest(email, password);
+        try {
+            HttpURLConnection connection = sendPostMessage(PROTOCOL + SERVER + "auth/status", loginRequest);
+            String body = getBody(connection);
+            if (!body.equals("non"))
+                throw new InvalidActionException("User with mail address already exists.");
+        } catch (URISyntaxException _){}
+        List<Object> arguments = new ArrayList<>();
+        arguments.add(user.getId());
+        arguments.add(email);
+        sendUpdate(OperationType.UPDATE_MAIL, arguments);
         dbHandler.getUserManager().updateEmail(user.getId(), email);
         user.setEmail(email);
     }

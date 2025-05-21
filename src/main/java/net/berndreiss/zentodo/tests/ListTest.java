@@ -172,6 +172,10 @@ public class ListTest {
         Assert.assertEquals("List position for swapped item was not updated.", 2, (int) listReturned.get(2).getListPosition());
         Assert.assertEquals("List position for other item was has been changed.", 1, (int) listReturned.get(1).getListPosition());
 
+        try{
+            listManager.swapListEntries(user.getId(), user.getProfile(), list.getId(), entry2.getId(), 3);
+            Assert.fail("PositionOutOfBounds exception was not thrown.");
+        } catch (PositionOutOfBoundException _){}
         database.close();
     }
 

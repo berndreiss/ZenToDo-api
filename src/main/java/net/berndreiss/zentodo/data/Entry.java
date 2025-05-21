@@ -16,7 +16,7 @@ public class Entry{
     private long userId;
 
     @Column
-    private long profile = 0;
+    private int profile = 0;
 
     @Id
     private long id;//id generated in
@@ -49,7 +49,7 @@ public class Entry{
 
     public Entry(){}
 
-    public Entry(long userId, long profile, long id, String task, int position){
+    public Entry(long userId, int profile, long id, String task, int position){
         //creates a new instance and initializes the fields of the entry
         this.userId = userId;
         this.profile = profile;
@@ -58,7 +58,7 @@ public class Entry{
         this.task=task;
     }
 
-    public Entry(long userId, long profile, String task, int position){
+    public Entry(long userId, int profile, String task, int position){
         //creates a new instance and initializes the fields of the entry
         this.userId = userId;
         this.profile = profile;
@@ -68,7 +68,9 @@ public class Entry{
 
     public Long getUserId() {return userId;}
 
-    public long getProfile() {return profile;}
+    public int getProfile() {return profile;}
+
+    public void setProfile(int profile) {this.profile = profile;}
 
     public void setUserId(Long userId) {this.userId = userId;}
 
