@@ -26,10 +26,7 @@ public class ClientStub implements OperationHandlerI {
 
     private ZenWebSocketClient client;
 
-    private final String email;
-    private final String userName;
     public final Database dbHandler;
-    public String id;
     private final List<ClientOperationHandlerI> otherHandlers = new ArrayList<>();
     private ExceptionHandler exceptionHandler;
     private Consumer<String> messagePrinter;
@@ -42,72 +39,21 @@ public class ClientStub implements OperationHandlerI {
     private VectorClock vectorClock;
     public static TimeDrift timeDrift = new TimeDrift();
 
-    public static void main(String[] args) {
+    public static void  main(String[] args) throws InterruptedException {
+        EntityManagerFactory emf = Persistence.createEntityManagerFactory("ZenToDoPU1");
+        Database dbHandler = new DbHandler(emf, null);
+        ClientStub stub = new ClientStub(dbHandler);
 
-        EntityManagerFactory emf = Persistence.createEntityManagerFactory("ZenToDoPU");
-        DbHandler dbTestHandler = new DbHandler(emf, null);
+        stub.init("test@test.net", null, () -> "Test1234!?");
 
-        Supplier<String> passwordSupplier = () -> {
-            try (Scanner scanner = new Scanner(System.in)){
-                return scanner.nextLine();
-            }
-        };
-
-        passwordSupplier = () -> "Test123!?";
-
-        ClientStub stub = new ClientStub("bd_reiss@yahoo.de", dbTestHandler);
-
-        stub.setExceptionHandler(Throwable::printStackTrace);
-        stub.setMessagePrinter(System.out::println);
-        stub.init(passwordSupplier);
-        //stub.addNewEntry("TEST", 4);
-
-        List<Entry> allEntries =  dbTestHandler.getEntryManager().getEntries(stub.getUser().getId(), stub.getUser().getProfile());
-
-        for (Entry e: allEntries)
-            dbTestHandler.getEntryManager().removeEntry(e.getUserId(), e.getProfile(), e.getId());
-        dbTestHandler.getUserManager().clearQueue(stub.user.getId());
-
-
-        stub.addNewEntry("TASK");
-        dbTestHandler.close();
-        System.exit(0);
-
-        VectorClock vc1 = new VectorClock();
-
-        vc1.entries.put(0, 0L);
-        vc1.entries.put(1, 1L);
-        vc1.entries.put(2, 2L);
-
-
-        VectorClock vc2 = new VectorClock();
-
-        vc2.entries.put(0, 1000L);
-        vc2.entries.put(1, 0L);
-        vc2.entries.put(2, 0L);
-
-
-
-
-        List<Object> entries = new ArrayList<>();
-        entries.add(0L);
-        entries.add("TEST");
-        entries.add(0);
-        entries.add(0L);
-
-
-        ZenMessage zm = new ZenMessage(OperationType.ADD_NEW_ENTRY, entries, stub.vectorClock);
-
-
-
+        dbHandler.close();
+        emf.close();
     }
-
-    public ClientStub(String email, Database dbHandler){
-        this(email, null, dbHandler);
+    public ClientStub(String email, String userName, Supplier<String> passwordSupplier, Database dbHandler){
+        this.dbHandler = dbHandler;
+        init(email, userName, passwordSupplier);
     }
-    public ClientStub(String email, String userName, Database dbHandler){
-        this.email = email;
-        this.userName = userName;
+    public ClientStub(Database dbHandler){
         this.dbHandler = dbHandler;
         Optional<User> user = dbHandler.getUserManager().getUser(0);
         if (user.isEmpty())
@@ -120,14 +66,14 @@ public class ClientStub implements OperationHandlerI {
      * @param passwordSupplier
      * @return
      */
-    private Status authenticate(Supplier<String> passwordSupplier){
+    private Status authenticate(String email, String userName, Supplier<String> passwordSupplier){
         try {
             UserManagerI userManager = dbHandler.getUserManager();
             Optional<User> userOpt = userManager.getUserByEmail(email);
 
             userOpt.ifPresent(value -> user = value);
 
-            if (user == null) {
+            if (userOpt.isEmpty()) {
                 String loginRequest = getLoginRequest(email, passwordSupplier.get());
 
                 int attempts = 0;
@@ -252,16 +198,16 @@ public class ClientStub implements OperationHandlerI {
     /**
      * TODO
      */
-    public void init(Supplier<String> passwordSupplier) {
+    public void init(String email, String name, Supplier<String> passwordSupplier) {
 
         try {
 
             //Consumer<String> oldMessagePrinter = messagePrinter;
             //messagePrinter = null;
-            status= authenticate(passwordSupplier);
+            status= authenticate(email, name, passwordSupplier);
             //messagePrinter = oldMessagePrinter;
 
-            if (user == null)
+            if (user.getId() == 0)
                 return;
 
 
@@ -604,15 +550,17 @@ public class ClientStub implements OperationHandlerI {
 
     private void receiveMessage(ZenMessage message){
 
+        System.out.println(message);
 
         switch (message.type){
             case POST -> {}
             case ADD_NEW_ENTRY -> {
                 List<Object> args = message.arguments;
                 long userId = Long.parseLong(args.get(0).toString());
-                long id = Long.parseLong(args.get(1).toString());
-                String task = args.get(2).toString();
-                int position = Integer.parseInt(args.get(3).toString());
+                int profile = Integer.parseInt(args.get(1).toString());
+                long id = Long.parseLong(args.get(2).toString());
+                String task = args.get(3).toString();
+                int position = Integer.parseInt(args.get(4).toString());
                 Entry entry = null;
                 try {
                         entry =dbHandler.getEntryManager().addNewEntry(userId, id, task, position);
@@ -663,6 +611,7 @@ public class ClientStub implements OperationHandlerI {
         //messagePrinter.accept(String.valueOf(vectorClock == null));
         List<Object> arguments = new ArrayList<>();
         arguments.add(user.getId());
+        arguments.add(user.getProfile());
         arguments.add(entry.getId());
         arguments.add(entry.getTask());
         arguments.add(entry.getPosition());

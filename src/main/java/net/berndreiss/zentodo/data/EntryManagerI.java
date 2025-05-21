@@ -36,7 +36,7 @@ public interface EntryManagerI {
     * @param id   the id of the new task as provided by the server
     * @param task the task to be associated with the entry
     */
-   Entry addNewEntry(long userId, long profile, long id, String task, int position) throws DuplicateIdException, PositionOutOfBoundException;
+   Entry addNewEntry(long userId, long profile, long id, String task, int position) throws DuplicateIdException, PositionOutOfBoundException, InvalidActionException;
 
    /**
     * Delete entry from database including the local queue(s). All entries with position greater than the deleted

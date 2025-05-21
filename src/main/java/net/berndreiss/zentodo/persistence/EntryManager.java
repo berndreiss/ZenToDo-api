@@ -62,17 +62,19 @@ public class EntryManager implements EntryManagerI {
         do {
             id = random.nextLong();
         }
-        while (ids.contains(id));
+        while (ids.contains(id) || id == 0);
         Entry entry = null;
         try {
             entry = addNewEntry(userId, profile, id, task, position);
-        } catch(DuplicateIdException _){}
+        } catch(DuplicateIdException | InvalidActionException _){}
         return entry;
     }
 
 
     @Override
-    public synchronized Entry addNewEntry(long userId, long profile, long id, String task, int position) throws DuplicateIdException, PositionOutOfBoundException {
+    public synchronized Entry addNewEntry(long userId, long profile, long id, String task, int position) throws DuplicateIdException, PositionOutOfBoundException, InvalidActionException {
+        if (id == 0)
+            throw new InvalidActionException("Id must not be 0.");
 
         List<Entry> entries = getEntries(userId, profile);
         if (position > entries.size())

@@ -36,7 +36,7 @@ public class EntryTest {
     }
 
     @Test
-    public void addNewEntry() throws PositionOutOfBoundException {
+    public void addNewEntry() throws PositionOutOfBoundException, InvalidActionException, DuplicateIdException {
         User user = DatabaseTestSuite.user;
         Database database = DatabaseTestSuite.databaseSupplier.get();
         EntryManagerI entryManager = database.getEntryManager();
@@ -147,6 +147,10 @@ public class EntryTest {
             entryManager.addNewEntry(user.getId(), DatabaseTestSuite.user.getProfile(),2, "TASK2", entries.size()+1);
             Assert.fail("Add new entry did not throw exception for position out of bounds.");
         } catch (PositionOutOfBoundException | DuplicateIdException _){}
+        try {
+            entryManager.addNewEntry(user.getId(), user.getProfile(),0L, "task",0);
+            Assert.fail("Entry id must not be 0.");
+        } catch (InvalidActionException _){}
         database.close();
     }
 

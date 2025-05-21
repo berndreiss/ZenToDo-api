@@ -10,7 +10,7 @@ public class Device {
 
     @Id
     @Column (nullable = false)
-    private long id;
+    private int id;
 
     @Column
     private Instant expiration;
@@ -22,11 +22,11 @@ public class Device {
     public Device() {
     }
 
-    public long getId() {
+    public int getId() {
         return id;
     }
 
-    public void setId(long id) {
+    public void setId(int id) {
         this.id = id;
     }
 
