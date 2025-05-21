@@ -1,5 +1,6 @@
 package net.berndreiss.zentodo.data;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -66,7 +67,7 @@ public interface OperationHandlerI {
      * @param id the id of the task to be updated
      * @param value the value to update with
      */
-    void updateFocus(long id, int value);
+    void updateFocus(long id, boolean value);
 
     /**
      * Update the field with the value provided.
@@ -74,7 +75,7 @@ public interface OperationHandlerI {
      * @param id the id of the task to be updated
      * @param value the value to update with
      */
-    void updateDropped(long id, int value);
+    void updateDropped(long id, boolean value);
 
     /**
      * Update the list field and the position with the value provided and increment all list items list positions greater than the position.
@@ -84,7 +85,7 @@ public interface OperationHandlerI {
      * @param value the value to update with
      * @param position position in which to add the item
      */
-    void updateList(long id, String value, int position);
+    void updateList(long id, Long newId);
 
     /**
      * Update the field with the value provided.
@@ -92,7 +93,7 @@ public interface OperationHandlerI {
      * @param id the id of the task to be updated
      * @param value the value to update with
      */
-    void updateReminderDate(long id, Long value);
+    void updateReminderDate(long id, Instant value);
 
     /**
      * Update the field with the value provided. Also needs to update the reminder date.
@@ -114,16 +115,14 @@ public interface OperationHandlerI {
 
     /**
      * TODO
-     * @param id
      * @param name
      */
-    void updateUserName(long id, String name);
+    void updateUserName(String name);
 
     /**
      * TODO
-     * @param id
      * @param email
      */
-    boolean updateEmail(long id, String email);
+    void updateEmail(String email) throws InvalidActionException;
 
 }

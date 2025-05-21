@@ -21,7 +21,7 @@ public class EntryManager implements EntryManagerI {
     }
 
     @Override
-    public Optional<Entry> getEntry(long userId, long profile, long id) {
+    public Optional<Entry> getEntry(long userId, int profile, long id) {
         Optional<Entry> entry;
         entry = em.createQuery("SELECT e FROM Entry e WHERE e.userId = :userId  AND profile = :profile AND e.id = :id", Entry.class)
                 .setParameter("userId", userId)
@@ -32,7 +32,7 @@ public class EntryManager implements EntryManagerI {
     }
 
     @Override
-    public List<Entry> getEntries(long userId, long profile) {
+    public List<Entry> getEntries(long userId, int profile) {
         List<Entry> list;
         list = em.createQuery("SELECT e FROM Entry e WHERE e.userId = :userId AND e.profile = :profile", Entry.class)
                 .setParameter("userId", userId)
@@ -42,7 +42,23 @@ public class EntryManager implements EntryManagerI {
     }
 
     @Override
-    public synchronized Entry addNewEntry (long userId, long profile, String task) {
+    public List<Entry> loadFocus(long userId, int profile) {
+        return em.createQuery("SELECT e FROM Entry e WHERE e.userId = :userId AND e.profile = :profile AND e.focus = true", Entry.class)
+                .setParameter("userId", userId)
+                .setParameter("profile", profile)
+                .getResultList();
+    }
+
+    @Override
+    public List<Entry> loadDropped(long userId, int profile) {
+        return em.createQuery("SELECT e FROM Entry e WHERE e.userId = :userId AND e.profile = :profile AND e.dropped = true", Entry.class)
+                .setParameter("userId", userId)
+                .setParameter("profile", profile)
+                .getResultList();
+    }
+
+    @Override
+    public synchronized Entry addNewEntry (long userId, int profile, String task) {
         List<Entry> entries = getEntries(userId, profile);
         Entry entry = null;
         try {
@@ -51,7 +67,7 @@ public class EntryManager implements EntryManagerI {
         return entry;
     }
     @Override
-    public synchronized Entry addNewEntry (long userId, long profile, String task,int position) throws PositionOutOfBoundException{
+    public synchronized Entry addNewEntry (long userId, int profile, String task,int position) throws PositionOutOfBoundException{
 
         List<Entry> entries = getEntries(userId, profile);
         if (position > entries.size())
@@ -72,7 +88,7 @@ public class EntryManager implements EntryManagerI {
 
 
     @Override
-    public synchronized Entry addNewEntry(long userId, long profile, long id, String task, int position) throws DuplicateIdException, PositionOutOfBoundException, InvalidActionException {
+    public synchronized Entry addNewEntry(long userId, int profile, long id, String task, int position) throws DuplicateIdException, PositionOutOfBoundException, InvalidActionException {
         if (id == 0)
             throw new InvalidActionException("Id must not be 0.");
 
@@ -97,7 +113,7 @@ public class EntryManager implements EntryManagerI {
     }
 
     @Override
-    public synchronized void removeEntry(long userId, long profile, long id) {
+    public synchronized void removeEntry(long userId, int profile, long id) {
 
         em.getTransaction().begin();
         em.createQuery("DELETE FROM Entry e WHERE e.id = :id AND e.userId = :userId AND e.profile = :profile")
@@ -108,7 +124,7 @@ public class EntryManager implements EntryManagerI {
         em.getTransaction().commit();
     }
     @Override
-    public synchronized void updateId(long userId, long profile, long id, long newId) throws DuplicateIdException {
+    public synchronized void updateId(long userId, int profile, long id, long newId) throws DuplicateIdException {
         Optional<Entry> entry = getEntry(userId, profile, newId);
         if (entry.isPresent())
             throw new DuplicateIdException("Id for entry already exists: id " + newId);
@@ -123,7 +139,7 @@ public class EntryManager implements EntryManagerI {
     }
 
     @Override
-    public synchronized void swapEntries(long userId, long profile, long id, int position) throws PositionOutOfBoundException {
+    public synchronized void swapEntries(long userId, int profile, long id, int position) throws PositionOutOfBoundException {
 
 
         List<Entry> entries = getEntries(userId, profile);
@@ -149,7 +165,7 @@ public class EntryManager implements EntryManagerI {
 
 
     @Override
-    public synchronized void updateTask(long userId, long profile, long id, String value) {
+    public synchronized void updateTask(long userId, int profile, long id, String value) {
         if (value == null)
             return;
         Optional<Entry> entry = getEntry(userId, profile, id);
@@ -162,7 +178,7 @@ public class EntryManager implements EntryManagerI {
     }
 
     @Override
-    public synchronized void updateFocus(long userId, long profile, long id, boolean value) {
+    public synchronized void updateFocus(long userId, int profile, long id, boolean value) {
 
         Optional<Entry> entry = getEntry(userId, profile, id);
         if (entry.isEmpty())
@@ -175,7 +191,7 @@ public class EntryManager implements EntryManagerI {
     }
 
     @Override
-    public synchronized void updateDropped(long userId, long profile, long id, boolean value) {
+    public synchronized void updateDropped(long userId, int profile, long id, boolean value) {
         Optional<Entry> entry = getEntry(userId, profile, id);
         if (entry.isEmpty())
             return;
@@ -186,7 +202,7 @@ public class EntryManager implements EntryManagerI {
     }
 
     @Override
-    public synchronized void updateReminderDate(long userId, long profile, long id, Instant value) {
+    public synchronized void updateReminderDate(long userId, int profile, long id, Instant value) {
         Optional<Entry> entry = getEntry(userId, profile, id);
         if (entry.isEmpty())
             return;
@@ -197,7 +213,7 @@ public class EntryManager implements EntryManagerI {
     }
 
     @Override
-    public synchronized void updateRecurrence(long userId, long profile, long id, String value) {
+    public synchronized void updateRecurrence(long userId, int profile, long id, String value) {
 
         Optional<Entry> entry = getEntry(userId, profile, id);
         if (entry.isEmpty())

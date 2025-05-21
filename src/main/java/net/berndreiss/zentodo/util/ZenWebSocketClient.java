@@ -20,7 +20,7 @@ public class ZenWebSocketClient extends Endpoint {
     @OnOpen
     public void onOpen(Session session, EndpointConfig endpointConfig) {
         this.session = session;
-        System.out.println("Connected to server");
+        clientStub.getMessagePrinter().accept("Connected");
 
         session.addMessageHandler(new MessageHandler.Whole<String>() {
             @Override
@@ -33,28 +33,25 @@ public class ZenWebSocketClient extends Endpoint {
             if (connection.getResponseCode() != 200)
                 throw new RuntimeException("Could not retrieve data from server.");
 
-            clientStub.status = Status.UPDATED;
             clientStub.clearQueue();
 
         } catch (Exception e) {
-            e.printStackTrace();
+            clientStub.status = Status.OFFLINE;
+            clientStub.getExceptionHandler().handle(e);
         }
     }
 
     @OnMessage
     public void onMessage(String message) {
-        System.out.println("Received message: " + message);
     }
 
     @OnClose
     public void onClose(Session session, CloseReason reason) {
-        System.out.println("Connection closed: " + reason.getReasonPhrase());
     }
 
 
     @OnError
     public void onError(Session session, Throwable throwable) {
-        System.err.println("WebSocket error: " + throwable.getCause());
     }
 
     public ZenWebSocketClient(Consumer<String> messageConsumer, ClientStub clientStub){
@@ -83,7 +80,7 @@ public class ZenWebSocketClient extends Endpoint {
             container.connectToServer(this, config, serverUri);
 
         } catch (Exception e) {
-            //TODO IMPLEMENT
+            clientStub.getExceptionHandler().handle(e);
         }
     }
 }

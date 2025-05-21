@@ -12,7 +12,7 @@ public interface EntryManagerI {
     * @param entry
     * @param id
     */
-   void updateId(long userId, long profile, long entry, long id) throws DuplicateIdException;
+   void updateId(long userId, int profile, long entry, long id) throws DuplicateIdException;
 
    /**
     * TODO DESCRIBE
@@ -21,14 +21,14 @@ public interface EntryManagerI {
    ;
 
 
-   Entry addNewEntry(long userId, long profile, String task);
+   Entry addNewEntry(long userId, int profile, String task);
 
    /**
     * Add a single new task to the database.
     *
     * @param task the task to be associated with the entry
     */
-   Entry addNewEntry(long userId, long profile, String task, int position) throws PositionOutOfBoundException;
+   Entry addNewEntry(long userId, int profile, String task, int position) throws PositionOutOfBoundException;
 
    /**
     * Add a single new task to the database.
@@ -36,7 +36,7 @@ public interface EntryManagerI {
     * @param id   the id of the new task as provided by the server
     * @param task the task to be associated with the entry
     */
-   Entry addNewEntry(long userId, long profile, long id, String task, int position) throws DuplicateIdException, PositionOutOfBoundException, InvalidActionException;
+   Entry addNewEntry(long userId, int profile, long id, String task, int position) throws DuplicateIdException, PositionOutOfBoundException, InvalidActionException;
 
    /**
     * Delete entry from database including the local queue(s). All entries with position greater than the deleted
@@ -44,7 +44,7 @@ public interface EntryManagerI {
     *
     * @param id the id of the entry to be deleted
     */
-   void removeEntry(long userId, long profile, long id);
+   void removeEntry(long userId, int profile, long id);
 
    /**
     * Swap entry with id with the entry at position.
@@ -52,7 +52,7 @@ public interface EntryManagerI {
     * @param id       the id of the entry to be moved
     * @param position the position with which to swap
     */
-   void swapEntries(long userId, long profile, long id, int position) throws PositionOutOfBoundException;
+   void swapEntries(long userId, int profile, long id, int position) throws PositionOutOfBoundException;
 
 
    /**
@@ -61,7 +61,7 @@ public interface EntryManagerI {
     * @param id    the id of the task to be updated
     * @param value the value to update with
     */
-   void updateTask(long userId, long profile, long id, String value);
+   void updateTask(long userId, int profile, long id, String value);
 
    /**
     * Update the field with the value provided.
@@ -69,7 +69,7 @@ public interface EntryManagerI {
     * @param id    the id of the task to be updated
     * @param value the value to update with
     */
-   void updateFocus(long userId, long profile, long id, boolean value);
+   void updateFocus(long userId, int profile, long id, boolean value);
 
    /**
     * Update the field with the value provided.
@@ -77,7 +77,7 @@ public interface EntryManagerI {
     * @param id    the id of the task to be updated
     * @param value the value to update with
     */
-   void updateDropped(long userId, long profile, long id, boolean value);
+   void updateDropped(long userId, int profile, long id, boolean value);
 
 
    /**
@@ -86,7 +86,7 @@ public interface EntryManagerI {
     * @param id    the id of the task to be updated
     * @param value the value to update with
     */
-   void updateReminderDate(long userId, long profile, long id, Instant value);
+   void updateReminderDate(long userId, int profile, long id, Instant value);
 
 
    /**
@@ -95,11 +95,14 @@ public interface EntryManagerI {
     * @param id           the id of the task to be updated
     * @param value        the value to update with
     */
-   void updateRecurrence(long userId, long profile, long id, String value);
+   void updateRecurrence(long userId, int profile, long id, String value);
 
 
 
-   Optional<Entry> getEntry(long userId, long profile, long id);
+   Optional<Entry> getEntry(long userId, int profile, long id);
 
-   List<Entry> getEntries(long userId, long profile);
+   List<Entry> getEntries(long userId, int profile);
+
+   List<Entry> loadFocus(long userId, int profile);
+   List<Entry> loadDropped(long userId, int profile);
 }

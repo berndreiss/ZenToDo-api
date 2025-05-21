@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * TODO DESCRIBE
@@ -28,29 +29,32 @@ public class ClientStub implements OperationHandlerI {
 
     public final Database dbHandler;
     private final List<ClientOperationHandlerI> otherHandlers = new ArrayList<>();
-    private ExceptionHandler exceptionHandler;
-    private Consumer<String> messagePrinter;
+    private ExceptionHandler exceptionHandler = _ -> {};
+    private Consumer<String> messagePrinter = _ -> {};
     public static String PROTOCOL = "http://";
     public static String SERVER = "localhost:8080/";
     public  User user;
     public int profile;
     public Status status;
-    public String tokenDirectory;
     private VectorClock vectorClock;
     public static TimeDrift timeDrift = new TimeDrift();
+    public List<ZenServerMessage> currentMessages = new ArrayList<>();
+    private Supplier<String> passwordSupplier;
 
-    public static void  main(String[] args) throws InterruptedException {
+    public static void  main(String[] args) throws PositionOutOfBoundException {
         EntityManagerFactory emf = Persistence.createEntityManagerFactory("ZenToDoPU1");
         Database dbHandler = new DbHandler(emf, null);
         ClientStub stub = new ClientStub(dbHandler);
 
         stub.init("test@test.net", null, () -> "Test1234!?");
+        stub.addNewEntry("TEST", 0);
 
         dbHandler.close();
         emf.close();
     }
     public ClientStub(String email, String userName, Supplier<String> passwordSupplier, Database dbHandler){
         this.dbHandler = dbHandler;
+        this.passwordSupplier = passwordSupplier;
         init(email, userName, passwordSupplier);
     }
     public ClientStub(Database dbHandler){
@@ -61,11 +65,6 @@ public class ClientStub implements OperationHandlerI {
         this.user = user.get();
     }
 
-    /**
-     * TODO DESCRIBE
-     * @param passwordSupplier
-     * @return
-     */
     private Status authenticate(String email, String userName, Supplier<String> passwordSupplier){
         try {
             UserManagerI userManager = dbHandler.getUserManager();
@@ -112,7 +111,7 @@ public class ClientStub implements OperationHandlerI {
                             userManager.setToken(Long.parseLong(ids[1]), ids[3]);
                             if (messagePrinter != null)
                                  messagePrinter.accept("User logged in.");
-                            return Status.ENABLED;
+                            return Status.ONLINE;
                         }
 
                         throw new Exception("User could not be registered.");
@@ -146,11 +145,11 @@ public class ClientStub implements OperationHandlerI {
                     //TODO retrieve complete server side db
                     if (messagePrinter != null)
                         messagePrinter.accept("User logged in.");
-                    return Status.ENABLED;
+                    return Status.ONLINE;
                 } else {
                     if (messagePrinter != null)
                         messagePrinter.accept("Something went wrong when retrieving the status of the user from the server.");
-                    return Status.ERROR;
+                    return Status.OFFLINE;
                 }
 
             }
@@ -162,7 +161,7 @@ public class ClientStub implements OperationHandlerI {
                     userManager.setToken(user.getId(), getBody(connection));
                     if (messagePrinter != null)
                         messagePrinter.accept("User logged in.");
-                    return Status.ENABLED;
+                    return Status.ONLINE;
                 }
             }
 
@@ -175,7 +174,7 @@ public class ClientStub implements OperationHandlerI {
                     userManager.setToken(user.getId(), getBody(connection));
                     if (messagePrinter != null)
                         messagePrinter.accept("User logged in.");
-                    return Status.ENABLED;
+                    return Status.ONLINE;
                 }
                 if (connection.getResponseCode() == 404) {
                     userManager.removeUser(user.getId());
@@ -191,7 +190,7 @@ public class ClientStub implements OperationHandlerI {
             else
                 if (messagePrinter != null)
                     messagePrinter.accept("Something went wrong. Try logging in later.");
-            return Status.ERROR;
+            return Status.OFFLINE;
         }
     }
 
@@ -204,7 +203,7 @@ public class ClientStub implements OperationHandlerI {
 
             //Consumer<String> oldMessagePrinter = messagePrinter;
             //messagePrinter = null;
-            status= authenticate(email, name, passwordSupplier);
+            status = authenticate(email, name, passwordSupplier);
             //messagePrinter = oldMessagePrinter;
 
             if (user.getId() == 0)
@@ -215,7 +214,7 @@ public class ClientStub implements OperationHandlerI {
             vectorClock = new VectorClock(user);
 
 
-            if (status != Status.ENABLED) {
+            if (status != Status.ONLINE) {
                 //TODO HANDLE
                 return;
             }
@@ -310,18 +309,16 @@ public class ClientStub implements OperationHandlerI {
     public synchronized HttpURLConnection sendAuthPostMessage(String urlString, String body) throws Exception {
 
         if (status == Status.DIRTY) {
-            status = Status.UPDATED;
             HttpURLConnection connection = sendAuthPostMessage(PROTOCOL + SERVER + "process", jsonifyServerList(dbHandler.getUserManager().getQueued(user.getId())));
 
             if (connection.getResponseCode() != 200) {
-                status = Status.DIRTY;
                 throw new Exception("Something went wrong sending data to server.");
             }
+            status = Status.ONLINE;
         }
 
         URL url = new URI(urlString).toURL();
         HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-        connection = (HttpURLConnection) url.openConnection();
         connection.setRequestMethod("POST");
         connection.setRequestProperty("Content-Type", "application/json");
         connection.setRequestProperty("Authorization", "Bearer " + dbHandler.getUserManager().getToken(user.getId()));
@@ -340,13 +337,12 @@ public class ClientStub implements OperationHandlerI {
     public synchronized HttpURLConnection sendAuthGetMessageBU(String urlString) throws Exception {
 
         if (status == Status.DIRTY) {
-            status = Status.UPDATED;
             HttpURLConnection connection = sendAuthPostMessage(PROTOCOL + SERVER + "process", jsonifyServerList(dbHandler.getUserManager().getQueued(user.getId())));
 
             if (connection.getResponseCode() != 200) {
-                status = Status.DIRTY;
                 throw new Exception("Something went wrong sending data to server.");
             }
+            status = Status.ONLINE;
         }
 
         URL url = new URI(urlString).toURL();
@@ -392,7 +388,6 @@ public class ClientStub implements OperationHandlerI {
 
     /**
      * TODO DESCRIBE
-     * @param operationHandler
      */
     public void addOperationHandler(ClientOperationHandlerI operationHandler){
         this.otherHandlers.add(operationHandler);
@@ -400,7 +395,6 @@ public class ClientStub implements OperationHandlerI {
 
     /**
      * TODO DESCRIBE
-     * @param operationHandler
      */
     public void removeOperationHandler(ClientOperationHandlerI operationHandler){
         this.otherHandlers.remove(operationHandler);
@@ -408,23 +402,26 @@ public class ClientStub implements OperationHandlerI {
 
     /**
      * TODO DESCRIBE
-     * @param exceptionHandler
      */
     public void setExceptionHandler(ExceptionHandler exceptionHandler) {
         this.exceptionHandler = exceptionHandler;
     }
 
+    public ExceptionHandler getExceptionHandler(){
+        return exceptionHandler;
+    }
     /**
      * //TODO
-     * @param messagePrinter
      */
     public void setMessagePrinter(Consumer<String> messagePrinter){
         this.messagePrinter = messagePrinter;
     }
 
+    public Consumer<String> getMessagePrinter() {
+        return messagePrinter;
+    }
     /**
      *
-     * @return
      */
     public User getUser(){return user;}
 
@@ -445,8 +442,6 @@ public class ClientStub implements OperationHandlerI {
     }
     /**
      * TODO DESCRIBE
-     * @param message
-     * @return
      */
     public static String jsonifyMessage(ZenMessage message, String whitespace){
         StringBuilder sb = new StringBuilder();
@@ -475,8 +470,6 @@ public class ClientStub implements OperationHandlerI {
 
     /**
      * TODO
-     * @param list
-     * @return
      */
     public static String jsonifyList(List<ZenMessage> list){
         StringBuilder sb = new StringBuilder();
@@ -550,8 +543,6 @@ public class ClientStub implements OperationHandlerI {
 
     private void receiveMessage(ZenMessage message){
 
-        System.out.println(message);
-
         switch (message.type){
             case POST -> {}
             case ADD_NEW_ENTRY -> {
@@ -563,9 +554,13 @@ public class ClientStub implements OperationHandlerI {
                 int position = Integer.parseInt(args.get(4).toString());
                 Entry entry = null;
                 try {
-                        entry =dbHandler.getEntryManager().addNewEntry(userId, id, task, position);
+                        entry =dbHandler.getEntryManager().addNewEntry(userId, profile, id, task, position);
                 } catch (PositionOutOfBoundException e){
 
+                } catch (DuplicateIdException e) {
+                    throw new RuntimeException(e);
+                } catch (InvalidActionException e) {
+                    throw new RuntimeException(e);
                 }
                 Entry finalEntry = entry;
                 otherHandlers.forEach(handler ->{
@@ -592,57 +587,68 @@ public class ClientStub implements OperationHandlerI {
 
     }
 
+    private synchronized void sendUpdate(OperationType type, List<Object> arguments) {
+        if (user.getId() == 0)
+            return;
+        vectorClock.increment();
+        dbHandler.getUserManager().setClock(user.getId(), vectorClock);
+        ZenServerMessage zm = new ZenServerMessage(type, arguments, vectorClock);
+        List<ZenServerMessage> list = new ArrayList<>();
+        list.add(zm);
+        currentMessages.add(zm);
+        try {
+            if (status != Status.ONLINE)
+                init(user.getEmail(), user.getUserName(), passwordSupplier);
+            int responseCode = 404;
+            if (status == Status.ONLINE) {
+                HttpURLConnection connection = sendAuthPostMessage(PROTOCOL + SERVER + "process", jsonifyServerList(list));
+                responseCode = connection.getResponseCode();
+            }
+            if (responseCode != 200)
+                throw new Exception("There was a problem sending data to the server: " + responseCode);
+        } catch (Exception e) {
+            exceptionHandler.handle(e);
+            dbHandler.getUserManager().addToQueue(user, zm);
+        }
+        currentMessages.remove(zm);
+    }
+
     @Override
-    public Entry addNewEntry(String task) {
+    public synchronized Entry addNewEntry(String task) {
         Entry entry = dbHandler.getEntryManager().addNewEntry(user == null ? 0 : user.getId(), user == null ? profile : user.getProfile(), task);
         return entry == null ? null : addNewEntry(entry);
     }
     @Override
-    public Entry addNewEntry(String task, int position) throws PositionOutOfBoundException {
+    public synchronized Entry addNewEntry(String task, int position) throws PositionOutOfBoundException {
         Entry entry = dbHandler.getEntryManager().addNewEntry(user == null ? 0 : user.getId(), user == null ? profile : user.getProfile(), task, position);
         return addNewEntry(entry);
     }
 
     @Override
-    public Entry addNewEntry(Entry entry) {
-
-        vectorClock.increment();
-        dbHandler.getUserManager().setClock(user.getId(), vectorClock);
-        //messagePrinter.accept(String.valueOf(vectorClock == null));
+    public synchronized Entry addNewEntry(Entry entry) {
         List<Object> arguments = new ArrayList<>();
         arguments.add(user.getId());
         arguments.add(user.getProfile());
         arguments.add(entry.getId());
         arguments.add(entry.getTask());
         arguments.add(entry.getPosition());
-        ZenServerMessage zm = new ZenServerMessage(OperationType.ADD_NEW_ENTRY, arguments, vectorClock);
-        List<ZenServerMessage> list = new ArrayList<>();
-        list.add(zm);
-        try {
-            if (status != Status.UPDATED)
-                throw new Exception("Updates haven't been processed yet.");
-
-            HttpURLConnection connection = sendAuthPostMessage(PROTOCOL + SERVER + "process", jsonifyServerList(list));
-
-            int responseCode = connection.getResponseCode();
-            if (responseCode != 200) {
-                dbHandler.getUserManager().addToQueue(user, zm);
-            }
-        } catch (Exception e) {
-            exceptionHandler.handle(e);
-            dbHandler.getUserManager().addToQueue(user, zm);
-        }
+        sendUpdate(OperationType.ADD_NEW_ENTRY, arguments);
         return entry;
-
     }
 
+
     @Override
-    public void removeEntry(long id) {
+    public synchronized void removeEntry(long id) {
+        List<Object> arguments = new ArrayList<>();
+        arguments.add(user.getId());
+        arguments.add(user.getProfile());
+        arguments.add(id);
+        sendUpdate(OperationType.DELETE, arguments);
         dbHandler.getEntryManager().removeEntry(user == null ? 0 : user.getId(), user == null ? profile : user.getProfile(), id);
     }
 
     @Override
-    public Optional<Entry> getEntry(long id) {
+    public synchronized Optional<Entry> getEntry(long id) {
         return dbHandler.getEntryManager().getEntry(user == null ? 0 : user.getId(), user == null ? profile : user.getProfile(), id);
     }
 
@@ -653,91 +659,112 @@ public class ClientStub implements OperationHandlerI {
 
     @Override
     public List<Entry> loadFocus() {
-        return new ArrayList<Entry>();
+        return dbHandler.getEntryManager().loadFocus(user.getId(), user.getProfile());
     }
 
     @Override
     public List<Entry> loadDropped() {
-        return new ArrayList<Entry>();
+        return dbHandler.getEntryManager().loadDropped(user.getId(), user.getProfile());
     }
 
     @Override
     public List<Entry> loadList(Long list) {
-        return new ArrayList<Entry>();
+        return dbHandler.getListManager().getListEntries(user.getId(), user.getProfile(), list);
     }
 
     @Override
     public List<TaskList> loadLists() {
-        return new ArrayList<TaskList>();
+        return dbHandler.getListManager().getListsForUser(user.getId(), user.getProfile());
     }
 
     @Override
     public Map<Long, String> getListColors() {
-        return new  HashMap<Long, String>();
+        List<TaskList> lists = loadLists();
+        return lists.stream().collect(Collectors.toMap(
+                TaskList::getId,
+                TaskList::getColor
+        ));
     }
 
     @Override
     public Optional<TaskList> getListByName(String name) {
-        return Optional.empty();
+        return dbHandler.getListManager().getListByName(user.getId(), user.getProfile(), name);
     }
 
     @Override
-    public void swapEntries(long id, int position) {
-
-    }
-
-    @Override
-    public void swapListEntries(long id, int position) {
+    public synchronized void swapEntries(long id, int position) {
+        //TODO SEND TO SERVER
 
     }
 
     @Override
-    public void updateTask(long id, String value) {
-
+    public synchronized void swapListEntries(long id, int position) {
+        //TODO SEND TO SERVER
     }
 
     @Override
-    public void updateFocus(long id, int value) {
-
+    public synchronized void updateTask(long id, String value) {
+        //TODO SEND TO SERVER
+        dbHandler.getEntryManager().updateTask(user.getId(), user.getProfile(), id, value);
     }
 
     @Override
-    public void updateDropped(long id, int value) {
-
+    public synchronized void updateFocus(long id, boolean value) {
+        //TODO SEND TO SERVER
+        dbHandler.getEntryManager().updateFocus(user.getId(), user.getProfile(), id, value);
     }
 
     @Override
-    public void updateList(long id, String value, int position) {
-
+    public synchronized void updateDropped(long id, boolean value) {
+        //TODO SEND TO SERVER
+        dbHandler.getEntryManager().updateDropped(user.getId(), user.getProfile(), id, value);
     }
 
     @Override
-    public void updateReminderDate(long id, Long value) {
-
+    public synchronized void updateList(long id, Long newId) {
+        //TODO SEND TO SERVER
+        dbHandler.getListManager().updateList(user.getId(), user.getProfile(), id, newId);
     }
 
     @Override
-    public void updateRecurrence(long id, Long reminderDate, String value) {
-
+    public synchronized void updateReminderDate(long id, Instant value) {
+        //TODO SEND TO SERVER
+        dbHandler.getEntryManager().updateReminderDate(user.getId(), user.getProfile(), id, value);
     }
 
     @Override
-    public void updateListColor(long list, String color) {
-
+    public synchronized void updateRecurrence(long id, Long reminderDate, String value) {
+        //TODO SEND TO SERVER
+        dbHandler.getEntryManager().updateRecurrence(user.getId(), user.getProfile(), id, value);
     }
 
     @Override
-    public void updateUserName(long id, String name) {
-
+    public synchronized void updateListColor(long list, String color) {
+        //TODO SEND TO SERVER
+        dbHandler.getListManager().updateListColor(list, color);
     }
 
     @Override
-    public boolean updateEmail(long id, String email) {
-
-        return true;
+    public synchronized void updateUserName(String name) {
+        if (user.getId() == 0)
+            return;
+        //TODO SEND TO SERVER
+        dbHandler.getUserManager().updateUserName(user.getId(), name);
+        user.setUserName(name);
     }
 
-    public void clearQueue() {
+    @Override
+    public synchronized void updateEmail(String email) throws InvalidActionException {
+        if (user.getId() == 0)
+            return;
+        //TODO SEND TO AND CONFIRM WITH SERVER
+        dbHandler.getUserManager().updateEmail(user.getId(), email);
+        user.setEmail(email);
+    }
+
+    public synchronized void clearQueue() {
+        if (user.getId() == 0)
+            return;
         dbHandler.getUserManager().clearQueue(user.getId());
     }
 }

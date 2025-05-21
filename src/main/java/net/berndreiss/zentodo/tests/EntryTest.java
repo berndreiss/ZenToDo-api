@@ -337,5 +337,23 @@ public class EntryTest {
 
     }
 
+    @Test
+    public void loadFocusAndDropped(){
+        User user = DatabaseTestSuite.user;
+        Database database = DatabaseTestSuite.databaseSupplier.get();
+        EntryManagerI entryManager = database.getEntryManager();
+        Entry entryFocus = entryManager.addNewEntry(user.getId(), DatabaseTestSuite.user.getProfile(), "TASK0");
+        Entry entryDropped = entryManager.addNewEntry(user.getId(), DatabaseTestSuite.user.getProfile(), "TASK1");
+        entryManager.updateFocus(user.getId(), user.getProfile(), entryFocus.getId(), true);
+
+        List<Entry> focused = entryManager.loadFocus(user.getId(), user.getProfile());
+        List<Entry> dropped = entryManager.loadDropped(user.getId(), user.getProfile());
+        Assert.assertFalse("Focused tasks were not loaded.", focused.isEmpty());
+        Assert.assertFalse("Dropped tasks were not loaded.", dropped.isEmpty());
+        Assert.assertEquals("Wrong task was loaded for focused tasks.", entryFocus.getId(), focused.get(0).getId());
+        Assert.assertEquals("Wrong task was loaded for dropped tasks.", entryDropped.getId(), dropped.get(0).getId());
+
+        database.close();
+    }
 
 }
