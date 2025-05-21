@@ -17,7 +17,9 @@ public class ListManager implements ListManagerI {
     }
 
     @Override
-    public synchronized TaskList addList(long id, String name, String color) {
+    public synchronized TaskList addList(long id, String name, String color) throws InvalidActionException {
+        if (name == null)
+            throw new InvalidActionException("List name must not be null.");
         if (getList(id).isPresent())
             return null;
         TaskList list = new TaskList(id, name, color);
@@ -67,6 +69,10 @@ public class ListManager implements ListManagerI {
 
         em.getTransaction().begin();
         em.persist(profile);
+        em.persist(list);
+        em.createNativeQuery("UPDATE entries SET list = NULL, listposition = NULL WHERE list = :listId")
+                .setParameter("listId", listId)
+                .executeUpdate();
         em.getTransaction().commit();
     }
 
@@ -82,6 +88,9 @@ public class ListManager implements ListManagerI {
             }
             list.getProfiles().clear();
             em.remove(list);
+            em.createNativeQuery("UPDATE entries SET list = NULL, listposition = NULL WHERE list = :listId")
+                    .setParameter("listId", id)
+                    .executeUpdate();
             em.getTransaction().commit();
         }
     }
@@ -165,7 +174,9 @@ public class ListManager implements ListManagerI {
     }
 
     @Override
-    public synchronized void updateListName(long listId, String name) {
+    public synchronized void updateListName(long listId, String name) throws InvalidActionException {
+        if (name == null)
+            throw new InvalidActionException("List name must not be null.");
         Optional<TaskList> list = getList(listId);
         if (list.isEmpty())
             return;

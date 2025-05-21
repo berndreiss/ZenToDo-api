@@ -141,7 +141,7 @@ public class UserManager implements UserManagerI {
     }
 
     @Override
-    public synchronized void removeProfile(long userId, long profileId) throws InvalidActionException {
+    public synchronized void removeProfile(long userId, int profileId) throws InvalidActionException {
 
         if (userId == 0 && profileId == 0)
             throw new InvalidActionException("Cannot remove the default profile for user");

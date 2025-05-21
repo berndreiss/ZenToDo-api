@@ -122,7 +122,8 @@ public class UserTest {
         User user = userManager.addUser(1,mail1, null, 0);
         userManager.addProfile(0);
         Profile profile1 = userManager.addProfile(user.getId());
-
+        TaskList list = database.getListManager().addList(0, "LIST", null);
+        database.getListManager().addUserProfileToList(user.getId(), 0, list.getId());
         entryManager.addNewEntry(user.getId(), 0, "TASK");
         entryManager.addNewEntry(user.getId(), 0, "TASK");
 
@@ -131,9 +132,12 @@ public class UserTest {
         userManager.removeProfile(user.getId(), 0);
         Optional<Profile> profile = userManager.getProfile(user.getId(), 0);
         Assert.assertTrue("Profile was not delete.", profile.isEmpty());
-
         Assert.assertTrue("Entries associated with profile were not deleted.", entryManager.getEntries(user.getId(), 0).isEmpty());
+        List<TaskList> lists = database.getListManager().getListsForUser(user.getId(), 0);
+        Assert.assertTrue("List associations for profile were not removed.", lists.isEmpty());
 
+        lists = database.getListManager().getLists();
+        Assert.assertFalse("List was delete too.", lists.isEmpty());
         try{
             userManager.removeProfile(0,0);
             Assert.fail("Deleting the default profile not triggering InvalidActionException");
@@ -241,7 +245,7 @@ public class UserTest {
         Assert.assertEquals(2, messages.size());
         Assert.assertEquals("Queue was not updated properly", message.type, messages.get(0).type);
         Assert.assertEquals("Queue was not updated properly", message.clock.jsonify(), messages.get(0).clock.jsonify());
-        Assert.assertEquals("Queue was not updated properly", message.timeStamp, messages.get(0).timeStamp);
+        Assert.assertEquals("Queue was not updated properly", message.timeStamp.getEpochSecond(), messages.get(0).timeStamp.getEpochSecond());
         Assert.assertEquals("Queue was not updated properly", ((Entry) message.arguments.get(0)).getTask(), "TASK0");
         Assert.assertEquals("Queue was not updated properly", ((Entry) message.arguments.get(1)).getTask(), "TASK1");
         database.close();

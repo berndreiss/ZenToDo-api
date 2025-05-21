@@ -21,7 +21,7 @@ public interface UserManagerI {
      * TODO
      */
     void removeUser(long userId) throws InvalidActionException;
-    void removeProfile(long userId, long profileId) throws InvalidActionException;
+    void removeProfile(long userId, int profileId) throws InvalidActionException;
 
     /**
      *
