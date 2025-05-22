@@ -49,6 +49,7 @@ public class ClientStub implements OperationHandlerI {
 
         stub.init("test@test.net", null, () -> "Test1234!?");
         Entry entry = stub.addNewEntry("TEST", 0);
+        stub.removeEntry(entry.getId());
 
         dbHandler.close();
         emf.close();
@@ -548,14 +549,13 @@ public class ClientStub implements OperationHandlerI {
             case POST -> {}
             case ADD_NEW_ENTRY -> {
                 List<Object> args = message.arguments;
-                long userId = Long.parseLong(args.get(0).toString());
-                int profile = Integer.parseInt(args.get(1).toString());
-                long id = Long.parseLong(args.get(2).toString());
-                String task = args.get(3).toString();
-                int position = Integer.parseInt(args.get(4).toString());
+                int profile = Integer.parseInt(args.get(0).toString());
+                long id = Long.parseLong(args.get(1).toString());
+                String task = args.get(2).toString();
+                int position = Integer.parseInt(args.get(3).toString());
                 Entry entry = null;
                 try {
-                        entry =dbHandler.getEntryManager().addNewEntry(userId, profile, id, task, position);
+                        entry =dbHandler.getEntryManager().addNewEntry(user.getId(), profile, id, task, position);
                 } catch (PositionOutOfBoundException e){
 
                 } catch (DuplicateIdException e) {
@@ -628,7 +628,6 @@ public class ClientStub implements OperationHandlerI {
     @Override
     public synchronized Entry addNewEntry(Entry entry) {
         List<Object> arguments = new ArrayList<>();
-        arguments.add(user.getId());
         arguments.add(user.getProfile());
         arguments.add(entry.getId());
         arguments.add(entry.getTask());
@@ -641,7 +640,6 @@ public class ClientStub implements OperationHandlerI {
     @Override
     public synchronized void removeEntry(long id) {
         List<Object> arguments = new ArrayList<>();
-        arguments.add(user.getId());
         arguments.add(user.getProfile());
         arguments.add(id);
         sendUpdate(OperationType.DELETE, arguments);
@@ -696,7 +694,6 @@ public class ClientStub implements OperationHandlerI {
     public synchronized void swapEntries(long id, int position) throws PositionOutOfBoundException {
         dbHandler.getEntryManager().swapEntries(user.getId(), user.getProfile(), id, position);
         List<Object> arguments = new ArrayList<>();
-        arguments.add(user.getId());
         arguments.add(user.getProfile());
         arguments.add(id);
         arguments.add(position);
@@ -707,7 +704,6 @@ public class ClientStub implements OperationHandlerI {
     public synchronized void swapListEntries(long list, long id, int position) throws PositionOutOfBoundException {
         dbHandler.getListManager().swapListEntries(user.getId(), user.getProfile(), list, id, position);
         List<Object> arguments = new ArrayList<>();
-        arguments.add(user.getId());
         arguments.add(user.getProfile());
         arguments.add(id);
         arguments.add(position);
@@ -717,7 +713,6 @@ public class ClientStub implements OperationHandlerI {
     @Override
     public synchronized void updateTask(long id, String value) {
         List<Object> arguments = new ArrayList<>();
-        arguments.add(user.getId());
         arguments.add(user.getProfile());
         arguments.add(id);
         arguments.add(value);
@@ -728,7 +723,6 @@ public class ClientStub implements OperationHandlerI {
     @Override
     public synchronized void updateFocus(long id, boolean value) {
         List<Object> arguments = new ArrayList<>();
-        arguments.add(user.getId());
         arguments.add(user.getProfile());
         arguments.add(id);
         arguments.add(value);
@@ -739,7 +733,6 @@ public class ClientStub implements OperationHandlerI {
     @Override
     public synchronized void updateDropped(long id, boolean value) {
         List<Object> arguments = new ArrayList<>();
-        arguments.add(user.getId());
         arguments.add(user.getProfile());
         arguments.add(id);
         arguments.add(value);
@@ -750,7 +743,6 @@ public class ClientStub implements OperationHandlerI {
     @Override
     public synchronized void updateList(long id, Long newId) {
         List<Object> arguments = new ArrayList<>();
-        arguments.add(user.getId());
         arguments.add(user.getProfile());
         arguments.add(id);
         arguments.add(newId);
@@ -761,7 +753,6 @@ public class ClientStub implements OperationHandlerI {
     @Override
     public synchronized void updateReminderDate(long id, Instant value) {
         List<Object> arguments = new ArrayList<>();
-        arguments.add(user.getId());
         arguments.add(user.getProfile());
         arguments.add(id);
         arguments.add(value);
@@ -772,7 +763,6 @@ public class ClientStub implements OperationHandlerI {
     @Override
     public synchronized void updateRecurrence(long id, Long reminderDate, String value) {
         List<Object> arguments = new ArrayList<>();
-        arguments.add(user.getId());
         arguments.add(user.getProfile());
         arguments.add(id);
         arguments.add(reminderDate);
@@ -795,7 +785,6 @@ public class ClientStub implements OperationHandlerI {
         if (user.getId() == 0)
             return;
         List<Object> arguments = new ArrayList<>();
-        arguments.add(user.getId());
         arguments.add(name);
         sendUpdate(OperationType.UPDATE_USER_NAME, arguments);
         dbHandler.getUserManager().updateUserName(user.getId(), name);
@@ -815,7 +804,6 @@ public class ClientStub implements OperationHandlerI {
                 throw new InvalidActionException("User with mail address already exists.");
         } catch (URISyntaxException _){}
         List<Object> arguments = new ArrayList<>();
-        arguments.add(user.getId());
         arguments.add(email);
         sendUpdate(OperationType.UPDATE_MAIL, arguments);
         dbHandler.getUserManager().updateEmail(user.getId(), email);
@@ -827,4 +815,4 @@ public class ClientStub implements OperationHandlerI {
             return;
         dbHandler.getUserManager().clearQueue(user.getId());
     }
-}
+    }
