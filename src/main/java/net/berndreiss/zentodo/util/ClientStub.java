@@ -544,7 +544,6 @@ public class ClientStub implements OperationHandlerI {
     }
 
     private void receiveMessage(ZenMessage message){
-
         switch (message.type){
             case POST -> {}
             case ADD_NEW_ENTRY -> {
@@ -569,21 +568,106 @@ public class ClientStub implements OperationHandlerI {
                 });
             }
             case DELETE -> {
-                long id = Long.parseLong(message.arguments.getFirst().toString());
-                dbHandler.getEntryManager().removeEntry(user.getId(), user.getProfile(), id);
+                int profile = Integer.parseInt(message.arguments.get(0).toString());
+                long id = Long.parseLong(message.arguments.get(1).toString());
+                dbHandler.getEntryManager().removeEntry(user.getId(), profile, id);
                 otherHandlers.forEach(h -> h.removeEntry(id));
             }
-            case SWAP -> {}
-            case SWAP_LIST -> {}
-            case UPDATE_LIST -> {}
-            case UPDATE_TASK -> {}
-            case UPDATE_FOCUS -> {}
-            case UPDATE_DROPPED -> {}
-            case UPDATE_RECURRENCE -> {}
-            case UPDATE_REMINDER_DATE -> {}
-            case UPDATE_LIST_COLOR -> {}
-            case UPDATE_MAIL -> {}
-            case UPDATE_USER_NAME -> {}
+            case SWAP -> {
+                int profile = Integer.parseInt(message.arguments.get(0).toString());
+                long id = Long.parseLong(message.arguments.get(1).toString());
+                int position = Integer.parseInt(message.arguments.get(2).toString());
+                try {
+                    dbHandler.getEntryManager().swapEntries(user.getId(), profile, id, position);
+                    otherHandlers.forEach(h -> {
+                        try {
+                            h.swapEntries(id, position);
+                        } catch (PositionOutOfBoundException e) {
+                           exceptionHandler.handle(e);
+                        }
+                    });
+                } catch (PositionOutOfBoundException e){
+                    //TODO HANDLE
+                }
+            }
+            case SWAP_LIST -> {
+                int profile = Integer.parseInt(message.arguments.get(0).toString());
+                long id = Long.parseLong(message.arguments.get(1).toString());
+                long list = Long.parseLong(message.arguments.get(2).toString());
+                int position = Integer.parseInt(message.arguments.get(3).toString());
+                try {
+                    dbHandler.getListManager().swapListEntries(user.getId(), profile, id, list, position);
+                    otherHandlers.forEach(h -> {
+                        try {
+                            h.swapEntries(id, position);
+                        } catch (PositionOutOfBoundException e) {
+                           exceptionHandler.handle(e);
+                        }
+                    });
+                } catch (PositionOutOfBoundException e) {
+                    //TODO HANDLE
+                }
+            }
+            case UPDATE_LIST -> {
+                int profile = Integer.parseInt(message.arguments.get(0).toString());
+                long id = Long.parseLong(message.arguments.get(1).toString());
+                Long list = Long.parseLong(message.arguments.get(2).toString());
+                dbHandler.getListManager().updateList(user.getId(), profile, id, list);
+                otherHandlers.forEach(h -> h.updateList(id, list));
+            }
+            case UPDATE_TASK -> {
+                int profile = Integer.parseInt(message.arguments.get(0).toString());
+                long id = Long.parseLong(message.arguments.get(1).toString());
+                String task = message.arguments.get(2).toString();
+                dbHandler.getEntryManager().updateTask(user.getId(), profile, id, task);
+                otherHandlers.forEach(h -> h.updateTask(id, task));
+            }
+            case UPDATE_FOCUS -> {
+                int profile = Integer.parseInt(message.arguments.get(0).toString());
+                long id = Long.parseLong(message.arguments.get(1).toString());
+                boolean focus = Boolean.parseBoolean(message.arguments.get(2).toString());
+                dbHandler.getEntryManager().updateFocus(user.getId(), profile, id, focus);
+                otherHandlers.forEach(h -> h.updateFocus(id, focus));
+            }
+            case UPDATE_DROPPED -> {
+                int profile = Integer.parseInt(message.arguments.get(0).toString());
+                long id = Long.parseLong(message.arguments.get(1).toString());
+                boolean dropped = Boolean.parseBoolean(message.arguments.get(2).toString());
+                dbHandler.getEntryManager().updateDropped(user.getId(), profile, id, dropped);
+                otherHandlers.forEach(h -> h.updateDropped(id, dropped));
+            }
+            case UPDATE_RECURRENCE -> {
+                int profile = Integer.parseInt(message.arguments.get(0).toString());
+                long id = Long.parseLong(message.arguments.get(1).toString());
+                String recurrence = message.arguments.get(2).toString();
+                dbHandler.getEntryManager().updateRecurrence(user.getId(), profile, id, recurrence);
+                otherHandlers.forEach(h -> h.updateRecurrence(id, recurrence));
+            }
+            case UPDATE_REMINDER_DATE -> {
+                int profile = Integer.parseInt(message.arguments.get(0).toString());
+                long id = Long.parseLong(message.arguments.get(1).toString());
+                Instant date  = Instant.parse(message.arguments.get(1).toString());
+                dbHandler.getEntryManager().updateReminderDate(user.getId(), profile, id, date);
+                otherHandlers.forEach(h -> h.updateReminderDate(id, date));
+            }
+            case UPDATE_LIST_COLOR -> {
+                long list = Long.parseLong(message.arguments.get(0).toString());
+                String color = message.arguments.get(1).toString();
+                dbHandler.getListManager().updateListColor(list, color);
+                otherHandlers.forEach(h -> h.updateListColor(list, color));
+            }
+            case UPDATE_MAIL -> {
+                String mail = message.arguments.get(0).toString();
+                try {
+                    dbHandler.getUserManager().updateEmail(user.getId(), mail);
+                } catch (InvalidActionException e){
+                    //TODO HANDLE
+                }
+            }
+            case UPDATE_USER_NAME -> {
+                String name = message.arguments.get(0).toString();
+                dbHandler.getUserManager().updateUserName(user.getId(), name);
+            }
         }
 
     }
@@ -761,11 +845,10 @@ public class ClientStub implements OperationHandlerI {
     }
 
     @Override
-    public synchronized void updateRecurrence(long id, Long reminderDate, String value) {
+    public synchronized void updateRecurrence(long id, String value) {
         List<Object> arguments = new ArrayList<>();
         arguments.add(user.getProfile());
         arguments.add(id);
-        arguments.add(reminderDate);
         arguments.add(value);
         sendUpdate(OperationType.UPDATE_RECURRENCE, arguments);
         dbHandler.getEntryManager().updateRecurrence(user.getId(), user.getProfile(), id, value);

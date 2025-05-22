@@ -99,10 +99,9 @@ public interface OperationHandlerI {
      * Update the field with the value provided. Also needs to update the reminder date.
      *
      * @param id the id of the task to be updated
-     * @param reminderDate the reminder date of the task
      * @param value the value to update with
      */
-    void updateRecurrence(long id, Long reminderDate, String value);
+    void updateRecurrence(long id, String value);
 
     /**
      *
