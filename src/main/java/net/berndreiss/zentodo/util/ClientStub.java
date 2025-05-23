@@ -196,6 +196,9 @@ public class ClientStub implements OperationHandlerI {
         }
     }
 
+    public void reinit(){
+        init(user.getEmail(), user.getUserName(), passwordSupplier);
+    }
     /**
      * TODO
      */
