@@ -258,7 +258,6 @@ public class ClientStub implements OperationHandlerI {
                 } catch (Exception e) {
                     if (exceptionHandler != null)
                         exceptionHandler.handle(e);
-
                 }
 
                 for (ZenMessage zm: messages)
@@ -544,6 +543,7 @@ public class ClientStub implements OperationHandlerI {
     }
 
     private void receiveMessage(ZenMessage message){
+        //TODO CHECK VALIDITY
         switch (message.type){
             case POST -> {}
             case ADD_NEW_ENTRY -> {
