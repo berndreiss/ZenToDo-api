@@ -251,6 +251,7 @@ public class UserManager implements UserManagerI {
     }
     @Override
     public List<ZenServerMessage> getQueued(long userId) {
+        //TODO DO NOT RETURN ITEMS OF OTHER USERS
         List<ZenServerMessage> result = new ArrayList<>();
         em.createQuery("SELECT qi FROM QueueItem qi", QueueItem.class).getResultStream().forEach(qi -> {
             List<Object> args = new ArrayList<>(qi.getArguments());

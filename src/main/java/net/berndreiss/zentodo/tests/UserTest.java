@@ -231,6 +231,7 @@ public class UserTest {
     }
     @Test
     public void addToQueue() throws DuplicateIdException, InvalidActionException {
+        //TODO ADD TEST THAT QUEUE ITEM OF OTHER USERS ARE NOT RETURNED
         Database database = DatabaseTestSuite.databaseSupplier.get();
         UserManagerI userManager = database.getUserManager();
         EntryManagerI entryManager = database.getEntryManager();

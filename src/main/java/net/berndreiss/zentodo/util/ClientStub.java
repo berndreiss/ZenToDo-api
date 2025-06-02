@@ -49,7 +49,7 @@ public class ClientStub implements OperationHandlerI {
 
         stub.init("test@test.net", null, () -> "Test1234!?");
         Entry entry = stub.addNewEntry("TEST", 0);
-        stub.removeEntry(entry.getId());
+        //stub.removeEntry(entry.getId());
 
         dbHandler.close();
         emf.close();
