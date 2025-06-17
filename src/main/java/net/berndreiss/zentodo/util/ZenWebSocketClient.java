@@ -11,7 +11,7 @@ import java.util.function.Consumer;
 @ClientEndpoint
 public class ZenWebSocketClient extends Endpoint {
 
-    public final static String WEBSOCKET_ENDPOINT = "ws/pubsub";
+    public final static String WEBSOCKET_ENDPOINT = "wss/pubsub";
 
     private Session session;
     private Consumer<String> messageConsumer;
@@ -63,7 +63,7 @@ public class ZenWebSocketClient extends Endpoint {
         try {
 
             WebSocketContainer container = ContainerProvider.getWebSocketContainer();
-            URI serverUri = new URI("ws://" + ClientStub.SERVER + WEBSOCKET_ENDPOINT);
+            URI serverUri = new URI("wss://" + ClientStub.SERVER + WEBSOCKET_ENDPOINT);
 
 
             ClientEndpointConfig config = ClientEndpointConfig.Builder.create()

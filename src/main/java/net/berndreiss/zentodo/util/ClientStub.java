@@ -32,8 +32,8 @@ public class ClientStub implements OperationHandlerI {
     private final List<ClientOperationHandlerI> otherHandlers = new ArrayList<>();
     private ExceptionHandler exceptionHandler = _ -> {};
     private Consumer<String> messagePrinter = _ -> {};
-    public static String PROTOCOL = "http://";
-    public static String SERVER = "localhost:8080/";
+    public static String PROTOCOL = "https://";
+    public static String SERVER = "zentodo.berndreiss.net/api/";
     public  User user;
     public int profile;
     public Status status;
@@ -47,7 +47,9 @@ public class ClientStub implements OperationHandlerI {
         Database dbHandler = new DbHandler(emf, null);
         ClientStub stub = new ClientStub(dbHandler);
 
-        stub.init("test@test.net", null, () -> "Test1234!?");
+        stub.setMessagePrinter(System.out::println);
+        stub.setExceptionHandler(System.out::println);
+        stub.init("bd_reiss@yahoo.de", null, () -> "Test1234!?");
         Entry entry = stub.addNewEntry("TEST", 0);
         //stub.removeEntry(entry.getId());
 
@@ -77,6 +79,7 @@ public class ClientStub implements OperationHandlerI {
             if (userOpt.isEmpty()) {
                 String loginRequest = getLoginRequest(email, passwordSupplier.get());
 
+                messagePrinter.accept("STARTING ATTEMPTS");
                 int attempts = 0;
                 while (attempts++ < 10){
 
@@ -304,6 +307,10 @@ public class ClientStub implements OperationHandlerI {
         try (OutputStream os = connection.getOutputStream()) {
             byte[] input = body.getBytes(StandardCharsets.UTF_8);
             os.write(input, 0, input.length);
+        } catch(Exception e){
+            StringWriter sw = new StringWriter();
+            e.printStackTrace(new PrintWriter(sw));
+            messagePrinter.accept("Exception in getOutputStream: " + sw.toString());
         }
         processResponse(connection);
         return connection;
