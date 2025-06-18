@@ -15,7 +15,7 @@ public class QueueItem {
     @GeneratedValue (strategy = GenerationType.IDENTITY)
     private long id;
 
-    @Column
+    @Column(columnDefinition = "TEXT")
     private String clock;
 
     @Column
