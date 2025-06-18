@@ -74,6 +74,8 @@ public class Entry{
 
     public void setUserId(Long userId) {this.userId = userId;}
 
+    public void setId(long id){this.id = id;}
+
     //the following functions simply return the different fields of the entry
     public long getId(){return this.id;}
 

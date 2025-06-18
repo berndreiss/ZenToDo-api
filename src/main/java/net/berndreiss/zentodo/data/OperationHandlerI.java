@@ -15,7 +15,7 @@ public interface OperationHandlerI {
 
 
 
-    Entry addNewEntry(Entry entry);
+    Entry addNewEntry(Entry entry) throws PositionOutOfBoundException, DuplicateIdException, InvalidActionException;
 
     Entry addNewEntry(String task) throws PositionOutOfBoundException;
     Entry addNewEntry(String task, int position) throws PositionOutOfBoundException;

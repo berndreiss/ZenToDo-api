@@ -1,42 +1,80 @@
 package net.berndreiss.zentodo;
 
-import net.berndreiss.zentodo.data.OperationField;
-
-/*
-
-0 ID
-1 TASK
-2 FOCUS
-3 DROPPED
-4 LIST
-5 LIST_POSITION
-6 REMINDER_DATE
-7 RECURRENCE
-8 POSITION
-9 COLOR
-
+/**
+ * Possible operations when interacting with the server. The arguments that have to be passed are in the comments
+ * including the adequate type in parentheses. Null values are to be represented by empty Strings.
+ * THE POST METHODS ARE NOT IMPLEMENTED ON THE SERVER SIDE!
  */
+
 public enum OperationType {
-    POST(new OperationField[]{OperationField.ID, OperationField.TASK, OperationField.FOCUS, OperationField.DROPPED, OperationField.LIST, OperationField.LIST_POSITION, OperationField.REMINDER_DATE, OperationField.RECURRENCE}),
-    ADD_NEW_ENTRY(new OperationField[]{OperationField.ID, OperationField.TASK, OperationField.ID, OperationField.POSITION}),
-    DELETE(new OperationField[]{OperationField.ID}),
-    SWAP (new OperationField[]{OperationField.ID, OperationField.POSITION}),
-    SWAP_LIST (new OperationField[]{OperationField.ID, OperationField.LIST_POSITION}),
-    UPDATE_TASK (new OperationField[]{OperationField.ID, OperationField.TASK}),
-    UPDATE_FOCUS (new OperationField[]{OperationField.ID, OperationField.FOCUS}),
-    UPDATE_DROPPED (new OperationField[]{OperationField.ID, OperationField.DROPPED}),
-    UPDATE_LIST (new OperationField[]{OperationField.ID, OperationField.LIST}),
-    UPDATE_REMINDER_DATE (new OperationField[]{OperationField.ID, OperationField.REMINDER_DATE}),
-    UPDATE_RECURRENCE (new OperationField[]{OperationField.ID, OperationField.RECURRENCE}),
-    UPDATE_LIST_COLOR (new OperationField[]{OperationField.LIST, OperationField.COLOR}),
-    UPDATE_USER_NAME(new OperationField[]{OperationField.ID, OperationField.USERNAME}),
-    UPDATE_ID(new OperationField[]{}),
-    UPDATE_MAIL(new OperationField[]{OperationField.ID, OperationField.MAIL}),
+    /**
+     * PROFILE (int), ID (long), TASK (String), POSITION (int), FOCUS (boolean), DROPPED (boolean),
+     * LIST (Long), LIST_POSITION (Long), REMINDER_DATE (Instant), RECURRENCE (String)
+     */
+    POST,
+    /**
+     * ID (long), NAME (String), COLOR (String), PROFILES (int[])
+     */
+    POST_LIST,
+    /**
+     * ID (long), NAME (String)
+     */
+    POST_PROFILE,
+    /**
+     * PROFILE (int), ID (long), TASK (String), POSITION (int)
+     */
+    ADD_NEW_ENTRY,
+    /**
+     * PROFILE (int), ID (long)
+     */
+    DELETE,
+    /**
+     * PROFILE (int), ID (long), POSITION (int)
+     */
+    SWAP ,
+    /**
+     * PROFILE (int), ID (long), LIST (long), LIST_POSITION (int)
+     */
+    SWAP_LIST ,
+    /**
+     * PROFILE (int), ID (long), TASK (String)
+     */
+    UPDATE_TASK ,
+    /**
+     * PROFILE (int), ID (long), FOCUS (boolean)
+     */
+    UPDATE_FOCUS ,
+    /**
+     * PROFILE (int), ID (long), DROPPED (boolean)
+     */
+    UPDATE_DROPPED ,
+    /**
+     * PROFILE (int), ID (long), LIST (Long)
+     */
+    UPDATE_LIST ,
+    /**
+     * PROFILE (int), ID (long), REMINDER_DATE (Instant)
+     */
+    UPDATE_REMINDER_DATE ,
+    /**
+     * PROFILE (int), ID (long), RECURRENCE (String)
+     */
+    UPDATE_RECURRENCE ,
+    /**
+     * LIST (long), COLOR (String)
+     */
+    UPDATE_LIST_COLOR ,
+    /**
+     * ID (long), NAME (String)
+     */
+    UPDATE_USER_NAME,
+    /**
+     * ID (long), MAIL (String)
+     */
+    UPDATE_MAIL,
+    /**
+     * OLD_ID (long), NEW_ID (long)
+     */
+    UPDATE_ID,
     ;
-
-    public final OperationField[] args;
-
-    OperationType(OperationField[] args){
-        this.args = args;
-    }
 }

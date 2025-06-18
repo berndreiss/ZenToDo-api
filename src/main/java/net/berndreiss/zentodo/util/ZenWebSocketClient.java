@@ -28,17 +28,17 @@ public class ZenWebSocketClient extends Endpoint {
                 messageConsumer.accept(message);
             }
         });
-        try {
-            HttpURLConnection connection = clientStub.sendAuthPostMessage(ClientStub.PROTOCOL + ClientStub.SERVER + "queue", " ");
-            if (connection.getResponseCode() != 200)
-                throw new RuntimeException("Could not retrieve data from server.");
+        //try {
+            //HttpURLConnection connection = clientStub.sendAuthPostMessage(ClientStub.PROTOCOL + ClientStub.SERVER + "queue", " ");
+            //if (connection.getResponseCode() != 200)
+                //throw new RuntimeException("Could not retrieve data from server.");
 
-            clientStub.clearQueue();
+            //clientStub.clearQueue();
 
-        } catch (Exception e) {
-            clientStub.status = Status.OFFLINE;
-            clientStub.getExceptionHandler().handle(e);
-        }
+        //} catch (Exception e) {
+            //clientStub.status = Status.OFFLINE;
+            //clientStub.getExceptionHandler().handle(e);
+        //}
     }
 
     @OnMessage
@@ -63,7 +63,7 @@ public class ZenWebSocketClient extends Endpoint {
         try {
 
             WebSocketContainer container = ContainerProvider.getWebSocketContainer();
-            URI serverUri = new URI("wss://" + ClientStub.SERVER + WEBSOCKET_ENDPOINT);
+            URI serverUri = new URI(ClientStub.WEBSOCKET_PROTOCOL + ClientStub.SERVER + WEBSOCKET_ENDPOINT);
 
 
             ClientEndpointConfig config = ClientEndpointConfig.Builder.create()

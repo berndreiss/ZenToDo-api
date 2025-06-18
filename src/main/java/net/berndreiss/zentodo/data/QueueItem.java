@@ -21,7 +21,8 @@ public class QueueItem {
     @Column
     private OperationType type;
 
-    @Column
+    @Column(columnDefinition = "TEXT")
+    @Convert(converter = StringListConverter.class)
     private List<String> arguments;
 
     @Column
@@ -58,7 +59,7 @@ public class QueueItem {
         this.arguments = new ArrayList<>();
 
         for (Object o : arguments)
-            this.arguments.add(o.toString());
+            this.arguments.add(o == null ? "" : o.toString());
     }
 
     public Instant getTimeStamp() {

@@ -139,6 +139,13 @@ public class EntryManager implements EntryManagerI {
     }
 
     @Override
+    public void postEntry(Entry entry) {
+        em.getTransaction().begin();
+        em.persist(entry);
+        em.getTransaction().commit();
+    }
+
+    @Override
     public synchronized void swapEntries(long userId, int profile, long id, int position) throws PositionOutOfBoundException {
 
 

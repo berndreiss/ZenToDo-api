@@ -32,8 +32,12 @@ public class ClientStub implements OperationHandlerI {
     private final List<ClientOperationHandlerI> otherHandlers = new ArrayList<>();
     private ExceptionHandler exceptionHandler = _ -> {};
     private Consumer<String> messagePrinter = _ -> {};
-    public static String PROTOCOL = "https://";
-    public static String SERVER = "zentodo.berndreiss.net/api/";
+    public static String WEBSOCKET_PROTOCOL = "ws://";
+    public static String PROTOCOL = "http://";
+    public static String SERVER = "localhost:8080/api/";
+    //public static String WEBSOCKET_PROTOCOL = "wss";
+    //public static String PROTOCOL = "https://";
+    //public static String SERVER = "zentodo.berndreiss.net/api/";
     public  User user;
     public int profile;
     public Status status;
@@ -42,19 +46,24 @@ public class ClientStub implements OperationHandlerI {
     public List<ZenServerMessage> currentMessages = new ArrayList<>();
     private Supplier<String> passwordSupplier;
 
-    public static void  main(String[] args) throws PositionOutOfBoundException {
-        EntityManagerFactory emf = Persistence.createEntityManagerFactory("ZenToDoPU1");
-        Database dbHandler = new DbHandler(emf, null);
-        ClientStub stub = new ClientStub(dbHandler);
+    public static void  main(String[] args) throws PositionOutOfBoundException, InvalidActionException {
+        for (int i = 0; i < 100; i++) {
+            EntityManagerFactory emf = Persistence.createEntityManagerFactory("ZenToDoPU1");
+            Database dbHandler = new DbHandler(emf, null);
+            ClientStub stub = new ClientStub(dbHandler);
+            stub.setMessagePrinter(System.out::println);
+            stub.setExceptionHandler(System.out::println);
+            stub.init("bd_reiss@yahoo.de", null, () -> "Test1234!?");
+            Profile profile1 = dbHandler.getUserManager().addProfile(stub.user.getId());
+            stub.user.setProfile(profile1.getId());
+            System.out.println(stub.user.getProfile());
+            Entry entry = stub.addNewEntry("TEST");
+            //stub.removeEntry(entry.getId());
+            //Optional<Entry> entry1 = stub.getEntry(entry.getId());
 
-        stub.setMessagePrinter(System.out::println);
-        stub.setExceptionHandler(System.out::println);
-        stub.init("bd_reiss@yahoo.de", null, () -> "Test1234!?");
-        Entry entry = stub.addNewEntry("TEST", 0);
-        //stub.removeEntry(entry.getId());
-
-        dbHandler.close();
-        emf.close();
+            dbHandler.close();
+            emf.close();
+        }
     }
     public ClientStub(String email, String userName, Supplier<String> passwordSupplier, @NotNull Database dbHandler){
         this.dbHandler = dbHandler;
@@ -79,7 +88,6 @@ public class ClientStub implements OperationHandlerI {
             if (userOpt.isEmpty()) {
                 String loginRequest = getLoginRequest(email, passwordSupplier.get());
 
-                messagePrinter.accept("STARTING ATTEMPTS");
                 int attempts = 0;
                 while (attempts++ < 10){
 
@@ -227,7 +235,18 @@ public class ClientStub implements OperationHandlerI {
                 return;
             }
 
-            HttpURLConnection connection = sendAuthPostMessage(PROTOCOL + SERVER + "process", jsonifyServerList(dbHandler.getUserManager().getQueued(user.getId())));
+            HttpURLConnection connection = sendAuthGetMessage(PROTOCOL + SERVER + "queue");
+
+            int responseCode = connection.getResponseCode();
+            if (responseCode != 200)
+                throw new Exception("Something went wrong getting data from the server.");
+
+            String response = getBody(connection);
+
+            for (ZenMessage message: parseMessage(getMessage(response)))
+                receiveMessage(message);
+
+            connection = sendAuthPostMessage(PROTOCOL + SERVER + "process", jsonifyServerList(dbHandler.getUserManager().getQueued(user.getId())));
 
             if (connection.getResponseCode() != 200){
                 throw new Exception("Something went wrong sending data to server.");
@@ -266,8 +285,13 @@ public class ClientStub implements OperationHandlerI {
                         exceptionHandler.handle(e);
                 }
 
-                for (ZenMessage zm: messages)
-                    receiveMessage(zm);
+                for (ZenMessage zm: messages) {
+                    try {
+                        receiveMessage(zm);
+                    } catch (DuplicateIdException | InvalidActionException | PositionOutOfBoundException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
             }, this);
             Thread thread = new Thread(() -> client.connect(user.getEmail(), dbHandler.getUserManager().getToken(user.getId()), user.getDevice()));
             thread.start();
@@ -345,7 +369,7 @@ public class ClientStub implements OperationHandlerI {
         return connection;
     }
     //TODO
-    public synchronized HttpURLConnection sendAuthGetMessageBU(String urlString) throws Exception {
+    public synchronized HttpURLConnection sendAuthGetMessage(String urlString) throws Exception {
 
         if (status == Status.DIRTY) {
             HttpURLConnection connection = sendAuthPostMessage(PROTOCOL + SERVER + "process", jsonifyServerList(dbHandler.getUserManager().getQueued(user.getId())));
@@ -552,10 +576,33 @@ public class ClientStub implements OperationHandlerI {
         return (JSONArray) obj.get("message");
     }
 
-    private void receiveMessage(ZenMessage message){
+    private void receiveMessage(ZenMessage message) throws DuplicateIdException, InvalidActionException, PositionOutOfBoundException {
         //TODO CHECK VALIDITY
         switch (message.type){
-            case POST -> {}
+            case POST -> {
+                List<Object> args = message.arguments;
+                int profile = Integer.parseInt(args.get(0).toString());
+                long id = Long.parseLong(args.get(1).toString());
+                String task = args.get(2).toString();
+                int position = Integer.parseInt(args.get(3).toString());
+                boolean focus = Boolean.parseBoolean(args.get(4).toString());
+                boolean dropped = Boolean.parseBoolean(args.get(5).toString());
+                Long list = args.get(6).toString().isEmpty() ? null : Long.parseLong(args.get(6).toString());
+                Integer listPosition = args.get(7).toString().isEmpty() ? null : Integer.parseInt(args.get(7).toString());
+                Instant reminderDate = args.get(8).toString().isEmpty() ? null : Instant.parse(args.get(8).toString());
+                String recurrence = args.get(9).toString().isEmpty() ? null : args.get(9).toString();
+
+                Entry entry = new Entry(user.getId(), profile, task, position);
+                entry.setId(id);
+                entry.setFocus(focus);
+                entry.setDropped(dropped);
+                entry.setList(list);
+                entry.setListPosition(listPosition);
+                entry.setReminderDate(reminderDate);
+                entry.setRecurrence(recurrence);
+
+                dbHandler.getEntryManager().postEntry(entry);
+            }
             case ADD_NEW_ENTRY -> {
                 List<Object> args = message.arguments;
                 int profile = Integer.parseInt(args.get(0).toString());
@@ -574,7 +621,11 @@ public class ClientStub implements OperationHandlerI {
                 }
                 Entry finalEntry = entry;
                 otherHandlers.forEach(handler ->{
+                    try {
                         handler.addNewEntry(finalEntry);
+                    } catch (PositionOutOfBoundException | DuplicateIdException | InvalidActionException e) {
+                        throw new RuntimeException(e);
+                    }
                 });
             }
             case DELETE -> {
@@ -618,13 +669,6 @@ public class ClientStub implements OperationHandlerI {
                     //TODO HANDLE
                 }
             }
-            case UPDATE_LIST -> {
-                int profile = Integer.parseInt(message.arguments.get(0).toString());
-                long id = Long.parseLong(message.arguments.get(1).toString());
-                Long list = Long.parseLong(message.arguments.get(2).toString());
-                dbHandler.getListManager().updateList(user.getId(), profile, id, list);
-                otherHandlers.forEach(h -> h.updateList(id, list));
-            }
             case UPDATE_TASK -> {
                 int profile = Integer.parseInt(message.arguments.get(0).toString());
                 long id = Long.parseLong(message.arguments.get(1).toString());
@@ -646,12 +690,12 @@ public class ClientStub implements OperationHandlerI {
                 dbHandler.getEntryManager().updateDropped(user.getId(), profile, id, dropped);
                 otherHandlers.forEach(h -> h.updateDropped(id, dropped));
             }
-            case UPDATE_RECURRENCE -> {
+            case UPDATE_LIST -> {
                 int profile = Integer.parseInt(message.arguments.get(0).toString());
                 long id = Long.parseLong(message.arguments.get(1).toString());
-                String recurrence = message.arguments.get(2).toString();
-                dbHandler.getEntryManager().updateRecurrence(user.getId(), profile, id, recurrence);
-                otherHandlers.forEach(h -> h.updateRecurrence(id, recurrence));
+                Long list = Long.parseLong(message.arguments.get(2).toString());
+                dbHandler.getListManager().updateList(user.getId(), profile, id, list);
+                otherHandlers.forEach(h -> h.updateList(id, list));
             }
             case UPDATE_REMINDER_DATE -> {
                 int profile = Integer.parseInt(message.arguments.get(0).toString());
@@ -660,11 +704,22 @@ public class ClientStub implements OperationHandlerI {
                 dbHandler.getEntryManager().updateReminderDate(user.getId(), profile, id, date);
                 otherHandlers.forEach(h -> h.updateReminderDate(id, date));
             }
+            case UPDATE_RECURRENCE -> {
+                int profile = Integer.parseInt(message.arguments.get(0).toString());
+                long id = Long.parseLong(message.arguments.get(1).toString());
+                String recurrence = message.arguments.get(2).toString();
+                dbHandler.getEntryManager().updateRecurrence(user.getId(), profile, id, recurrence);
+                otherHandlers.forEach(h -> h.updateRecurrence(id, recurrence));
+            }
             case UPDATE_LIST_COLOR -> {
                 long list = Long.parseLong(message.arguments.get(0).toString());
                 String color = message.arguments.get(1).toString();
                 dbHandler.getListManager().updateListColor(list, color);
                 otherHandlers.forEach(h -> h.updateListColor(list, color));
+            }
+            case UPDATE_USER_NAME -> {
+                String name = message.arguments.get(0).toString();
+                dbHandler.getUserManager().updateUserName(user.getId(), name);
             }
             case UPDATE_MAIL -> {
                 String mail = message.arguments.get(0).toString();
@@ -674,9 +729,8 @@ public class ClientStub implements OperationHandlerI {
                     //TODO HANDLE
                 }
             }
-            case UPDATE_USER_NAME -> {
-                String name = message.arguments.get(0).toString();
-                dbHandler.getUserManager().updateUserName(user.getId(), name);
+            case UPDATE_ID -> {
+                //TODO IMPLEMENT
             }
         }
 
@@ -711,25 +765,36 @@ public class ClientStub implements OperationHandlerI {
     @Override
     public synchronized Entry addNewEntry(String task) {
         Entry entry = dbHandler.getEntryManager().addNewEntry(user == null ? 0 : user.getId(), user == null ? profile : user.getProfile(), task);
-        return entry == null ? null : addNewEntry(entry);
+        if (entry != null)
+            sendAddEntryUpdate(entry);
+        return entry;
     }
     @Override
     public synchronized Entry addNewEntry(String task, int position) throws PositionOutOfBoundException {
         Entry entry = dbHandler.getEntryManager().addNewEntry(user == null ? 0 : user.getId(), user == null ? profile : user.getProfile(), task, position);
-        return addNewEntry(entry);
+        if (entry != null)
+            sendAddEntryUpdate(entry);
+        return entry;
     }
 
+    //TODO THIS IS NOT IDEAL
     @Override
-    public synchronized Entry addNewEntry(Entry entry) {
+    public synchronized Entry addNewEntry(Entry entry) throws PositionOutOfBoundException, DuplicateIdException, InvalidActionException {
+        Entry persistedEntry = dbHandler.getEntryManager().addNewEntry(user == null ? 0 : user.getId(), user == null ? profile : user.getProfile(), entry.getId(), entry.getTask(), entry.getPosition());
+        if (persistedEntry == null)
+            return null;
+        sendAddEntryUpdate(persistedEntry);
+        return persistedEntry;
+    }
+
+    private void sendAddEntryUpdate(Entry entry){
         List<Object> arguments = new ArrayList<>();
         arguments.add(user.getProfile());
         arguments.add(entry.getId());
         arguments.add(entry.getTask());
         arguments.add(entry.getPosition());
         sendUpdate(OperationType.ADD_NEW_ENTRY, arguments);
-        return entry;
     }
-
 
     @Override
     public synchronized void removeEntry(long id) {

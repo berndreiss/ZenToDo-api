@@ -20,6 +20,7 @@ public interface EntryManagerI {
     */
    ;
 
+   void postEntry(Entry entry);
 
    Entry addNewEntry(long userId, int profile, String task);
 
