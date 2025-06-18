@@ -30,7 +30,7 @@ public class User {
     @Column (nullable = false)
     private int profile;
 
-    @Column
+    @Column(columnDefinition = "TEXT")
     private String clock;
 
     @Column
