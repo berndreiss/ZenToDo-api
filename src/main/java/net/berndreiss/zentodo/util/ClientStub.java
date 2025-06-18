@@ -32,12 +32,12 @@ public class ClientStub implements OperationHandlerI {
     private final List<ClientOperationHandlerI> otherHandlers = new ArrayList<>();
     private ExceptionHandler exceptionHandler = _ -> {};
     private Consumer<String> messagePrinter = _ -> {};
-    public static String WEBSOCKET_PROTOCOL = "ws://";
-    public static String PROTOCOL = "http://";
-    public static String SERVER = "localhost:8080/api/";
-    //public static String WEBSOCKET_PROTOCOL = "wss";
-    //public static String PROTOCOL = "https://";
-    //public static String SERVER = "zentodo.berndreiss.net/api/";
+    //public static String WEBSOCKET_PROTOCOL = "ws://";
+    //public static String PROTOCOL = "http://";
+    //public static String SERVER = "localhost:8080/api/";
+    public static String WEBSOCKET_PROTOCOL = "wss://";
+    public static String PROTOCOL = "https://";
+    public static String SERVER = "zentodo.berndreiss.net/api/";
     public  User user;
     public int profile;
     public Status status;
@@ -47,17 +47,17 @@ public class ClientStub implements OperationHandlerI {
     private Supplier<String> passwordSupplier;
 
     public static void  main(String[] args) throws PositionOutOfBoundException, InvalidActionException {
-        for (int i = 0; i < 100; i++) {
+        for (int i = 0; i < 1; i++) {
             EntityManagerFactory emf = Persistence.createEntityManagerFactory("ZenToDoPU1");
             Database dbHandler = new DbHandler(emf, null);
             ClientStub stub = new ClientStub(dbHandler);
             stub.setMessagePrinter(System.out::println);
             stub.setExceptionHandler(System.out::println);
             stub.init("bd_reiss@yahoo.de", null, () -> "Test1234!?");
-            Profile profile1 = dbHandler.getUserManager().addProfile(stub.user.getId());
-            stub.user.setProfile(profile1.getId());
-            System.out.println(stub.user.getProfile());
-            Entry entry = stub.addNewEntry("TEST");
+            //Profile profile1 = dbHandler.getUserManager().addProfile(stub.user.getId());
+            //stub.user.setProfile(profile1.getId());
+            //System.out.println(stub.user.getProfile());
+            //Entry entry = stub.addNewEntry("TEST");
             //stub.removeEntry(entry.getId());
             //Optional<Entry> entry1 = stub.getEntry(entry.getId());
 
@@ -235,7 +235,7 @@ public class ClientStub implements OperationHandlerI {
                 return;
             }
 
-            HttpURLConnection connection = sendAuthGetMessage(PROTOCOL + SERVER + "queue");
+            HttpURLConnection connection = sendAuthPostMessage(PROTOCOL + SERVER + "queue", "");
 
             int responseCode = connection.getResponseCode();
             if (responseCode != 200)
