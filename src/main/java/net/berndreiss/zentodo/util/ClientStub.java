@@ -56,8 +56,7 @@ public class ClientStub implements OperationHandlerI {
             stub.init("bd_reiss@yahoo.de", null, () -> "Test1234!?");
             //Profile profile1 = dbHandler.getUserManager().addProfile(stub.user.getId());
             //stub.user.setProfile(profile1.getId());
-            //System.out.println(stub.user.getProfile());
-            //Entry entry = stub.addNewEntry("TEST");
+            Entry entry = stub.addNewEntry("Test");
             //stub.removeEntry(entry.getId());
             //Optional<Entry> entry1 = stub.getEntry(entry.getId());
 
@@ -612,12 +611,10 @@ public class ClientStub implements OperationHandlerI {
                 Entry entry = null;
                 try {
                         entry =dbHandler.getEntryManager().addNewEntry(user.getId(), profile, id, task, position);
-                } catch (PositionOutOfBoundException e){
+                } catch (PositionOutOfBoundException | DuplicateIdException | InvalidActionException e){
+                    if (exceptionHandler != null)
+                        exceptionHandler.handle(e);
 
-                } catch (DuplicateIdException e) {
-                    throw new RuntimeException(e);
-                } catch (InvalidActionException e) {
-                    throw new RuntimeException(e);
                 }
                 Entry finalEntry = entry;
                 otherHandlers.forEach(handler ->{
