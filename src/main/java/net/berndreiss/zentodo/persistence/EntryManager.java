@@ -100,15 +100,20 @@ public class EntryManager implements EntryManagerI {
         if (existingEntry.isPresent())
             throw new DuplicateIdException("Entry with id already exists: id " + id);
         Entry entry = new Entry(userId, profile, id, task, position);
-        em.getTransaction().begin();
-        for (Entry e: entries){
-            if (e.getPosition() >= position) {
-                e.setPosition(e.getPosition() + 1);
-                em.merge(e);
+        try {
+            em.getTransaction().begin();
+            for (Entry e : entries) {
+                if (e.getPosition() >= position) {
+                    e.setPosition(e.getPosition() + 1);
+                    em.merge(e);
+                }
             }
+            em.merge(entry);
+            em.getTransaction().commit();
+        } catch(RuntimeException e){
+            if (em.getTransaction().isActive())
+                em.getTransaction().rollback();
         }
-        em.merge(entry);
-        em.getTransaction().commit();
         return entry;
     }
 

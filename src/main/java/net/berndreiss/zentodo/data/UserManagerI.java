@@ -13,15 +13,15 @@ public interface UserManagerI {
      * @param email
      * @param userName
      */
-    User addUser(long userId, String email, String userName, int device) throws DuplicateIdException, InvalidActionException;
-    Profile addProfile(long userId, String name) throws InvalidActionException;
-    Profile addProfile(long userId) throws InvalidActionException;
+    User addUser(long userId, String email, String userName, Integer device) throws DuplicateUserIdException, InvalidUserActionException;
+    Profile addProfile(long userId, String name) throws InvalidUserActionException;
+    Profile addProfile(long userId) throws InvalidUserActionException;
 
     /**
      * TODO
      */
-    void removeUser(long userId) throws InvalidActionException;
-    void removeProfile(long userId, int profileId) throws InvalidActionException;
+    void removeUser(long userId) throws InvalidUserActionException;
+    void removeProfile(long userId, int profileId) throws InvalidUserActionException;
 
     /**
      *
@@ -56,7 +56,7 @@ public interface UserManagerI {
      * @param id
      * @param email
      */
-    void updateEmail(Long userId, String email) throws  InvalidActionException;
+    void updateEmail(Long userId, String email) throws  InvalidUserActionException;
 
     /**
      * TODO

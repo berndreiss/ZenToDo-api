@@ -24,8 +24,8 @@ public class User {
     @Column
     private boolean enabled = false;
 
-    @Column (nullable = false)
-    private int device;
+    @Column
+    private Integer device;
 
     @Column (nullable = false)
     private int profile;
@@ -36,7 +36,7 @@ public class User {
     @Column
     private String password;
 
-    @OneToMany (mappedBy = "user", cascade = CascadeType.REMOVE, orphanRemoval = true,  fetch = FetchType.EAGER)
+    @OneToMany (mappedBy = "deviceId.user", cascade = CascadeType.REMOVE, orphanRemoval = true,  fetch = FetchType.EAGER)
     private List<Device> devices = new ArrayList<>();
 
     @OneToMany (mappedBy = "profileId.user", cascade = CascadeType.REMOVE, orphanRemoval = true,  fetch = FetchType.EAGER)
@@ -56,11 +56,11 @@ public class User {
         this.userName = userName;
     }
 
-    public User(String email, int device){
+    public User(String email, Integer device){
         this.email = email;
         this.device = device;
     }
-    public User(String email, String username, int device){
+    public User(String email, String username, Integer device){
         this.email = email;
         this.userName = username;
         this.device = device;
@@ -98,9 +98,9 @@ public class User {
         this.enabled = enabled;
     }
 
-    public int getDevice(){return device;}
+    public Integer getDevice(){return device;}
 
-    public void setDevice(int device){this.device = device;}
+    public void setDevice(Integer device){this.device = device;}
 
     public int getProfile(){return profile;}
 

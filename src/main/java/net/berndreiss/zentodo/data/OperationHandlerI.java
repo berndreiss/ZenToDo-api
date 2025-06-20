@@ -1,6 +1,7 @@
 package net.berndreiss.zentodo.data;
 
 import java.io.IOException;
+import java.net.ConnectException;
 import java.net.URISyntaxException;
 import java.time.Instant;
 import java.util.List;
@@ -15,10 +16,10 @@ public interface OperationHandlerI {
 
 
 
-    Entry addNewEntry(Entry entry) throws PositionOutOfBoundException, DuplicateIdException, InvalidActionException;
+    Entry addNewEntry(Entry entry) throws PositionOutOfBoundException, DuplicateIdException, InvalidActionException, ConnectException;
 
-    Entry addNewEntry(String task) throws PositionOutOfBoundException;
-    Entry addNewEntry(String task, int position) throws PositionOutOfBoundException;
+    Entry addNewEntry(String task) throws PositionOutOfBoundException, ConnectException;
+    Entry addNewEntry(String task, int position) throws PositionOutOfBoundException, ConnectException;
 
     /**
      * Delete entry from database including the local queue(s). All entries with position greater than the deleted
@@ -26,7 +27,7 @@ public interface OperationHandlerI {
      *
      * @param id the id of the entry to be deleted
      */
-    void removeEntry(long id);
+    void removeEntry(long id) throws ConnectException;
 
     Optional<Entry> getEntry(long id);
 
@@ -45,7 +46,7 @@ public interface OperationHandlerI {
      * @param id the id of the entry to be moved
      * @param position the position with which to swap
      */
-    void swapEntries(long id, int position) throws PositionOutOfBoundException;
+    void swapEntries(long id, int position) throws PositionOutOfBoundException, ConnectException;
 
     /**
      * Swap entry in list with entry at position.
@@ -53,7 +54,7 @@ public interface OperationHandlerI {
      * @param id the id of the entry to be moved
      * @param position the position with which to swap
      */
-    void swapListEntries(long list, long id, int position) throws PositionOutOfBoundException;
+    void swapListEntries(long list, long id, int position) throws PositionOutOfBoundException, ConnectException;
 
     /**
      * Update the task with the value provided.
@@ -61,7 +62,7 @@ public interface OperationHandlerI {
      * @param id the id of the task to be updated
      * @param value the value to update with
      */
-    void updateTask(long id, String value);
+    void updateTask(long id, String value) throws ConnectException;
 
     /**
      * Update the field with the value provided.
@@ -69,7 +70,7 @@ public interface OperationHandlerI {
      * @param id the id of the task to be updated
      * @param value the value to update with
      */
-    void updateFocus(long id, boolean value);
+    void updateFocus(long id, boolean value) throws ConnectException;
 
     /**
      * Update the field with the value provided.
@@ -77,7 +78,7 @@ public interface OperationHandlerI {
      * @param id the id of the task to be updated
      * @param value the value to update with
      */
-    void updateDropped(long id, boolean value);
+    void updateDropped(long id, boolean value) throws ConnectException;
 
     /**
      * Update the list field and the position with the value provided and increment all list items list positions greater than the position.
@@ -85,7 +86,7 @@ public interface OperationHandlerI {
      *
      * @param id the id of the task to be updated
      */
-    void updateList(long id, Long newId);
+    void updateList(long id, Long newId) throws ConnectException;
 
     /**
      * Update the field with the value provided.
@@ -93,7 +94,7 @@ public interface OperationHandlerI {
      * @param id the id of the task to be updated
      * @param value the value to update with
      */
-    void updateReminderDate(long id, Instant value);
+    void updateReminderDate(long id, Instant value) throws ConnectException;
 
     /**
      * Update the field with the value provided. Also needs to update the reminder date.
@@ -101,7 +102,7 @@ public interface OperationHandlerI {
      * @param id the id of the task to be updated
      * @param value the value to update with
      */
-    void updateRecurrence(long id, String value);
+    void updateRecurrence(long id, String value) throws ConnectException;
 
     /**
      *
@@ -110,13 +111,13 @@ public interface OperationHandlerI {
      * @param list the list to change
      * @param color the color to put
      */
-    void updateListColor(long list, String color);
+    void updateListColor(long list, String color) throws ConnectException;
 
     /**
      * TODO
      * @param name
      */
-    void updateUserName(String name);
+    void updateUserName(String name) throws ConnectException;
 
     /**
      * TODO

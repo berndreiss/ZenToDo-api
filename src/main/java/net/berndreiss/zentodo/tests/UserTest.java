@@ -182,7 +182,8 @@ public class UserTest {
         userManager.setDevice(user.getId(), 1);
         Optional<User> userReturned = userManager.getUser(user.getId());
         Assert.assertTrue(userReturned.isPresent());
-        Assert.assertEquals("Device was not set for user.", 1, userReturned.get().getDevice());
+        Assert.assertNotNull(userReturned.get().getDevice());
+        Assert.assertEquals("Device was not set for user.", 1, Integer.parseInt(String.valueOf(userReturned.get().getDevice())));
         database.close();
 
     }

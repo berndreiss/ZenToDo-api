@@ -1,7 +1,6 @@
 package net.berndreiss.zentodo.persistence;
 
 import jakarta.persistence.EntityManager;
-import jakarta.persistence.criteria.CriteriaBuilder;
 import net.berndreiss.zentodo.data.*;
 import net.berndreiss.zentodo.util.VectorClock;
 import net.berndreiss.zentodo.util.ZenServerMessage;
@@ -42,14 +41,14 @@ public class UserManager implements UserManagerI {
     }
 
     @Override
-    public synchronized void updateEmail(Long userId, String email) throws InvalidActionException {
+    public synchronized void updateEmail(Long userId, String email) throws InvalidUserActionException {
         Optional<User> user = getUser(userId);
 
         if (user.isEmpty() || user.get().getEmail().equals(email))
             return;
         Optional<User> userWithMail = getUserByEmail(email);
         if (userWithMail.isPresent())
-            throw new InvalidActionException("User with mail address already exists: mail " + email);
+            throw new InvalidUserActionException("User with mail address already exists: mail " + email);
         user.get().setEmail(email);
         em.getTransaction().begin();
         em.merge(user.get());
@@ -73,14 +72,14 @@ public class UserManager implements UserManagerI {
     }
 
     @Override
-    public synchronized User addUser(long id, String email, String userName, int device) throws DuplicateIdException, InvalidActionException{
+    public synchronized User addUser(long id, String email, String userName, Integer device) throws DuplicateUserIdException, InvalidUserActionException{
 
         Optional<User> userOpt = getUser(id);
         if (userOpt.isPresent())
-            throw new DuplicateIdException("User with id already exists: id " + id);
+            throw new DuplicateUserIdException("User with id already exists: id " + id);
         userOpt = getUserByEmail(email);
         if (userOpt.isPresent())
-            throw new InvalidActionException("User with mail already exists: mail " + email);
+            throw new InvalidUserActionException("User with mail already exists: mail " + email);
         em.getTransaction().begin();
         User user = new User(email, userName, device);
         user.setId(id);
@@ -99,15 +98,15 @@ public class UserManager implements UserManagerI {
     }
 
     @Override
-    public synchronized Profile addProfile(long userId) throws InvalidActionException {
+    public synchronized Profile addProfile(long userId) throws InvalidUserActionException {
         return addProfile(userId, null);
 
     }
 
     @Override
-    public synchronized Profile addProfile(long userId, String name) throws InvalidActionException {
+    public synchronized Profile addProfile(long userId, String name) throws InvalidUserActionException {
         if (getUser(userId).isEmpty())
-            throw new InvalidActionException("User does not exist");
+            throw new InvalidUserActionException("User does not exist");
         em.getTransaction().begin();
         User user = em.createQuery("SELECT u FROM User u WHERE u.id = :userId", User.class)
                     .setParameter("userId", userId)
@@ -126,9 +125,9 @@ public class UserManager implements UserManagerI {
     }
 
     @Override
-    public synchronized void removeUser(long userId) throws InvalidActionException {
+    public synchronized void removeUser(long userId) throws InvalidUserActionException {
         if (userId == 0)
-            throw new InvalidActionException("Cannot remove default user.");
+            throw new InvalidUserActionException("Cannot remove default user.");
         em.getTransaction().begin();
         em.createQuery("DELETE FROM Profile p WHERE p.profileId.user.id = :userId")
                 .setParameter("userId", userId)
@@ -141,14 +140,14 @@ public class UserManager implements UserManagerI {
     }
 
     @Override
-    public synchronized void removeProfile(long userId, int profileId) throws InvalidActionException {
+    public synchronized void removeProfile(long userId, int profileId) throws InvalidUserActionException {
 
         if (userId == 0 && profileId == 0)
-            throw new InvalidActionException("Cannot remove the default profile for user");
+            throw new InvalidUserActionException("Cannot remove the default profile for user");
 
         List<Profile> profiles = getProfiles(userId);
         if (profiles.size() == 1)
-            throw new InvalidActionException("Cannot remove last profile for user " + userId);
+            throw new InvalidUserActionException("Cannot remove last profile for user " + userId);
 
         em.getTransaction().begin();
         em.createQuery("DELETE FROM Entry e WHERE e.userId = :userId AND e.profile = :profileId")

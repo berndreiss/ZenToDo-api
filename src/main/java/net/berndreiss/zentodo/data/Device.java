@@ -8,27 +8,25 @@ import java.time.Instant;
 @Table (name="devices")
 public class Device {
 
-    @Id
-    @Column (nullable = false)
-    private int id;
+    @EmbeddedId
+    private DeviceId deviceId;
 
     @Column
     private Instant expiration;
-
-    @ManyToOne
-    @JoinColumn(name = "user_id",nullable = false)
-    private User user;
 
     public Device() {
     }
 
     public int getId() {
-        return id;
+        return deviceId.getId();
     }
 
     public void setId(int id) {
-        this.id = id;
+        this.deviceId.setId(id);
     }
+
+    public DeviceId getDeviceId() {return this.deviceId;}
+    public void setDeviceId(DeviceId deviceId){this.deviceId = deviceId;}
 
     public Instant getExpiration() {
         return expiration;
@@ -39,10 +37,10 @@ public class Device {
     }
 
     public User getUser() {
-        return user;
+        return deviceId.getUser();
     }
 
     public void setUser(User user) {
-        this.user = user;
+        this.deviceId.setUser(user);
     }
 }

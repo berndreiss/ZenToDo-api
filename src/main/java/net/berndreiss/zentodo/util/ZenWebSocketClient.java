@@ -2,6 +2,7 @@ package net.berndreiss.zentodo.util;
 
 import jakarta.websocket.*;
 
+import java.io.IOException;
 import java.net.*;
 import java.util.Collections;
 import java.util.List;
@@ -59,14 +60,18 @@ public class ZenWebSocketClient extends Endpoint {
         this.clientStub = clientStub;
     }
 
-    public void connect(String email, String token, long device) {
-        try {
+    public void connect(String email, String token, long device) throws DeploymentException, IOException {
 
             WebSocketContainer container = ContainerProvider.getWebSocketContainer();
-            URI serverUri = new URI(ClientStub.WEBSOCKET_PROTOCOL + ClientStub.SERVER + WEBSOCKET_ENDPOINT);
+        URI serverUri = null;
+        try {
+            serverUri = new URI(ClientStub.WEBSOCKET_PROTOCOL + ClientStub.SERVER + WEBSOCKET_ENDPOINT);
+        } catch (URISyntaxException e) {
+            throw new RuntimeException(e);
+        }
 
 
-            ClientEndpointConfig config = ClientEndpointConfig.Builder.create()
+        ClientEndpointConfig config = ClientEndpointConfig.Builder.create()
                     .configurator(new ClientEndpointConfig.Configurator(){
                         @Override
                         public void beforeRequest(Map<String, List<String>> headers){
@@ -79,8 +84,5 @@ public class ZenWebSocketClient extends Endpoint {
 
             container.connectToServer(this, config, serverUri);
 
-        } catch (Exception e) {
-            clientStub.getExceptionHandler().handle(e);
-        }
     }
 }
