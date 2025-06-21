@@ -1,7 +1,7 @@
 package net.berndreiss.zentodo.data;
 
 import jakarta.persistence.*;
-import net.berndreiss.zentodo.OperationType;
+import net.berndreiss.zentodo.operations.OperationType;
 
 import java.time.Instant;
 import java.util.ArrayList;

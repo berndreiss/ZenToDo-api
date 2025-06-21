@@ -12,7 +12,7 @@ import java.util.function.Consumer;
 @ClientEndpoint
 public class ZenWebSocketClient extends Endpoint {
 
-    public final static String WEBSOCKET_ENDPOINT = "wss/pubsub";
+    public final static String WEBSOCKET_ENDPOINT = "/wss/pubsub";
 
     private Session session;
     private Consumer<String> messageConsumer;
@@ -65,7 +65,7 @@ public class ZenWebSocketClient extends Endpoint {
             WebSocketContainer container = ContainerProvider.getWebSocketContainer();
         URI serverUri = null;
         try {
-            serverUri = new URI(ClientStub.WEBSOCKET_PROTOCOL + ClientStub.SERVER + WEBSOCKET_ENDPOINT);
+            serverUri = new URI(ClientStub.WEBSOCKET_PROTOCOL + "://" + ClientStub.SERVER + WEBSOCKET_ENDPOINT);
         } catch (URISyntaxException e) {
             throw new RuntimeException(e);
         }

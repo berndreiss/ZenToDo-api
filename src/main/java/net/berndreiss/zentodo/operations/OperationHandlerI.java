@@ -1,4 +1,10 @@
-package net.berndreiss.zentodo.data;
+package net.berndreiss.zentodo.operations;
+
+import net.berndreiss.zentodo.data.Entry;
+import net.berndreiss.zentodo.data.TaskList;
+import net.berndreiss.zentodo.exceptions.DuplicateIdException;
+import net.berndreiss.zentodo.exceptions.InvalidActionException;
+import net.berndreiss.zentodo.exceptions.PositionOutOfBoundException;
 
 import java.io.IOException;
 import java.net.ConnectException;

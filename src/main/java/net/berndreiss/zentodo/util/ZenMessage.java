@@ -1,7 +1,6 @@
 package net.berndreiss.zentodo.util;
 
-import jdk.dynalink.linker.support.CompositeTypeBasedGuardingDynamicLinker;
-import net.berndreiss.zentodo.OperationType;
+import net.berndreiss.zentodo.operations.OperationType;
 import org.json.JSONArray;
 import org.json.JSONObject;
 

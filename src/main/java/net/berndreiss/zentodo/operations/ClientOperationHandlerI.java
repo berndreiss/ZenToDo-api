@@ -1,5 +1,7 @@
-package net.berndreiss.zentodo.data;
+package net.berndreiss.zentodo.operations;
 
+import net.berndreiss.zentodo.data.Entry;
+import net.berndreiss.zentodo.data.User;
 import net.berndreiss.zentodo.util.VectorClock;
 import net.berndreiss.zentodo.util.ZenServerMessage;
 

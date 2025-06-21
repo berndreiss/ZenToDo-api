@@ -1,10 +1,14 @@
 package net.berndreiss.zentodo.tests;
 
-import jakarta.persistence.criteria.CriteriaBuilder;
-import net.berndreiss.zentodo.OperationType;
+import net.berndreiss.zentodo.operations.OperationType;
 import net.berndreiss.zentodo.data.*;
+import net.berndreiss.zentodo.data.Entry;
+import net.berndreiss.zentodo.data.Profile;
+import net.berndreiss.zentodo.data.TaskList;
+import net.berndreiss.zentodo.data.User;
+import net.berndreiss.zentodo.exceptions.DuplicateIdException;
+import net.berndreiss.zentodo.exceptions.InvalidActionException;
 import net.berndreiss.zentodo.util.VectorClock;
-import net.berndreiss.zentodo.util.ZenMessage;
 import net.berndreiss.zentodo.util.ZenServerMessage;
 import org.junit.After;
 import org.junit.Assert;

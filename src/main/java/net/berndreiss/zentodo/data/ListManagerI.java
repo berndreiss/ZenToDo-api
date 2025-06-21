@@ -1,5 +1,8 @@
 package net.berndreiss.zentodo.data;
 
+import net.berndreiss.zentodo.exceptions.InvalidActionException;
+import net.berndreiss.zentodo.exceptions.PositionOutOfBoundException;
+
 import java.util.List;
 import java.util.Optional;
 

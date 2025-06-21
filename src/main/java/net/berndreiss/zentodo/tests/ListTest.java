@@ -1,14 +1,18 @@
 package net.berndreiss.zentodo.tests;
 
 import net.berndreiss.zentodo.data.*;
-import net.berndreiss.zentodo.persistence.ListManager;
+import net.berndreiss.zentodo.data.Entry;
+import net.berndreiss.zentodo.data.TaskList;
+import net.berndreiss.zentodo.data.User;
+import net.berndreiss.zentodo.exceptions.DuplicateIdException;
+import net.berndreiss.zentodo.exceptions.InvalidActionException;
+import net.berndreiss.zentodo.exceptions.PositionOutOfBoundException;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
 

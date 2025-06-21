@@ -1,5 +1,9 @@
 package net.berndreiss.zentodo.data;
 
+import net.berndreiss.zentodo.exceptions.DuplicateIdException;
+import net.berndreiss.zentodo.exceptions.InvalidActionException;
+import net.berndreiss.zentodo.exceptions.PositionOutOfBoundException;
+
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;

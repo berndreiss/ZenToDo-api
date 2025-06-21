@@ -1,8 +1,12 @@
 package net.berndreiss.zentodo.tests;
 
-import jakarta.persistence.EntityManagerFactory;
 import net.berndreiss.zentodo.data.*;
 
+import net.berndreiss.zentodo.data.Entry;
+import net.berndreiss.zentodo.data.Profile;
+import net.berndreiss.zentodo.data.TaskList;
+import net.berndreiss.zentodo.data.User;
+import net.berndreiss.zentodo.exceptions.InvalidActionException;
 import org.junit.*;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;

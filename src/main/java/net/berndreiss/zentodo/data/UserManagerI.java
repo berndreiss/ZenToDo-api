@@ -1,5 +1,7 @@
 package net.berndreiss.zentodo.data;
 
+import net.berndreiss.zentodo.exceptions.DuplicateUserIdException;
+import net.berndreiss.zentodo.exceptions.InvalidUserActionException;
 import net.berndreiss.zentodo.util.VectorClock;
 import net.berndreiss.zentodo.util.ZenServerMessage;
 

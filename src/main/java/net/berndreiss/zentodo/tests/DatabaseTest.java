@@ -1,7 +1,7 @@
 package net.berndreiss.zentodo.tests;
 
 import net.berndreiss.zentodo.data.Database;
-import net.berndreiss.zentodo.data.InvalidActionException;
+import net.berndreiss.zentodo.exceptions.InvalidActionException;
 import net.berndreiss.zentodo.data.Profile;
 import net.berndreiss.zentodo.data.User;
 import org.junit.After;

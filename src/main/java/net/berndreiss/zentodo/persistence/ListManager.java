@@ -3,9 +3,10 @@ package net.berndreiss.zentodo.persistence;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.NoResultException;
 import net.berndreiss.zentodo.data.*;
+import net.berndreiss.zentodo.exceptions.InvalidActionException;
+import net.berndreiss.zentodo.exceptions.PositionOutOfBoundException;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 public class ListManager implements ListManagerI {
     private EntityManager em;

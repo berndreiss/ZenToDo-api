@@ -1,6 +1,6 @@
 package net.berndreiss.zentodo.util;
 
-import net.berndreiss.zentodo.OperationType;
+import net.berndreiss.zentodo.operations.OperationType;
 import org.json.JSONObject;
 
 import java.time.Instant;

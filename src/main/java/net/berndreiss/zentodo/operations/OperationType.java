@@ -1,4 +1,4 @@
-package net.berndreiss.zentodo;
+package net.berndreiss.zentodo.operations;
 
 /**
  * Possible operations when interacting with the server. The arguments that have to be passed are in the comments

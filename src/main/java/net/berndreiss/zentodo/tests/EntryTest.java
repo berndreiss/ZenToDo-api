@@ -1,16 +1,17 @@
 package net.berndreiss.zentodo.tests;
 
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.EntityManagerFactory;
-import jakarta.persistence.Persistence;
 import net.berndreiss.zentodo.data.*;
+import net.berndreiss.zentodo.data.Entry;
+import net.berndreiss.zentodo.data.User;
+import net.berndreiss.zentodo.exceptions.DuplicateIdException;
+import net.berndreiss.zentodo.exceptions.InvalidActionException;
+import net.berndreiss.zentodo.exceptions.PositionOutOfBoundException;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 

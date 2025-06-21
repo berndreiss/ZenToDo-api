@@ -2,6 +2,10 @@ package net.berndreiss.zentodo.persistence;
 
 import jakarta.persistence.EntityManager;
 import net.berndreiss.zentodo.data.*;
+import net.berndreiss.zentodo.data.Entry;
+import net.berndreiss.zentodo.exceptions.DuplicateIdException;
+import net.berndreiss.zentodo.exceptions.InvalidActionException;
+import net.berndreiss.zentodo.exceptions.PositionOutOfBoundException;
 
 import java.time.Instant;
 import java.util.*;

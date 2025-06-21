@@ -2,6 +2,10 @@ package net.berndreiss.zentodo.persistence;
 
 import jakarta.persistence.EntityManagerFactory;
 import net.berndreiss.zentodo.data.*;
+import net.berndreiss.zentodo.data.Profile;
+import net.berndreiss.zentodo.data.User;
+import net.berndreiss.zentodo.exceptions.DuplicateIdException;
+import net.berndreiss.zentodo.exceptions.InvalidActionException;
 
 import java.util.List;
 import java.util.Optional;
@@ -32,7 +36,7 @@ public class DbHandler extends Database implements  AutoCloseable {
         }
         try {
             getUserManager().addUser(0L, "default213498jfpq0r9u3@deqaowroiqur2urfault.net", "Default User", 0);
-        } catch (DuplicateIdException |InvalidActionException _) {}
+        } catch (DuplicateIdException | InvalidActionException _) {}
     }
 
     @Override
