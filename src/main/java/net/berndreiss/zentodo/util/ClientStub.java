@@ -15,6 +15,8 @@ import net.berndreiss.zentodo.persistence.DbHandler;
 import net.berndreiss.zentodo.data.*;
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.net.*;
@@ -33,8 +35,12 @@ import java.util.stream.Collectors;
 
 /**
  * A client stub for communication with the server.
+ * Default user
+ * Queue
  */
 public class ClientStub implements OperationHandlerI {
+
+    private static final Logger logger = LoggerFactory.getLogger(ClientStub.class);
 
     /** The websocket client for allowing the server to synch data live*/
     private ZenWebSocketClient webSocketClient;
@@ -63,7 +69,8 @@ public class ClientStub implements OperationHandlerI {
     /** Means of retrieving the password for login */
     private Supplier<String> passwordSupplier;
 
-    public static ClientStub getStub(String userName, String email, String persistenceUnit) throws InvalidUserActionException, IOException, DuplicateUserIdException {
+    //Method for testing purposes
+    public static ClientStub getStub(String userName, String email, String persistenceUnit) throws IOException {
 
         Path path = Paths.get(userName);
 
@@ -80,7 +87,9 @@ public class ClientStub implements OperationHandlerI {
         stub.setMessagePrinter(System.out::println);
         return stub;
     }
-    public static void main(String[] args) throws PositionOutOfBoundException, InvalidActionException, IOException, DuplicateIdException {
+
+    //Method for testing purposes
+    public static void main(String[] args) throws IOException {
         for (int i = 0; i < 1; i++) {
             try {
                 Files.createDirectory(Paths.get("user0"));
@@ -90,15 +99,15 @@ public class ClientStub implements OperationHandlerI {
             }
 
             ClientStub stub0 = getStub("user0", "bd_reiss@yahoo.de", "ZenToDoPU");
-            List<Entry> entries0 = stub0.loadEntries();
+            //List<Entry> entries0 = stub0.loadEntries();
             ClientStub stub1 = getStub("user1", "bd_reiss@yahoo.de", "ZenToDoPU1");
-            List<Entry> entries1 = stub1.loadEntries();
+            //List<Entry> entries1 = stub1.loadEntries();
             ClientStub stub2 = getStub("user2", "bd_reiss@yahoo.de", "ZenToDoPU2");
-            List<Entry> entries2 = stub2.loadEntries();
+            //List<Entry> entries2 = stub2.loadEntries();
 
-            Entry entry0 = stub0.addNewEntry("TASK0");
-            Entry entry1 = stub1.addNewEntry("TASK1");
-            Entry entry2 = stub2.addNewEntry("TASK2");
+            //Entry entry0 = stub0.addNewEntry("TASK0");
+            //Entry entry1 = stub1.addNewEntry("TASK1");
+            //Entry entry2 = stub2.addNewEntry("TASK2");
 
             stub0.reinit();
             stub1.reinit();
@@ -115,15 +124,22 @@ public class ClientStub implements OperationHandlerI {
         }
     }
 
+    /**
+     * Creates a new instance of the client stub and sets the use to the default user.
+     * @param dbHandler The database for persisting data
+     */
     public ClientStub(@NotNull Database dbHandler) {
         this.dbHandler = dbHandler;
         Optional<User> user = dbHandler.getUserManager().getUser(0);
-        if (user.isEmpty())
+        if (user.isEmpty()) {
+            logger.error("No default user has been found.");
             throw new RuntimeException("No default user has been found.");
+        }
         this.user = user.get();
+        this.status = Status.OFFLINE;
     }
 
-    //Authenticate the user. Register if non-existent.
+    //Authenticate the user -> if non-existent in database register and add to database
     private Status authenticate(String email, String userName) throws IOException, DuplicateUserIdException, InvalidUserActionException {
 
         //Check whether user exists already in local database
@@ -135,7 +151,7 @@ public class ClientStub implements OperationHandlerI {
         });
 
         //If the user does NOT exist, register user
-        if (user.getId() == 0 || userOpt.get().getDevice() == null) {
+        if (user.getId() == 0 || userOpt.isEmpty() || userOpt.get().getDevice() == null) {
 
             //get login request as JSON with "email" and "password"
             String loginRequest = getLoginRequest(email, passwordSupplier.get());
@@ -163,32 +179,37 @@ public class ClientStub implements OperationHandlerI {
                     String[] fields = body.split(",");
 
                     //User needs to verify mail -> add user and return REGISTERED
-                    if (fields[0].equals("exists")) {
-                        userManager.addUser(Long.parseLong(fields[1]), email, userName, Integer.parseInt(fields[2]));
-                        if (messagePrinter != null)
-                            messagePrinter.accept("User is already registered, but not verified. Check your mail.");
-                        return Status.REGISTERED;
+                    switch (fields[0]) {
+                        case "exists" -> {
+                            userManager.addUser(Long.parseLong(fields[1]), email, userName, Integer.parseInt(fields[2]));
+                            if (messagePrinter != null)
+                                messagePrinter.accept("User is already registered, but not verified. Check your mail.");
+                            return Status.REGISTERED;
+                        }
+
+
+                        //User needs to verify mail -> add user and return REGISTERED
+                        case "registered" -> {
+                            userManager.addUser(Long.parseLong(fields[1]), email, userName, null);
+                            if (messagePrinter != null)
+                                messagePrinter.accept("User was registered. Check your mails for verification.");
+                            return Status.REGISTERED;
+                        }
+
+
+                        //User was logged in -> add user, save token and return ONLINE
+                        case "logged_in" -> {
+                            user = userManager.addUser(Long.parseLong(fields[1]), email, userName, Integer.parseInt(fields[2]));
+                            vectorClock = new VectorClock(user);
+                            userManager.enableUser(user.getId());
+                            user.setEnabled(true);
+                            userManager.setToken(Long.parseLong(fields[1]), fields[3]);
+                            if (messagePrinter != null)
+                                messagePrinter.accept("User logged in.");
+                            return Status.ONLINE;
+                        }
                     }
 
-                    //User needs to verify mail -> add user and return REGISTERED
-                    if (fields[0].equals("registered")) {
-                        userManager.addUser(Long.parseLong(fields[1]), email, userName, null);
-                        if (messagePrinter != null)
-                            messagePrinter.accept("User was registered. Check your mails for verification.");
-                        return Status.REGISTERED;
-                    }
-
-                    //User was logged in -> add user, save token and return ONLINE
-                    if (fields[0].equals("logged_in")) {
-                        user = userManager.addUser(Long.parseLong(fields[1]), email, userName, Integer.parseInt(fields[2]));
-                        vectorClock = new VectorClock(user);
-                        userManager.enableUser(user.getId());
-                        user.setEnabled(true);
-                        userManager.setToken(Long.parseLong(fields[1]), fields[3]);
-                        if (messagePrinter != null)
-                            messagePrinter.accept("User logged in.");
-                        return Status.ONLINE;
-                    }
                     throw new ConnectException("User could not be registered");
                 }
             }
@@ -217,12 +238,9 @@ public class ClientStub implements OperationHandlerI {
             HttpURLConnection connection = sendPostMessage(PROTOCOL + "://" + SERVER + "/auth/status", loginRequest);
             String body = getBody(connection);
 
-            //TODO WHAT TO DO HERE? Return DELETED
-            if (body.equals("non")) {
-                //TODO ASK WHEHTER USER SHOULD BE DELETED!
-                //userManager.removeUser(user.getId());
+            //The user has been deleted
+            if (body.equals("non"))
                 return Status.DELETED;
-            }
 
             //User exists, but mail was not verified. Return REGISTERED.
             if (body.equals("exists")) {
@@ -230,12 +248,11 @@ public class ClientStub implements OperationHandlerI {
                     messagePrinter.accept("User already exists, but was not verified. Check your mails.");
                 return Status.REGISTERED;
             }
-            //User is enabled. Proceed to
+            //User is enabled -> Process token.
             if (body.startsWith("enabled")) {
                 user.setEnabled(true);
                 userManager.enableUser(user.getId());
                 userManager.setToken(user.getId(), body.split(",")[1]);
-                //TODO retrieve complete server side db
                 if (messagePrinter != null)
                     messagePrinter.accept("User logged in.");
                 return Status.ONLINE;
@@ -273,75 +290,112 @@ public class ClientStub implements OperationHandlerI {
                     messagePrinter.accept("User logged in.");
                 return Status.ONLINE;
             }
-            //User does not exist anymoer
-            if (connection.getResponseCode() == 404) {
-                //TODO handle
-                //userManager.removeUser(user.getId());
+            //User does not exist anymore
+            if (connection.getResponseCode() == 404)
                 return Status.DELETED;
-            }
         }
         throw new ConnectException("Was not able to login.");
     }
 
-    public void reinit() throws DuplicateIdException, InvalidActionException, IOException {
+    /**
+     * Reinitialize the user, if it was initialized before.
+     * @throws IOException Exception thrown when there are problems communicating with the server.
+     */
+    public void reinit() throws IOException {
+        //If default user return
+        if (user.getId() == 0)
+            return;
         init(user.getEmail(), user.getUserName(), passwordSupplier);
     }
 
     /**
-     * TODO
+     * Initialize the stub with a user.
+     * @param email Mail address of the user.
+     * @param name Name of the user.
+     * @param passwordSupplier Means of retrieving the password for the user.
+     * @throws IOException Exception thrown when communicating with the server.
      */
-    public void init(String email, String name, Supplier<String> passwordSupplier) throws IOException, DuplicateUserIdException, InvalidUserActionException {
+    public void init(@NotNull String email, String name, @NotNull Supplier<String> passwordSupplier) throws IOException {
         this.passwordSupplier = passwordSupplier;
-        status = authenticate(email, name);
 
-        if (user.getId() == 0)
-            return;
-
-        //initialize Vector clock
-        vectorClock = new VectorClock(user);
-
-        if (status != Status.ONLINE) {
-            //TODO HANDLE
-            return;
-        }
-
-
-        HttpURLConnection connection = null;
+        //Authenticate the user and get the status.
         try {
-            connection = sendAuthPostMessage(PROTOCOL + "://" + SERVER + "/queue", "");
-        } catch (URISyntaxException e) {
+            status = authenticate(email, name);
+        } catch (DuplicateUserIdException e) {//this should actually never happen
+            logger.error("Attempt to add duplicate user id in authenticate.", e);
+            throw new RuntimeException(e);
+        } catch (InvalidUserActionException e){
+            logger.error("Attempt to perform invalid user action in authenticate.", e);
             throw new RuntimeException(e);
         }
 
+        //If the user is still the default user return
+        if (user.getId() == 0)
+            return;
+
+        //Initialize the vector clock
+        vectorClock = new VectorClock(user);
+
+        //If we are not online return
+        if (status != Status.ONLINE)
+            return;
+
+        HttpURLConnection connection;
+
+        //TODO ignore if queue is empty
+        //Send the local queue to the server
+        try {
+            connection = sendAuthPostMessage(PROTOCOL + "://" + SERVER + "/process_operation", jsonifyServerList(dbHandler.getUserManager().getQueued(user.getId())));
+        } catch (URISyntaxException e) {
+            logger.error("URI is not valid", e);
+            throw new RuntimeException(e);
+        }
+
+        //If the response was not valid go offline and throw an exception
+        if (connection.getResponseCode() != 200) {
+            status = Status.OFFLINE;
+            throw new ConnectException("There was a problem sending queue data to the server");
+        }
+
+        //Get the queue from the server and process it
+        try {
+            connection = sendAuthPostMessage(PROTOCOL + "://" + SERVER + "/queue", "");
+        } catch (URISyntaxException e) {//This should never happen
+            logger.error("URI is not valid", e);
+            throw new RuntimeException(e);
+        }
+
+        //If the response was not valid go offline and throw an exception
         int responseCode = connection.getResponseCode();
-        if (responseCode != 200)
+        if (responseCode != 200) {
+            status = Status.OFFLINE;
             throw new ConnectException("There was a problem getting queue data from the server.");
+        }
 
+        //Get the response and process the messages it contains
         String response = getBody(connection);
-
         for (ZenMessage message : parseMessage(getMessage(response))) {
             try {
                 receiveMessage(message);
-            } catch (PositionOutOfBoundException | DuplicateIdException | InvalidActionException e) {
+            } catch (PositionOutOfBoundException e) {
+                logger.error("Position out of bound:\n{}", jsonifyMessage(message), e);
+                throw new RuntimeException(e);
+            } catch (DuplicateIdException e){
+                logger.error("Attempt to add entry with duplicate id:\n{}", jsonifyMessage(message), e);
+                throw new RuntimeException(e);
+            } catch (InvalidActionException e){
+                logger.error("Attempt to perform invalid action:\n{}", jsonifyMessage(message), e);
                 throw new RuntimeException(e);
             }
         }
 
-        try {
-            connection = sendAuthPostMessage(PROTOCOL + "://" + SERVER + "/process_operation", jsonifyServerList(dbHandler.getUserManager().getQueued(user.getId())));
-        } catch (URISyntaxException e) {
-            throw new RuntimeException(e);
-        }
-
-        if (connection.getResponseCode() != 200)
-            throw new ConnectException("There was a problem sending queue data to the server");
-
-        //
+        //Set up the websocket client and run it on another thread to retrieve messages live from the server
         webSocketClient = new ZenWebSocketClient(this::consumeMessage, this);
         Thread thread = new Thread(() -> {
             try {
                 webSocketClient.connect(user.getEmail(), dbHandler.getUserManager().getToken(user.getId()), user.getDevice());
             } catch (DeploymentException | IOException e) {
+                logger.error("Problem connecting the websocket client", e);
                 throw new RuntimeException(e);
             }
         });
@@ -351,98 +405,118 @@ public class ClientStub implements OperationHandlerI {
             try {
                 sendAuthPostMessage(PROTOCOL + "://" + SERVER + "test", "");
             } catch (URISyntaxException e) {
+                logger.error("URI is not valid", e);
                 throw new RuntimeException(e);
             }
         }
     }
 
+    /*
+     * Consume a raw message form the server:
+     *   - parses the message as a list of ZenMessage
+     *   - sends an acknowledgement for the message to the server
+     *   - processes the operations contained in the message
+     */
     private void consumeMessage(String rawMessage) {
 
         String id = getId(rawMessage);
         JSONArray parsedMessage = getMessage(rawMessage);
-
         List<ZenMessage> messages = parseMessage(parsedMessage);
 
-        if (!messages.isEmpty()) {
-                /*
-                if (!messages.isEmpty() && messages.getFirst().clock.changeDifference(vectorClock ) != 1){
-
-                    try {
-                        HttpURLConnection conn = sendAuthPostMessage(ClientStub.PROTOCOL + ClientStub.SERVER + "queue", " ");
-                        if (conn.getResponseCode() != 200)
-                            throw new RuntimeException("Could not retrieve data from server.");
-                        //return;
-                    } catch (Exception e) {
-                        throw new RuntimeException(e);
-                    }
-                }
-*/
-        }
-
-        HttpURLConnection conn = null;
+        //Send acknowledgement to the server
+        HttpURLConnection conn;
         try {
             conn = sendAuthPostMessage(PROTOCOL + "://" + SERVER + "/ackn", id);
             if (conn.getResponseCode() != 200) {
                 status = Status.OFFLINE;
-                throw new ConnectException("Server could not accept acknowledgement.");
+                return;
             }
-        } catch (URISyntaxException | IOException e) {
-            status = Status.OFFLINE;
+        } catch (URISyntaxException e) {
+            logger.error("URI is not valid", e);
             throw new RuntimeException(e);
+        } catch (IOException e){
+            status = Status.OFFLINE;
+            return;
         }
 
+        //Process the operations contained in the message
         for (ZenMessage zm : messages) {
             try {
                 receiveMessage(zm);
-            } catch (DuplicateIdException | InvalidActionException | PositionOutOfBoundException | ConnectException e) {
+            } catch (DuplicateIdException e) {
+                logger.error("There was an attempt to add an entry with a duplicate id:\n{}", jsonifyMessage(zm), e);
                 throw new RuntimeException(e);
-            }
+            } catch (InvalidActionException e){
+                logger.error("There was an attempt to perform an invalid action:\n{}", jsonifyMessage(zm), e);
+                throw new RuntimeException(e);
+            } catch (PositionOutOfBoundException e){
+                logger.error("An entry was out of bound:\n{}", jsonifyMessage(zm), e);
+                throw new RuntimeException(e);
+                //TODO remove ConnectException for other handlers?
+            } catch (ConnectException _){}
         }
     }
 
+    /**
+     * Get the body of a URL connection.
+     * @param connection The connection to process.
+     * @return The body.
+     * @throws IOException Thrown when there are problems communicating with the server.
+     */
     public static String getBody(HttpURLConnection connection) throws IOException {
-
         BufferedReader br = new BufferedReader(new InputStreamReader(connection.getInputStream()));
         String inputLine;
         StringBuilder response = new StringBuilder();
-
         while ((inputLine = br.readLine()) != null)
             response.append(inputLine);
-
         return response.toString();
     }
 
-    //TODO COMMENT
+    /**
+     * Send a non authenticated Post message.
+     * @param urlString URL to use.
+     * @param body Message body to send.
+     * @return the URL connection.
+     * @throws IOException Thrown when there are problems communicating with the server.
+     */
     public HttpURLConnection sendPostMessage(String urlString, String body) throws IOException {
 
-        URL url = null;
+        URL url;
         try {
             url = new URI(urlString).toURL();
         } catch (URISyntaxException e) {
+            logger.error("URI was not valid", e);
             throw new RuntimeException(e);
         }
         HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-
         connection.setRequestMethod("POST");
         connection.setRequestProperty("Content-Type", "application/json");
+        //This is used to determine the time drift between the server and the client using the basic NTP
+        // -> see class TimeDrift
         connection.setRequestProperty("t1", TimeDrift.getTimeStamp());
         connection.setDoOutput(true);
 
         try (OutputStream os = connection.getOutputStream()) {
             byte[] input = body.getBytes(StandardCharsets.UTF_8);
             os.write(input, 0, input.length);
-        } catch (Exception e) {
-            StringWriter sw = new StringWriter();
-            e.printStackTrace(new PrintWriter(sw));
-            messagePrinter.accept("Exception in getOutputStream: " + sw.toString());
         }
         processResponse(connection);
         return connection;
     }
 
-    //TODO
+    /**
+     * Send an authenticated post message to the server.
+     * If the status is DIRTY also send the queue to the server.
+     *
+     * @param urlString URL to use.
+     * @param body The body to send.
+     * @return a connection.
+     * @throws IOException Thrown when there is a problem communicating with the server.
+     * @throws URISyntaxException Thrown when the URI is not valid.
+     */
     public synchronized HttpURLConnection sendAuthPostMessage(String urlString, String body) throws IOException, URISyntaxException {
 
+        //If the status is DIRTY send the queue to the server.
         if (status == Status.DIRTY) {
             HttpURLConnection connection = sendAuthPostMessage(PROTOCOL + "://" + SERVER + "/process_operation", jsonifyServerList(dbHandler.getUserManager().getQueued(user.getId())));
 
@@ -469,7 +543,8 @@ public class ClientStub implements OperationHandlerI {
         return connection;
     }
 
-    //TODO
+    //This method is used at the moment since there is a problem using GET methods with Android
+    /*
     public synchronized HttpURLConnection sendAuthGetMessage(String urlString) throws Exception {
 
         if (status == Status.DIRTY) {
@@ -493,7 +568,7 @@ public class ClientStub implements OperationHandlerI {
 
         processResponse(connection);
         return connection;
-    }
+    }*/
 
     //TODO
     private void processResponse(HttpURLConnection connection) {
@@ -516,6 +591,7 @@ public class ClientStub implements OperationHandlerI {
 
     }
 
+    //TODO do we want this?
     /**
      *
      */
