@@ -15,3 +15,5 @@ It provides:
     * An interface for a user manager
     * An interface for a list manager
     * An interface for general database operations
+  * A JPA based persistence solution for the above mentioned database
+  * Interfaces for operations between client and server
