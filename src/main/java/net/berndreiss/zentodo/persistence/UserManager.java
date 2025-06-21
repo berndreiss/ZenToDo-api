@@ -156,7 +156,7 @@ public class UserManager implements UserManagerI {
             throw new InvalidUserActionException("Cannot remove last profile for user " + userId);
 
         em.getTransaction().begin();
-        em.createQuery("DELETE FROM Entry e WHERE e.userId = :userId AND e.profile = :profileId")
+        em.createQuery("DELETE FROM Task e WHERE e.userId = :userId AND e.profile = :profileId")
                 .setParameter("userId", userId)
                 .setParameter("profileId", profileId)
                 .executeUpdate();

@@ -23,7 +23,7 @@ public interface ListManagerI {
 
     void updateListName(long listId, String name) throws InvalidActionException;
     void updateListColor(long listId, String color);
-    List<Entry> getListEntries(long userId, int profile, Long listId);
+    List<Task> getListEntries(long userId, int profile, Long listId);
     Optional<TaskList> getList(long id);
     Optional<TaskList> getListByName(long userId, int profile, String name);
     List<TaskList> getListsForUser(long userId, int profile);

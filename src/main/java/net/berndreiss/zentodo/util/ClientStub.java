@@ -7,7 +7,7 @@ import jakarta.websocket.DeploymentException;
 import net.berndreiss.zentodo.operations.ClientOperationHandlerI;
 import net.berndreiss.zentodo.operations.OperationHandlerI;
 import net.berndreiss.zentodo.operations.OperationType;
-import net.berndreiss.zentodo.data.Entry;
+import net.berndreiss.zentodo.data.Task;
 import net.berndreiss.zentodo.data.TaskList;
 import net.berndreiss.zentodo.data.User;
 import net.berndreiss.zentodo.exceptions.*;
@@ -70,7 +70,7 @@ public class ClientStub implements OperationHandlerI {
     private Supplier<String> passwordSupplier;
 
     //Method for testing purposes
-    public static ClientStub getStub(String userName, String email, String persistenceUnit) throws IOException {
+    public static ClientStub getStub(String userName, String email, String persistenceUnit) {
 
         Path path = Paths.get(userName);
 
@@ -83,13 +83,17 @@ public class ClientStub implements OperationHandlerI {
         EntityManagerFactory emf = Persistence.createEntityManagerFactory(persistenceUnit);
         Database opHandler = new DbHandler(emf, userName);
         ClientStub stub = new  ClientStub(opHandler);
-        stub.init(email, userName, () -> "Test1234!?");
+        try {
+            stub.init(email, userName, () -> "Test1234!?");
+        } catch (IOException e) {
+            System.out.println(e.getMessage());
+        }
         stub.setMessagePrinter(System.out::println);
         return stub;
     }
 
     //Method for testing purposes
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) {
         for (int i = 0; i < 1; i++) {
             try {
                 Files.createDirectory(Paths.get("user0"));
@@ -105,13 +109,13 @@ public class ClientStub implements OperationHandlerI {
             ClientStub stub2 = getStub("user2", "bd_reiss@yahoo.de", "ZenToDoPU2");
             //List<Entry> entries2 = stub2.loadEntries();
 
-            //Entry entry0 = stub0.addNewEntry("TASK0");
+            Task task0 = stub0.addNewTask("TASK0");
             //Entry entry1 = stub1.addNewEntry("TASK1");
             //Entry entry2 = stub2.addNewEntry("TASK2");
 
-            stub0.reinit();
-            stub1.reinit();
-            stub2.reinit();
+            //stub0.reinit();
+            //stub1.reinit();
+            //stub2.reinit();
             //Profile profile1 = dbHandler.getUserManager().addProfile(stub.user.getId());
             //stub.user.setProfile(profile1.getId());
             //Entry entry = stub.addNewEntry("Test");
@@ -345,7 +349,7 @@ public class ClientStub implements OperationHandlerI {
         //TODO ignore if queue is empty
         //Send the local queue to the server
         try {
-            connection = sendAuthPostMessage(PROTOCOL + "://" + SERVER + "/process_operation", jsonifyServerList(dbHandler.getUserManager().getQueued(user.getId())));
+            connection = sendAuthPostMessage(PROTOCOL + "://" + SERVER + "/process_operation", ZenServerMessage.jsonifyServerList(dbHandler.getUserManager().getQueued(user.getId())));
         } catch (URISyntaxException e) {
             logger.error("URI is not valid", e);
             throw new RuntimeException(e);
@@ -374,17 +378,20 @@ public class ClientStub implements OperationHandlerI {
 
         //Get the response and process the messages it contains
         String response = getBody(connection);
-        for (ZenMessage message : parseMessage(getMessage(response))) {
+        JSONObject obj = new JSONObject(response);
+        JSONArray array = (JSONArray) obj.get("message");
+        List<ZenMessage> messages = ZenMessage.parseMessage(array);
+        for (ZenMessage message : messages) {
             try {
                 receiveMessage(message);
             } catch (PositionOutOfBoundException e) {
-                logger.error("Position out of bound:\n{}", jsonifyMessage(message), e);
+                logger.error("Position out of bound:\n{}", ZenMessage.jsonifyMessage(message), e);
                 throw new RuntimeException(e);
             } catch (DuplicateIdException e){
-                logger.error("Attempt to add entry with duplicate id:\n{}", jsonifyMessage(message), e);
+                logger.error("Attempt to add entry with duplicate id:\n{}", ZenMessage.jsonifyMessage(message), e);
                 throw new RuntimeException(e);
             } catch (InvalidActionException e){
-                logger.error("Attempt to perform invalid action:\n{}", jsonifyMessage(message), e);
+                logger.error("Attempt to perform invalid action:\n{}", ZenMessage.jsonifyMessage(message), e);
                 throw new RuntimeException(e);
             }
         }
@@ -411,7 +418,7 @@ public class ClientStub implements OperationHandlerI {
         }
     }
 
-    /*
+    /**
      * Consume a raw message form the server:
      *   - parses the message as a list of ZenMessage
      *   - sends an acknowledgement for the message to the server
@@ -419,9 +426,10 @@ public class ClientStub implements OperationHandlerI {
      */
     private void consumeMessage(String rawMessage) {
 
-        String id = getId(rawMessage);
-        JSONArray parsedMessage = getMessage(rawMessage);
-        List<ZenMessage> messages = parseMessage(parsedMessage);
+        JSONObject obj = new JSONObject(rawMessage);
+        String id = obj.get("id").toString();
+        JSONArray array = (JSONArray) obj.get("message");
+        List<ZenMessage> messages = ZenMessage.parseMessage(array);
 
         //Send acknowledgement to the server
         HttpURLConnection conn;
@@ -444,16 +452,16 @@ public class ClientStub implements OperationHandlerI {
             try {
                 receiveMessage(zm);
             } catch (DuplicateIdException e) {
-                logger.error("There was an attempt to add an entry with a duplicate id:\n{}", jsonifyMessage(zm), e);
+                logger.error("There was an attempt to add an entry with a duplicate id:\n{}", ZenMessage.jsonifyMessage(zm), e);
                 throw new RuntimeException(e);
             } catch (InvalidActionException e){
-                logger.error("There was an attempt to perform an invalid action:\n{}", jsonifyMessage(zm), e);
+                logger.error("There was an attempt to perform an invalid action:\n{}", ZenMessage.jsonifyMessage(zm), e);
                 throw new RuntimeException(e);
             } catch (PositionOutOfBoundException e){
-                logger.error("An entry was out of bound:\n{}", jsonifyMessage(zm), e);
+                logger.error("An entry was out of bound:\n{}", ZenMessage.jsonifyMessage(zm), e);
                 throw new RuntimeException(e);
                 //TODO remove ConnectException for other handlers?
-            } catch (ConnectException _){}
+            }
         }
     }
 
@@ -518,7 +526,7 @@ public class ClientStub implements OperationHandlerI {
 
         //If the status is DIRTY send the queue to the server.
         if (status == Status.DIRTY) {
-            HttpURLConnection connection = sendAuthPostMessage(PROTOCOL + "://" + SERVER + "/process_operation", jsonifyServerList(dbHandler.getUserManager().getQueued(user.getId())));
+            HttpURLConnection connection = sendAuthPostMessage(PROTOCOL + "://" + SERVER + "/process_operation", ZenServerMessage.jsonifyServerList(dbHandler.getUserManager().getQueued(user.getId())));
 
             if (connection.getResponseCode() != 200) {
                 throw new ConnectException("Something went wrong sending data to server.");
@@ -570,7 +578,10 @@ public class ClientStub implements OperationHandlerI {
         return connection;
     }*/
 
-    //TODO
+    /**
+     * Processing the response involves calculating the time drift.
+     * @param connection the connection to be processed
+     */
     private void processResponse(HttpURLConnection connection) {
         try {
             Instant t4 = TimeDrift.parseTimeStamp(TimeDrift.getTimeStamp());
@@ -586,8 +597,7 @@ public class ClientStub implements OperationHandlerI {
             if (timeDrift == null || td.compareTo(timeDrift) < 0)
                 timeDrift = td;
 
-        } catch (DateTimeParseException ignored) {
-        }
+        } catch (DateTimeParseException _) {}
 
     }
 
@@ -600,163 +610,72 @@ public class ClientStub implements OperationHandlerI {
     }
 
     /**
-     * TODO DESCRIBE
+     * Add a handler for client side operations.
+     * @param operationHandler The handler to be added.
      */
     public void addOperationHandler(ClientOperationHandlerI operationHandler) {
         this.otherHandlers.add(operationHandler);
     }
 
     /**
-     * TODO DESCRIBE
+     * Remove a handler for client side operations.
+     * @param operationHandler The handler to be removed.
      */
     public void removeOperationHandler(ClientOperationHandlerI operationHandler) {
         this.otherHandlers.remove(operationHandler);
     }
 
     /**
-     * //TODO
+     * Set the message printer.
+     * @param messagePrinter Printer to set.
      */
     public void setMessagePrinter(Consumer<String> messagePrinter) {
         this.messagePrinter = messagePrinter;
     }
 
+    /**
+     * Get the message printer.
+     * @return the printer.
+     */
     public Consumer<String> getMessagePrinter() {
         return messagePrinter;
     }
 
     /**
-     *
+     * Get the user currently initialized in the stub. If no specific user was initialized, the default user is set (id==0);
+     * @return the user currently initialized or the default user.
      */
     public User getUser() {
         return user;
     }
 
-    //TODO DESCRIBE
-    private static String getAuthHeader(String email, String password) {
-
-        String encodedAuth = Base64.getEncoder().encodeToString((email + ":" + password).getBytes(StandardCharsets.UTF_8));
-        return "Basic " + encodedAuth;
-    }
-
-    //TODO DESCRIBE
+    //TODO replace this with headers?
+    /**
+     * Get a body for a login request as a JSON format.
+     * @param email The email for the login request.
+     * @param password The password for the login request.
+     * @return the login request.
+     */
     private static String getLoginRequest(String email, String password) {
         return "{\"email\": \"" + email + "\", \"password\": \"" + password + "\"}";
     }
 
-    public static String jsonifyMessage(ZenMessage message) {
-        return jsonifyMessage(message, "");
-    }
 
     /**
-     * TODO DESCRIBE
+     * Parses the message and performs the operation it contains.
+     * @param message the message to process
+     * @throws DuplicateIdException thrown if task with duplicate id is added
+     * @throws InvalidActionException thrown if invalid action is performed
+     * @throws PositionOutOfBoundException thrown if task or list entry is out of bounds
      */
-    public static String jsonifyMessage(ZenMessage message, String whitespace) {
-        StringBuilder sb = new StringBuilder();
-
-        sb.append(whitespace).append("{\n");
-        sb.append(whitespace).append("  \"type\": \"").append(message.type).append("\",\n");
-        sb.append(whitespace).append("  \"arguments\": [");
-        String prefix = "";
-        for (Object argument : message.arguments) {
-            sb.append(prefix);
-            prefix = ", ";
-            sb.append("\"").append(argument).append("\"");
-
-        }
-        sb.append("]");
-        if (message instanceof ZenServerMessage) {
-            sb.append(",\n");
-            sb.append(whitespace).append("  \"timestamp\": \"").append(((ZenServerMessage) message).timeStamp.toString()).append("\"");
-        }
-        sb.append(",\n");
-        sb.append("\"clock\": ").append(message.clock == null ? "null" : message.clock.jsonify()).append("\n");
-        sb.append(whitespace).append("}");
-
-        return sb.toString();
-    }
-
-    /**
-     * TODO
-     */
-    public static String jsonifyList(List<ZenMessage> list) {
-        StringBuilder sb = new StringBuilder();
-
-        sb.append("[");
-
-        String prefix = "\n";
-        for (ZenMessage message : list) {
-            sb.append(prefix);
-            prefix = ",\n";
-            sb.append(jsonifyMessage(message, "  "));
-        }
-
-        sb.append("\n]");
-
-        return sb.toString();
-    }
-
-    public static String jsonifyServerList(List<ZenServerMessage> list) {
-        StringBuilder sb = new StringBuilder();
-
-        sb.append("[");
-
-        String prefix = "\n";
-        for (ZenMessage message : list) {
-            sb.append(prefix);
-            prefix = ",\n";
-            sb.append(jsonifyMessage(message, "  "));
-        }
-
-        sb.append("\n]");
-
-        return sb.toString();
-    }
-
-    public static List<ZenMessage> parseMessage(JSONArray jsonArray) {
-
-
-        List<ZenMessage> list = new ArrayList<>();
-
-        for (int i = 0; i < jsonArray.length(); i++) {
-            JSONObject obj = jsonArray.getJSONObject(i);
-
-            // Convert "type" field to Enum
-            OperationType type = OperationType.valueOf(obj.getString("type"));
-
-            // Extract arguments array
-            JSONArray argumentsObj = obj.getJSONArray("arguments");
-            List<Object> arguments = new ArrayList<>();
-
-            for (int j = 0; j < argumentsObj.length(); j++) {
-                arguments.add(argumentsObj.get(j)); // Extracting JSON values as generic Object
-            }
-
-            VectorClock clock = new VectorClock(obj.getJSONObject("clock"));
-
-            // Create ZenMessage instance and add it to the list
-            list.add(new ZenMessage(type, arguments, clock));
-        }
-        return list;
-    }
-
-    public static String getId(String rawMessage) {
-        JSONObject obj = new JSONObject(rawMessage);
-        return obj.get("id").toString();
-    }
-
-    public static JSONArray getMessage(String rawMessage) {
-        JSONObject obj = new JSONObject(rawMessage);
-        return (JSONArray) obj.get("message");
-    }
-
-    private void receiveMessage(ZenMessage message) throws DuplicateIdException, InvalidActionException, PositionOutOfBoundException, ConnectException {
+    private void receiveMessage(ZenMessage message) throws DuplicateIdException, InvalidActionException, PositionOutOfBoundException {
         //TODO CHECK VALIDITY
         switch (message.type) {
             case POST -> {
                 List<Object> args = message.arguments;
                 int profile = Integer.parseInt(args.get(0).toString());
                 long id = Long.parseLong(args.get(1).toString());
-                String task = args.get(2).toString();
+                String taskName = args.get(2).toString();
                 int position = Integer.parseInt(args.get(3).toString());
                 boolean focus = Boolean.parseBoolean(args.get(4).toString());
                 boolean dropped = Boolean.parseBoolean(args.get(5).toString());
@@ -765,44 +684,40 @@ public class ClientStub implements OperationHandlerI {
                 Instant reminderDate = args.get(8).toString().isEmpty() ? null : Instant.parse(args.get(8).toString());
                 String recurrence = args.get(9).toString().isEmpty() ? null : args.get(9).toString();
 
-                Entry entry = new Entry(user.getId(), profile, task, position);
-                entry.setId(id);
-                entry.setFocus(focus);
-                entry.setDropped(dropped);
-                entry.setList(list);
-                entry.setListPosition(listPosition);
-                entry.setReminderDate(reminderDate);
-                entry.setRecurrence(recurrence);
-
-                dbHandler.getEntryManager().postEntry(entry);
+                Task task = new Task(user.getId(), profile, taskName, position);
+                task.setId(id);
+                task.setFocus(focus);
+                task.setDropped(dropped);
+                task.setList(list);
+                task.setListPosition(listPosition);
+                task.setReminderDate(reminderDate);
+                task.setRecurrence(recurrence);
+                dbHandler.getTaskManager().postTask(task);
             }
             case ADD_NEW_ENTRY -> {
                 List<Object> args = message.arguments;
                 int profile = Integer.parseInt(args.get(0).toString());
                 long id = Long.parseLong(args.get(1).toString());
-                String task = args.get(2).toString();
+                String taskName = args.get(2).toString();
                 int position = Integer.parseInt(args.get(3).toString());
-                Entry entry = null;
-                entry = dbHandler.getEntryManager().addNewEntry(user.getId(), profile, id, task, position);
-
-                Entry finalEntry = entry;
+                Task task = dbHandler.getTaskManager().addNewTask(user.getId(), profile, id, taskName, position);
                 for (OperationHandlerI oh : otherHandlers)
-                    oh.addNewEntry(finalEntry);
+                    oh.addNewTask(task);
             }
             case DELETE -> {
                 int profile = Integer.parseInt(message.arguments.get(0).toString());
                 long id = Long.parseLong(message.arguments.get(1).toString());
-                dbHandler.getEntryManager().removeEntry(user.getId(), profile, id);
+                dbHandler.getTaskManager().removeTask(user.getId(), profile, id);
                 for (OperationHandlerI oh : otherHandlers)
-                    oh.removeEntry(id);
+                    oh.removeTask(id);
             }
             case SWAP -> {
                 int profile = Integer.parseInt(message.arguments.get(0).toString());
                 long id = Long.parseLong(message.arguments.get(1).toString());
                 int position = Integer.parseInt(message.arguments.get(2).toString());
-                dbHandler.getEntryManager().swapEntries(user.getId(), profile, id, position);
+                dbHandler.getTaskManager().swapTasks(user.getId(), profile, id, position);
                 for (OperationHandlerI oh : otherHandlers)
-                    oh.swapEntries(id, position);
+                    oh.swapTasks(id, position);
             }
             case SWAP_LIST -> {
                 int profile = Integer.parseInt(message.arguments.get(0).toString());
@@ -811,13 +726,13 @@ public class ClientStub implements OperationHandlerI {
                 int position = Integer.parseInt(message.arguments.get(3).toString());
                 dbHandler.getListManager().swapListEntries(user.getId(), profile, id, list, position);
                 for (OperationHandlerI oh : otherHandlers)
-                    oh.swapEntries(id, position);
+                    oh.swapTasks(id, position);
             }
             case UPDATE_TASK -> {
                 int profile = Integer.parseInt(message.arguments.get(0).toString());
                 long id = Long.parseLong(message.arguments.get(1).toString());
                 String task = message.arguments.get(2).toString();
-                dbHandler.getEntryManager().updateTask(user.getId(), profile, id, task);
+                dbHandler.getTaskManager().updateTask(user.getId(), profile, id, task);
                 for (OperationHandlerI oh : otherHandlers)
                     oh.updateTask(id, task);
             }
@@ -825,7 +740,7 @@ public class ClientStub implements OperationHandlerI {
                 int profile = Integer.parseInt(message.arguments.get(0).toString());
                 long id = Long.parseLong(message.arguments.get(1).toString());
                 boolean focus = Boolean.parseBoolean(message.arguments.get(2).toString());
-                dbHandler.getEntryManager().updateFocus(user.getId(), profile, id, focus);
+                dbHandler.getTaskManager().updateFocus(user.getId(), profile, id, focus);
                 for (OperationHandlerI oh : otherHandlers)
                     oh.updateFocus(id, focus);
             }
@@ -833,7 +748,7 @@ public class ClientStub implements OperationHandlerI {
                 int profile = Integer.parseInt(message.arguments.get(0).toString());
                 long id = Long.parseLong(message.arguments.get(1).toString());
                 boolean dropped = Boolean.parseBoolean(message.arguments.get(2).toString());
-                dbHandler.getEntryManager().updateDropped(user.getId(), profile, id, dropped);
+                dbHandler.getTaskManager().updateDropped(user.getId(), profile, id, dropped);
                 for (OperationHandlerI oh : otherHandlers)
                     oh.updateDropped(id, dropped);
             }
@@ -849,7 +764,7 @@ public class ClientStub implements OperationHandlerI {
                 int profile = Integer.parseInt(message.arguments.get(0).toString());
                 long id = Long.parseLong(message.arguments.get(1).toString());
                 Instant date = Instant.parse(message.arguments.get(1).toString());
-                dbHandler.getEntryManager().updateReminderDate(user.getId(), profile, id, date);
+                dbHandler.getTaskManager().updateReminderDate(user.getId(), profile, id, date);
                 for (OperationHandlerI oh : otherHandlers)
                     oh.updateReminderDate(id, date);
             }
@@ -857,7 +772,7 @@ public class ClientStub implements OperationHandlerI {
                 int profile = Integer.parseInt(message.arguments.get(0).toString());
                 long id = Long.parseLong(message.arguments.get(1).toString());
                 String recurrence = message.arguments.get(2).toString();
-                dbHandler.getEntryManager().updateRecurrence(user.getId(), profile, id, recurrence);
+                dbHandler.getTaskManager().updateRecurrence(user.getId(), profile, id, recurrence);
                 for (OperationHandlerI oh : otherHandlers)
                     oh.updateRecurrence(id, recurrence);
             }
@@ -869,11 +784,11 @@ public class ClientStub implements OperationHandlerI {
                     oh.updateListColor(list, color);
             }
             case UPDATE_USER_NAME -> {
-                String name = message.arguments.get(0).toString();
+                String name = message.arguments.getFirst().toString();
                 dbHandler.getUserManager().updateUserName(user.getId(), name);
             }
             case UPDATE_MAIL -> {
-                String mail = message.arguments.get(0).toString();
+                String mail = message.arguments.getFirst().toString();
                 dbHandler.getUserManager().updateEmail(user.getId(), mail);
             }
             case UPDATE_ID -> {
@@ -883,96 +798,133 @@ public class ClientStub implements OperationHandlerI {
 
     }
 
-    private synchronized void sendUpdate(OperationType type, List<Object> arguments) throws ConnectException {
+    /**
+     * Sends an update with an operation to the server.
+     * @param type The type of operation performed.
+     * @param arguments The arguments for the operation.
+     */
+    private synchronized void sendUpdate(OperationType type, List<Object> arguments){
+        //Do nothing for default user
         if (user.getId() == 0)
             return;
+        //Increment the vector clock by 1 and save it
         vectorClock.increment();
         dbHandler.getUserManager().setClock(user.getId(), vectorClock);
+        //Create a server message list and send it to the server
         ZenServerMessage zm = new ZenServerMessage(type, arguments, vectorClock);
         List<ZenServerMessage> list = new ArrayList<>();
         list.add(zm);
         try {
+            //reinit if we are not ONLINE
             if (status != Status.ONLINE)
-                init(user.getEmail(), user.getUserName(), passwordSupplier);
+                reinit();
+            //Default error
             int responseCode = 404;
             if (status == Status.ONLINE) {
-                HttpURLConnection connection = sendAuthPostMessage(PROTOCOL + "://" + SERVER + "/process_operation", jsonifyServerList(list));
+                HttpURLConnection connection = sendAuthPostMessage(PROTOCOL + "://" + SERVER + "/process_operation", ZenServerMessage.jsonifyServerList(list));
                 responseCode = connection.getResponseCode();
             }
             if (responseCode != 200)
-                throw new Exception("There was a problem sending data to the server: " + responseCode);
-        } catch (Exception e) {
+                throw new ConnectException("The server response was not valid: " + responseCode);
+        } catch (URISyntaxException e) {//This should never happen
+            logger.error("URI is not valid", e);
+            throw new RuntimeException("URI is not valid", e);
+        } catch (IOException e) {
+            //If sending the update did not succeed, go offline and add update to the queue
             status = Status.OFFLINE;
             dbHandler.getUserManager().addToQueue(user, zm);
         }
     }
 
     @Override
-    public synchronized Entry addNewEntry(String task) throws ConnectException {
-        Entry entry = dbHandler.getEntryManager().addNewEntry(user.getId(), user.getProfile(), task);
-        if (entry != null)
-            sendAddEntryUpdate(entry);
+    public synchronized Task addNewTask(String task) {
+        //Add locally (done first to get an id)
+        Task entry = dbHandler.getTaskManager().addNewTask(user.getId(), user.getProfile(), task);
+        if (entry == null)
+            return null;
+        //Tell the server
+        sendAddEntryUpdate(entry);
+        //Call handlers
+        for (OperationHandlerI oh: otherHandlers)
+            oh.addNewTask(task);
         return entry;
     }
 
     @Override
-    public synchronized Entry addNewEntry(String task, int position) throws PositionOutOfBoundException, ConnectException {
-        Entry entry = dbHandler.getEntryManager().addNewEntry(user.getId(), user.getProfile(), task, position);
-        if (entry != null)
-            sendAddEntryUpdate(entry);
+    public synchronized Task addNewTask(String task, int position) throws PositionOutOfBoundException {
+        //Add locally (done first to get an id)
+        Task entry = dbHandler.getTaskManager().addNewTask(user.getId(), user.getProfile(), task, position);
+        if (entry == null)
+            return null;
+        //Tell the server
+        sendAddEntryUpdate(entry);
+        //Call handlers
+        for (OperationHandlerI oh: otherHandlers)
+            oh.addNewTask(task, position);
         return entry;
     }
 
     //TODO THIS IS NOT IDEAL
     @Override
-    public synchronized Entry addNewEntry(Entry entry) throws PositionOutOfBoundException, DuplicateIdException, InvalidActionException, ConnectException {
-        Entry persistedEntry = dbHandler.getEntryManager().addNewEntry(user.getId(), user.getProfile(), entry.getId(), entry.getTask(), entry.getPosition());
-        if (persistedEntry == null)
+    public synchronized Task addNewTask(Task task) throws PositionOutOfBoundException, DuplicateIdException, InvalidActionException {
+        //Add locally (done first to get an id)
+        Task persistedTask = dbHandler.getTaskManager().addNewTask(user.getId(), user.getProfile(), task.getId(), task.getTask(), task.getPosition());
+        if (persistedTask == null)
             return null;
-        sendAddEntryUpdate(persistedEntry);
-        return persistedEntry;
+        //Tell the server
+        sendAddEntryUpdate(persistedTask);
+        //Call handlers
+        for (OperationHandlerI oh: otherHandlers)
+            oh.addNewTask(task);
+        return persistedTask;
     }
 
-    private void sendAddEntryUpdate(Entry entry) throws ConnectException {
+    //Helper method for sending operations of type ADD_NEW_ENTRY to the server
+    private void sendAddEntryUpdate(Task task) {
         List<Object> arguments = new ArrayList<>();
         arguments.add(user.getProfile());
-        arguments.add(entry.getId());
-        arguments.add(entry.getTask());
-        arguments.add(entry.getPosition());
+        arguments.add(task.getId());
+        arguments.add(task.getTask());
+        arguments.add(task.getPosition());
         sendUpdate(OperationType.ADD_NEW_ENTRY, arguments);
     }
 
     @Override
-    public synchronized void removeEntry(long id) throws ConnectException {
+    public synchronized void removeTask(long id) {
         List<Object> arguments = new ArrayList<>();
         arguments.add(user.getProfile());
         arguments.add(id);
+        //Tell the server
         sendUpdate(OperationType.DELETE, arguments);
-        dbHandler.getEntryManager().removeEntry(user.getId(), user.getProfile(), id);
+        //Update locally
+        dbHandler.getTaskManager().removeTask(user.getId(), user.getProfile(), id);
+        //Call handlers
+        for (OperationHandlerI oh: otherHandlers)
+            oh.removeTask(id);
     }
 
     @Override
-    public synchronized Optional<Entry> getEntry(long id) {
-        return dbHandler.getEntryManager().getEntry(user.getId(), user.getProfile(), id);
+    public synchronized Optional<Task> getTask(long id) {
+        return dbHandler.getTaskManager().getTask(user.getId(), user.getProfile(), id);
     }
 
     @Override
-    public List<Entry> loadEntries() {
-        return dbHandler.getEntryManager().getEntries(user.getId(), user.getProfile());
+    public List<Task> loadTasks() {
+        return dbHandler.getTaskManager().getTasks(user.getId(), user.getProfile());
     }
 
     @Override
-    public List<Entry> loadFocus() {
-        return dbHandler.getEntryManager().loadFocus(user.getId(), user.getProfile());
+    public List<Task> loadFocus() {
+        return dbHandler.getTaskManager().loadFocus(user.getId(), user.getProfile());
     }
 
     @Override
-    public List<Entry> loadDropped() {
-        return dbHandler.getEntryManager().loadDropped(user.getId(), user.getProfile());
+    public List<Task> loadDropped() {
+        return dbHandler.getTaskManager().loadDropped(user.getId(), user.getProfile());
     }
 
     @Override
-    public List<Entry> loadList(Long list) {
+    public List<Task> loadList(Long list) {
         return dbHandler.getListManager().getListEntries(user.getId(), user.getProfile(), list);
     }
 
@@ -996,122 +948,180 @@ public class ClientStub implements OperationHandlerI {
     }
 
     @Override
-    public synchronized void swapEntries(long id, int position) throws PositionOutOfBoundException, ConnectException {
-        dbHandler.getEntryManager().swapEntries(user.getId(), user.getProfile(), id, position);
+    public synchronized void swapTasks(long id, int position) throws PositionOutOfBoundException {
+        dbHandler.getTaskManager().swapTasks(user.getId(), user.getProfile(), id, position);
         List<Object> arguments = new ArrayList<>();
         arguments.add(user.getProfile());
         arguments.add(id);
         arguments.add(position);
+        //Tell the server
         sendUpdate(OperationType.SWAP, arguments);
+        //Update locally
+        dbHandler.getTaskManager().swapTasks(user.getId(), user.getProfile(), id, position);
+        //Call handlers
+        for (OperationHandlerI oh: otherHandlers)
+            oh.swapTasks(id, position);
     }
 
     @Override
-    public synchronized void swapListEntries(long list, long id, int position) throws PositionOutOfBoundException, ConnectException {
+    public synchronized void swapListEntries(long list, long id, int position) throws PositionOutOfBoundException {
         dbHandler.getListManager().swapListEntries(user.getId(), user.getProfile(), list, id, position);
         List<Object> arguments = new ArrayList<>();
         arguments.add(user.getProfile());
         arguments.add(id);
         arguments.add(position);
+        //Tell the server
         sendUpdate(OperationType.SWAP_LIST, arguments);
+        //Update locally
+        dbHandler.getListManager().swapListEntries(user.getId(), user.getProfile(), list, id, position);
+        //Call handlers
+        for (OperationHandlerI oh: otherHandlers)
+            oh.swapListEntries(list, id, position);
     }
 
     @Override
-    public synchronized void updateTask(long id, String value) throws ConnectException {
+    public synchronized void updateTask(long id, String value) {
         List<Object> arguments = new ArrayList<>();
         arguments.add(user.getProfile());
         arguments.add(id);
         arguments.add(value);
+        //Tell the server
         sendUpdate(OperationType.UPDATE_LIST, arguments);
-        dbHandler.getEntryManager().updateTask(user.getId(), user.getProfile(), id, value);
+        //Update locally
+        dbHandler.getTaskManager().updateTask(user.getId(), user.getProfile(), id, value);
+        //Call handlers
+        for (OperationHandlerI oh: otherHandlers)
+            oh.updateTask(id, value);
     }
 
     @Override
-    public synchronized void updateFocus(long id, boolean value) throws ConnectException {
+    public synchronized void updateFocus(long id, boolean value) {
         List<Object> arguments = new ArrayList<>();
         arguments.add(user.getProfile());
         arguments.add(id);
         arguments.add(value);
+        //Tell the server
         sendUpdate(OperationType.UPDATE_LIST, arguments);
-        dbHandler.getEntryManager().updateFocus(user.getId(), user.getProfile(), id, value);
+        //Update locally
+        dbHandler.getTaskManager().updateFocus(user.getId(), user.getProfile(), id, value);
+        //Call handlers
+        for (OperationHandlerI oh: otherHandlers)
+            oh.updateFocus(id, value);
     }
 
     @Override
-    public synchronized void updateDropped(long id, boolean value) throws ConnectException {
+    public synchronized void updateDropped(long id, boolean value) {
         List<Object> arguments = new ArrayList<>();
         arguments.add(user.getProfile());
         arguments.add(id);
         arguments.add(value);
+        //Tell the sever
         sendUpdate(OperationType.UPDATE_LIST, arguments);
-        dbHandler.getEntryManager().updateDropped(user.getId(), user.getProfile(), id, value);
+        //Update locally
+        dbHandler.getTaskManager().updateDropped(user.getId(), user.getProfile(), id, value);
+        //Call handlers
+        for (OperationHandlerI oh: otherHandlers)
+            oh.updateDropped(id, value);
     }
 
     @Override
-    public synchronized void updateList(long id, Long newId) throws ConnectException {
+    public synchronized void updateList(long id, Long newId) {
         List<Object> arguments = new ArrayList<>();
         arguments.add(user.getProfile());
         arguments.add(id);
         arguments.add(newId);
+        //Tell the server
         sendUpdate(OperationType.UPDATE_LIST, arguments);
+        //Update locally
         dbHandler.getListManager().updateList(user.getId(), user.getProfile(), id, newId);
+        //Call handlers
+        for (OperationHandlerI oh: otherHandlers)
+            oh.updateList(id, newId);
     }
 
     @Override
-    public synchronized void updateReminderDate(long id, Instant value) throws ConnectException {
+    public synchronized void updateReminderDate(long id, Instant value) {
         List<Object> arguments = new ArrayList<>();
         arguments.add(user.getProfile());
         arguments.add(id);
         arguments.add(value);
+        //Tell the server
         sendUpdate(OperationType.UPDATE_REMINDER_DATE, arguments);
-        dbHandler.getEntryManager().updateReminderDate(user.getId(), user.getProfile(), id, value);
+        //Update locally
+        dbHandler.getTaskManager().updateReminderDate(user.getId(), user.getProfile(), id, value);
+        //Call handlers
+        for (OperationHandlerI oh: otherHandlers)
+            oh.updateReminderDate(id, value);
     }
 
     @Override
-    public synchronized void updateRecurrence(long id, String value) throws ConnectException {
+    public synchronized void updateRecurrence(long id, String value) {
         List<Object> arguments = new ArrayList<>();
         arguments.add(user.getProfile());
         arguments.add(id);
         arguments.add(value);
+        //Tell the server
         sendUpdate(OperationType.UPDATE_RECURRENCE, arguments);
-        dbHandler.getEntryManager().updateRecurrence(user.getId(), user.getProfile(), id, value);
+        //Update locally
+        dbHandler.getTaskManager().updateRecurrence(user.getId(), user.getProfile(), id, value);
+        //Call handlers
+        for (OperationHandlerI oh: otherHandlers)
+            oh.updateRecurrence(id, value);
     }
 
     @Override
-    public synchronized void updateListColor(long list, String color) throws ConnectException {
+    public synchronized void updateListColor(long list, String color) {
         List<Object> arguments = new ArrayList<>();
         arguments.add(list);
         arguments.add(color);
+        //Tell the server
         sendUpdate(OperationType.UPDATE_LIST_COLOR, arguments);
+        //Update locally
         dbHandler.getListManager().updateListColor(list, color);
+        //Call handlers
+        for (OperationHandlerI oh: otherHandlers)
+            oh.updateListColor(list, color);
     }
 
     @Override
-    public synchronized void updateUserName(String name) throws ConnectException {
+    public synchronized void updateUserName(String name) {
         if (user.getId() == 0)
             return;
         List<Object> arguments = new ArrayList<>();
         arguments.add(name);
+        //Tell the server
         sendUpdate(OperationType.UPDATE_USER_NAME, arguments);
+        //Update locally
         dbHandler.getUserManager().updateUserName(user.getId(), name);
         user.setUserName(name);
     }
 
     @Override
-    public synchronized void updateEmail(String email) throws InvalidActionException, IOException {
+    public synchronized void updateEmail(@NotNull String email) throws InvalidActionException, IOException {
         if (user.getId() == 0)
+            return;
+        if (user.getEmail().equals(email))
             return;
         String password = passwordSupplier.get();
         String loginRequest = getLoginRequest(email, password);
+
+        //Check whether user with mail address already exists
         HttpURLConnection connection = sendPostMessage(PROTOCOL + "://" + SERVER + "/auth/status", loginRequest);
         String body = getBody(connection);
         if (!body.equals("non"))
             throw new InvalidActionException("User with mail address already exists.");
+        //Tell the server, that the mail address changed
         List<Object> arguments = new ArrayList<>();
         arguments.add(email);
         sendUpdate(OperationType.UPDATE_MAIL, arguments);
+        //Change mail locally
         dbHandler.getUserManager().updateEmail(user.getId(), email);
         user.setEmail(email);
     }
 
+    /**
+     * Clear the queue for the initialized user.
+     */
     public synchronized void clearQueue() {
         if (user.getId() == 0)
             return;

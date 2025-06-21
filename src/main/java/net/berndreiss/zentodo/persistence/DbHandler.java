@@ -22,7 +22,7 @@ public class DbHandler extends Database implements  AutoCloseable {
      *
      */
     public DbHandler(EntityManagerFactory emf, String tokenPath) {
-        super(new EntryManager(emf.createEntityManager()), new UserManager(emf.createEntityManager(), tokenPath), new DatabaseOps(emf.createEntityManager()), new ListManager(emf.createEntityManager()));
+        super(new TaskManager(emf.createEntityManager()), new UserManager(emf.createEntityManager(), tokenPath), new DatabaseOps(emf.createEntityManager()), new ListManager(emf.createEntityManager()));
         this.emf = emf;
 
         Optional<User> user = getUserManager().getUser(0L);
@@ -42,7 +42,7 @@ public class DbHandler extends Database implements  AutoCloseable {
     @Override
     public void close() {
 
-        ((EntryManager) getEntryManager()).close();
+        ((TaskManager) getTaskManager()).close();
         ((UserManager) getUserManager()).close();
         ((DatabaseOps) getDatabaseOps()).close();
         ((ListManager) getListManager()).close();

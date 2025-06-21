@@ -9,8 +9,8 @@ import java.time.Instant;
  */
 
 @Entity
-@Table(name = "entries")
-public class Entry{
+@Table(name = "tasks")
+public class Task {
 
     @Column
     private long userId;
@@ -47,9 +47,9 @@ public class Entry{
                               //two digit number defines the offset in years (y), months(m),
                               //weeks (w) or days(d) when the task is going to reoccur
 
-    public Entry(){}
+    public Task(){}
 
-    public Entry(long userId, int profile, long id, String task, int position){
+    public Task(long userId, int profile, long id, String task, int position){
         //creates a new instance and initializes the fields of the entry
         this.userId = userId;
         this.profile = profile;
@@ -58,7 +58,7 @@ public class Entry{
         this.task=task;
     }
 
-    public Entry(long userId, int profile, String task, int position){
+    public Task(long userId, int profile, String task, int position){
         //creates a new instance and initializes the fields of the entry
         this.userId = userId;
         this.profile = profile;

@@ -72,7 +72,7 @@ public class ListManager implements ListManagerI {
         em.getTransaction().begin();
         em.persist(profile);
         em.persist(list);
-        em.createNativeQuery("UPDATE entries SET list = NULL, listposition = NULL WHERE list = :listId")
+        em.createNativeQuery("UPDATE tasks SET list = NULL, listposition = NULL WHERE list = :listId")
                 .setParameter("listId", listId)
                 .executeUpdate();
         em.getTransaction().commit();
@@ -90,7 +90,7 @@ public class ListManager implements ListManagerI {
             }
             list.getProfiles().clear();
             em.remove(list);
-            em.createNativeQuery("UPDATE entries SET list = NULL, listposition = NULL WHERE list = :listId")
+            em.createNativeQuery("UPDATE tasks SET list = NULL, listposition = NULL WHERE list = :listId")
                     .setParameter("listId", id)
                     .executeUpdate();
             em.getTransaction().commit();
@@ -104,8 +104,8 @@ public class ListManager implements ListManagerI {
             if (list.isEmpty())
                 return;
         }
-        Optional<Entry> entry;
-        entry = em.createQuery("SELECT e FROM Entry e WHERE e.userId = :userId  AND profile = :profile AND e.id = :id", Entry.class)
+        Optional<Task> entry;
+        entry = em.createQuery("SELECT t FROM Task t WHERE t.userId = :userId  AND profile = :profile AND t.id = :id", Task.class)
                 .setParameter("userId", userId)
                 .setParameter("profile", profile)
                 .setParameter("id", entryId)
@@ -114,11 +114,11 @@ public class ListManager implements ListManagerI {
             return;
 
         Integer oldPosition = entry.get().getListPosition();
-        List<Entry> listEntriesOld = new ArrayList<>();
+        List<Task> listEntriesOld = new ArrayList<>();
         if (entry.get().getList() != null) {
             listEntriesOld = getListEntries(userId, profile, entry.get().getList());
         }
-        List<Entry> listEntries = getListEntries(userId, profile, id);
+        List<Task> listEntries = getListEntries(userId, profile, id);
         entry.get().setList(id);
         if (id != null)
             entry.get().setListPosition(listEntries.size());
@@ -127,7 +127,7 @@ public class ListManager implements ListManagerI {
 
         em.getTransaction().begin();
         em.merge(entry.get());
-        for (Entry e : listEntriesOld) {
+        for (Task e : listEntriesOld) {
             if (e.getId() == entryId)
                 continue;
             if (oldPosition != null && e.getListPosition() > oldPosition) {
@@ -161,7 +161,7 @@ public class ListManager implements ListManagerI {
                 .setParameter("listId", listId)
                 .executeUpdate();
         em.createNativeQuery("ALTER TABLE profile_list ENABLE TRIGGER ALL");
-        em.createNativeQuery("UPDATE entries SET list = :id WHERE list = :listId")
+        em.createNativeQuery("UPDATE tasks SET list = :id WHERE list = :listId")
                 .setParameter("id", id)
                 .setParameter("listId", listId)
                 .executeUpdate();
@@ -200,23 +200,23 @@ public class ListManager implements ListManagerI {
     }
 
     @Override
-    public List<Entry> getListEntries(long userId, int profile, Long list) {
-        List<Entry> entries;
+    public List<Task> getListEntries(long userId, int profile, Long list) {
+        List<Task> entries;
         if (list == null){
-            entries= em.createQuery("SELECT e FROM Entry e WHERE e.list IS NULL AND e.userId = :userId AND e.profile = :profile", Entry.class)
+            entries= em.createQuery("SELECT t FROM Task t WHERE t.list IS NULL AND t.userId = :userId AND t.profile = :profile", Task.class)
                     .setParameter("userId", userId)
                     .setParameter("profile", profile)
                     .getResultList();
         }else {
-            entries = em.createQuery("SELECT e FROM Entry e WHERE e.list = :list AND e.userId = :userId AND e.profile = :profile", Entry.class)
+            entries = em.createQuery("SELECT t FROM Task t WHERE t.list = :list AND t.userId = :userId AND t.profile = :profile", Task.class)
                     .setParameter("list", list)
                     .setParameter("userId", userId)
                     .setParameter("profile", profile)
                     .getResultList();
         }
         if (list == null)
-            return  entries.stream().sorted(Comparator.comparing(Entry::getPosition)).toList();
-        return entries.stream().sorted(Comparator.comparing(Entry::getListPosition)).toList();
+            return  entries.stream().sorted(Comparator.comparing(Task::getPosition)).toList();
+        return entries.stream().sorted(Comparator.comparing(Task::getListPosition)).toList();
     }
 
     @Override
@@ -257,13 +257,13 @@ public class ListManager implements ListManagerI {
 
     @Override
     public synchronized void swapListEntries(long userId, int profile, long list, long entryId, int position) throws PositionOutOfBoundException {
-        List<Entry> entries = getListEntries(userId, profile, list);
+        List<Task> entries = getListEntries(userId, profile, list);
         if (position >= entries.size())
             throw new PositionOutOfBoundException("List position is too big.");
-        Optional<Entry> entry = entries.stream().filter(e -> e.getId() == entryId).findFirst();
+        Optional<Task> entry = entries.stream().filter(e -> e.getId() == entryId).findFirst();
         if (entry.isEmpty())
             return;
-        Entry other = entries.get(position);
+        Task other = entries.get(position);
 
         other.setListPosition(entry.get().getListPosition());
         entry.get().setListPosition(position);

@@ -1,13 +1,12 @@
 package net.berndreiss.zentodo.operations;
 
-import net.berndreiss.zentodo.data.Entry;
+import net.berndreiss.zentodo.data.Task;
 import net.berndreiss.zentodo.data.TaskList;
 import net.berndreiss.zentodo.exceptions.DuplicateIdException;
 import net.berndreiss.zentodo.exceptions.InvalidActionException;
 import net.berndreiss.zentodo.exceptions.PositionOutOfBoundException;
 
 import java.io.IOException;
-import java.net.ConnectException;
 import java.net.URISyntaxException;
 import java.time.Instant;
 import java.util.List;
@@ -22,112 +21,130 @@ public interface OperationHandlerI {
 
 
 
-    Entry addNewEntry(Entry entry) throws PositionOutOfBoundException, DuplicateIdException, InvalidActionException, ConnectException;
+    Task addNewTask(Task task) throws PositionOutOfBoundException, DuplicateIdException, InvalidActionException;
 
-    Entry addNewEntry(String task) throws PositionOutOfBoundException, ConnectException;
-    Entry addNewEntry(String task, int position) throws PositionOutOfBoundException, ConnectException;
+    Task addNewTask(String task);
+    Task addNewTask(String task, int position) throws PositionOutOfBoundException;
+
+    void removeTask(long id);
+
+    Optional<Task> getTask(long id);
+
+    List<Task> loadTasks();
+
+    List<Task> loadFocus();
 
     /**
-     * Delete entry from database including the local queue(s). All entries with position greater than the deleted
-     * entries position are decremented.
-     *
-     * @param id the id of the entry to be deleted
+     * Load all tasks that have been dropped.
+     * @return a list of dropped tasks
      */
-    void removeEntry(long id) throws ConnectException;
+    List<Task> loadDropped();
 
-    Optional<Entry> getEntry(long id);
+    /**
+     * Load a task list.
+     * @param list the list to load
+     * @return the list
+     */
+    List<Task> loadList(Long list);
 
-    List<Entry> loadEntries();
-
-    List<Entry> loadFocus();
-    List<Entry> loadDropped();
-    List<Entry> loadList(Long list);
+    /**
+     * Get all task lists.
+     * @return a list of lists
+     */
     List<TaskList> loadLists();
+
+    /**
+     * Retrieve the colors of all lists as a map.
+     * @return a map<list, color>
+     */
     Map<Long, String> getListColors();
+
+    //TODO How are we handling lists with duplicate names
+    /**
+     * Get a list by its name.
+     * @param name the name to look for
+     * @return the list
+     */
     Optional<TaskList> getListByName(String name);
 
     /**
-     * Swap entry with id with the entry at position.
-     *
+     * Swap the position of two tasks.
+     * @param id the id of the task to be moved
+     * @param position the position with which to swap
+     * @throws PositionOutOfBoundException Thrown if the position is out of bounds.
+     */
+    void swapTasks(long id, int position) throws PositionOutOfBoundException;
+
+    /**
+     * Swap list entries.
+     * @param list the list in question
      * @param id the id of the entry to be moved
      * @param position the position with which to swap
+     * @throws PositionOutOfBoundException Thrown if the position is out of bounds
      */
-    void swapEntries(long id, int position) throws PositionOutOfBoundException, ConnectException;
+    void swapListEntries(long list, long id, int position) throws PositionOutOfBoundException;
 
     /**
-     * Swap entry in list with entry at position.
-     *
-     * @param id the id of the entry to be moved
-     * @param position the position with which to swap
-     */
-    void swapListEntries(long list, long id, int position) throws PositionOutOfBoundException, ConnectException;
-
-    /**
-     * Update the task with the value provided.
-     *
+     * Update the name of a task.
      * @param id the id of the task to be updated
      * @param value the value to update with
      */
-    void updateTask(long id, String value) throws ConnectException;
+    void updateTask(long id, String value);
 
     /**
-     * Update the field with the value provided.
-     *
+     * Update the focus field of a task.
      * @param id the id of the task to be updated
      * @param value the value to update with
      */
-    void updateFocus(long id, boolean value) throws ConnectException;
+    void updateFocus(long id, boolean value);
 
     /**
-     * Update the field with the value provided.
-     *
+     * Update the dropped field of a task.
      * @param id the id of the task to be updated
      * @param value the value to update with
      */
-    void updateDropped(long id, boolean value) throws ConnectException;
+    void updateDropped(long id, boolean value);
 
     /**
-     * Update the list field and the position with the value provided and increment all list items list positions greater than the position.
-     * If the old list is not null decrement all old list items positions greater than the old position.
-     *
+     * Update the list of a task.
      * @param id the id of the task to be updated
+     * @param newId the new list to be set
      */
-    void updateList(long id, Long newId) throws ConnectException;
+    void updateList(long id, Long newId);
 
     /**
-     * Update the field with the value provided.
-     *
+     * Update the reminder date of a task.
      * @param id the id of the task to be updated
      * @param value the value to update with
      */
-    void updateReminderDate(long id, Instant value) throws ConnectException;
+    void updateReminderDate(long id, Instant value);
 
     /**
-     * Update the field with the value provided. Also needs to update the reminder date.
-     *
+     * Update the recurrence of a task.
      * @param id the id of the task to be updated
-     * @param value the value to update with
+     * @param value the value to update with -> has to be in the form "interval|number".
+     *              Valid intervals are 'd', 'w', 'm', and 'y'; valid numbers are any positive integers
      */
-    void updateRecurrence(long id, String value) throws ConnectException;
+    void updateRecurrence(long id, String value);
 
     /**
-     *
-     * Updates the given list with the color provided.
-     *
+     * Update the color of a list.
      * @param list the list to change
-     * @param color the color to put
+     * @param color the color to use
      */
-    void updateListColor(long list, String color) throws ConnectException;
+    void updateListColor(long list, String color);
 
     /**
-     * TODO
-     * @param name
+     * Update the name of the initialized user.
+     * @param name the new name for the user
      */
-    void updateUserName(String name) throws ConnectException;
+    void updateUserName(String name);
 
     /**
-     * TODO
-     * @param email
+     * Update the email for the initialized user.
+     * @param email new email for the user
+     * @throws InvalidActionException thrown if the provided mail address is already in use
+     * @throws IOException thrown if there is a problem communicating with the server
      */
     void updateEmail(String email) throws InvalidActionException, IOException, URISyntaxException;
 

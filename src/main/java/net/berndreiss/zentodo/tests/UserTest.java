@@ -2,7 +2,7 @@ package net.berndreiss.zentodo.tests;
 
 import net.berndreiss.zentodo.operations.OperationType;
 import net.berndreiss.zentodo.data.*;
-import net.berndreiss.zentodo.data.Entry;
+import net.berndreiss.zentodo.data.Task;
 import net.berndreiss.zentodo.data.Profile;
 import net.berndreiss.zentodo.data.TaskList;
 import net.berndreiss.zentodo.data.User;
@@ -122,21 +122,21 @@ public class UserTest {
     public void removeProfile() throws DuplicateIdException, InvalidActionException {
         Database database = DatabaseTestSuite.databaseSupplier.get();
         UserManagerI userManager = database.getUserManager();
-        EntryManagerI entryManager = database.getEntryManager();
+        TaskManagerI entryManager = database.getTaskManager();
         User user = userManager.addUser(1,mail1, null, 0);
         userManager.addProfile(0);
         Profile profile1 = userManager.addProfile(user.getId());
         TaskList list = database.getListManager().addList(0, "LIST", null);
         database.getListManager().addUserProfileToList(user.getId(), 0, list.getId());
-        entryManager.addNewEntry(user.getId(), 0, "TASK");
-        entryManager.addNewEntry(user.getId(), 0, "TASK");
+        entryManager.addNewTask(user.getId(), 0, "TASK");
+        entryManager.addNewTask(user.getId(), 0, "TASK");
 
-        Assert.assertFalse(entryManager.getEntries(user.getId(), 0).isEmpty());
+        Assert.assertFalse(entryManager.getTasks(user.getId(), 0).isEmpty());
 
         userManager.removeProfile(user.getId(), 0);
         Optional<Profile> profile = userManager.getProfile(user.getId(), 0);
         Assert.assertTrue("Profile was not delete.", profile.isEmpty());
-        Assert.assertTrue("Entries associated with profile were not deleted.", entryManager.getEntries(user.getId(), 0).isEmpty());
+        Assert.assertTrue("Entries associated with profile were not deleted.", entryManager.getTasks(user.getId(), 0).isEmpty());
         List<TaskList> lists = database.getListManager().getListsForUser(user.getId(), 0);
         Assert.assertTrue("List associations for profile were not removed.", lists.isEmpty());
 
@@ -239,11 +239,11 @@ public class UserTest {
         //TODO ADD TEST THAT QUEUE ITEM OF OTHER USERS ARE NOT RETURNED
         Database database = DatabaseTestSuite.databaseSupplier.get();
         UserManagerI userManager = database.getUserManager();
-        EntryManagerI entryManager = database.getEntryManager();
+        TaskManagerI entryManager = database.getTaskManager();
         User user = userManager.addUser(1,mail1, null, 0);
         List<Object> entries = new ArrayList<>();
-        entries.add(entryManager.addNewEntry(user.getId(), user.getProfile(), "TASK0"));
-        entries.add(entryManager.addNewEntry(user.getId(), user.getProfile(), "TASK1"));
+        entries.add(entryManager.addNewTask(user.getId(), user.getProfile(), "TASK0"));
+        entries.add(entryManager.addNewTask(user.getId(), user.getProfile(), "TASK1"));
         ZenServerMessage message = new ZenServerMessage(OperationType.ADD_NEW_ENTRY, entries, new VectorClock(user.getClock()));
         userManager.addToQueue(user, message);
         userManager.addToQueue(user, message);
@@ -252,8 +252,8 @@ public class UserTest {
         Assert.assertEquals("Queue was not updated properly", message.type, messages.get(0).type);
         Assert.assertEquals("Queue was not updated properly", message.clock.jsonify(), messages.get(0).clock.jsonify());
         Assert.assertEquals("Queue was not updated properly", message.timeStamp.getEpochSecond(), messages.get(0).timeStamp.getEpochSecond());
-        Assert.assertEquals("Queue was not updated properly", ((Entry) message.arguments.get(0)).getTask(), "TASK0");
-        Assert.assertEquals("Queue was not updated properly", ((Entry) message.arguments.get(1)).getTask(), "TASK1");
+        Assert.assertEquals("Queue was not updated properly", ((Task) message.arguments.get(0)).getTask(), "TASK0");
+        Assert.assertEquals("Queue was not updated properly", ((Task) message.arguments.get(1)).getTask(), "TASK1");
         database.close();
 
     }
@@ -262,11 +262,11 @@ public class UserTest {
     public void clearQueue() throws DuplicateIdException, InvalidActionException {
         Database database = DatabaseTestSuite.databaseSupplier.get();
         UserManagerI userManager = database.getUserManager();
-        EntryManagerI entryManager = database.getEntryManager();
+        TaskManagerI entryManager = database.getTaskManager();
         User user = userManager.addUser(1,mail1, null, 0);
         List<Object> entries = new ArrayList<>();
-        entries.add(entryManager.addNewEntry(user.getId(), user.getProfile(), "TASK0"));
-        entries.add(entryManager.addNewEntry(user.getId(), user.getProfile(), "TASK1"));
+        entries.add(entryManager.addNewTask(user.getId(), user.getProfile(), "TASK0"));
+        entries.add(entryManager.addNewTask(user.getId(), user.getProfile(), "TASK1"));
         ZenServerMessage message = new ZenServerMessage(OperationType.ADD_NEW_ENTRY, entries, new VectorClock(user.getClock()));
         userManager.addToQueue(user, message);
         userManager.clearQueue(user.getId());

@@ -2,7 +2,7 @@ package net.berndreiss.zentodo.tests;
 
 import net.berndreiss.zentodo.data.*;
 
-import net.berndreiss.zentodo.data.Entry;
+import net.berndreiss.zentodo.data.Task;
 import net.berndreiss.zentodo.data.Profile;
 import net.berndreiss.zentodo.data.TaskList;
 import net.berndreiss.zentodo.data.User;
@@ -19,7 +19,7 @@ import java.util.function.Supplier;
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
         DatabaseTest.class,
-        EntryTest.class,
+        TaskTest.class,
         UserTest.class,
         ListTest.class
 })
@@ -30,7 +30,7 @@ public class DatabaseTestSuite {
 
     public static void clearDatabase(Database database) throws InvalidActionException {
         UserManagerI userManager = database.getUserManager();
-        EntryManagerI entryManager = database.getEntryManager();
+        TaskManagerI entryManager = database.getTaskManager();
         ListManagerI listManager = database.getListManager();
         for (TaskList l: listManager.getLists())
             listManager.removeList(l.getId());
@@ -40,9 +40,9 @@ public class DatabaseTestSuite {
                 continue;
             }
             for (Profile p : userManager.getProfiles(u.getId())) {
-                for (Entry e : entryManager.getEntries(u.getId(), p.getId()))
-                    entryManager.removeEntry(e.getUserId(), p.getId(), e.getId());
-                Assert.assertTrue(entryManager.getEntries(u.getId(), p.getId()).isEmpty());
+                for (Task e : entryManager.getTasks(u.getId(), p.getId()))
+                    entryManager.removeTask(e.getUserId(), p.getId(), e.getId());
+                Assert.assertTrue(entryManager.getTasks(u.getId(), p.getId()).isEmpty());
                 try {
                     userManager.removeProfile(u.getId(), p.getId());
                 } catch (InvalidActionException _){}
@@ -52,9 +52,9 @@ public class DatabaseTestSuite {
         }
 
         for (Profile p: userManager.getProfiles(0)) {
-            List<Entry> entries = entryManager.getEntries(0, p.getId());
-            for (Entry e : entries)
-                entryManager.removeEntry(0, 0, e.getId());
+            List<Task> entries = entryManager.getTasks(0, p.getId());
+            for (Task e : entries)
+                entryManager.removeTask(0, 0, e.getId());
             if (p.getId() != 0)
                 userManager.removeProfile(0, p.getId());
         }

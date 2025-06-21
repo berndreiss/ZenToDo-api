@@ -1,6 +1,6 @@
 package net.berndreiss.zentodo.operations;
 
-import net.berndreiss.zentodo.data.Entry;
+import net.berndreiss.zentodo.data.Task;
 import net.berndreiss.zentodo.data.User;
 import net.berndreiss.zentodo.util.VectorClock;
 import net.berndreiss.zentodo.util.ZenServerMessage;
@@ -17,7 +17,7 @@ public interface ClientOperationHandlerI extends OperationHandlerI {
      *
      * @param entries the entries to be added
      */
-    void post(List<Entry> entries);
+    void post(List<Task> entries);
 
 
     /**

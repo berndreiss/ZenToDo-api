@@ -34,4 +34,26 @@ public class ZenServerMessage extends ZenMessage{
         return new ZenServerMessage(ZenMessage.parse(obj), timeStamp);
     }
 
+    /**
+     * Jsonify a list of server messages.
+     * @param list The messages to be jsonified.
+     * @return the jsonified list.
+     */
+    public static String jsonifyServerList(List<ZenServerMessage> list) {
+        StringBuilder sb = new StringBuilder();
+
+        sb.append("[");
+
+        String prefix = "\n";
+        for (ZenMessage message : list) {
+            sb.append(prefix);
+            prefix = ",\n";
+            sb.append(jsonifyMessage(message, "  "));
+        }
+
+        sb.append("\n]");
+
+        return sb.toString();
+    }
+
 }

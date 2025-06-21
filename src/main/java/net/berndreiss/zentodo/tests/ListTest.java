@@ -1,7 +1,7 @@
 package net.berndreiss.zentodo.tests;
 
 import net.berndreiss.zentodo.data.*;
-import net.berndreiss.zentodo.data.Entry;
+import net.berndreiss.zentodo.data.Task;
 import net.berndreiss.zentodo.data.TaskList;
 import net.berndreiss.zentodo.data.User;
 import net.berndreiss.zentodo.exceptions.DuplicateIdException;
@@ -41,13 +41,13 @@ public class ListTest {
         User user = DatabaseTestSuite.user;
         int profile = user.getProfile();
         Database database = DatabaseTestSuite.databaseSupplier.get();
-        EntryManagerI entryManager = database.getEntryManager();
+        TaskManagerI entryManager = database.getTaskManager();
         ListManagerI listManager = database.getListManager();
-        Entry entry0 = entryManager.addNewEntry(user.getId(), profile, "TASK0");
-        Entry entry1 = entryManager.addNewEntry(user.getId(), profile, "TASK1");
-        Entry entry2 = entryManager.addNewEntry(user.getId(), profile, "TASK2");
+        Task task0 = entryManager.addNewTask(user.getId(), profile, "TASK0");
+        Task task1 = entryManager.addNewTask(user.getId(), profile, "TASK1");
+        Task task2 = entryManager.addNewTask(user.getId(), profile, "TASK2");
 
-        List<Entry> entriesNoList = listManager.getListEntries(user.getId(), user.getProfile(), null);
+        List<Task> entriesNoList = listManager.getListEntries(user.getId(), user.getProfile(), null);
         Assert.assertFalse("Did not return entries without a list.", entriesNoList.isEmpty());
         Assert.assertEquals("Returned wrong amount of entries without a list.", 3, entriesNoList.size());
 
@@ -62,37 +62,37 @@ public class ListTest {
                     return l.getName().equals("LIST NULL");
                 }));
         TaskList list1 = listManager.addList(getUniqueListId(database), "LIST1", null);
-        listManager.updateList(user.getId(), profile, entry0.getId(), list0.getId());
-        listManager.updateList(user.getId(), profile, entry1.getId(), list1.getId());
-        listManager.updateList(user.getId(), profile, entry2.getId(), list1.getId());
+        listManager.updateList(user.getId(), profile, task0.getId(), list0.getId());
+        listManager.updateList(user.getId(), profile, task1.getId(), list1.getId());
+        listManager.updateList(user.getId(), profile, task2.getId(), list1.getId());
 
-        List<Entry> entries0 = listManager.getListEntries(user.getId(), profile, list0.getId());
-        List<Entry> entries1 = listManager.getListEntries(user.getId(), profile, list1.getId());
+        List<Task> entries0 = listManager.getListEntries(user.getId(), profile, list0.getId());
+        List<Task> entries1 = listManager.getListEntries(user.getId(), profile, list1.getId());
         Assert.assertEquals(entries0.isEmpty() ? "Entry was not added to list." : "Too many entries were added to list.", 1, entries0.size());
-        Assert.assertEquals("Wrong entry found in list.", entry0.getId(), entries0.get(0).getId());
+        Assert.assertEquals("Wrong entry found in list.", task0.getId(), entries0.get(0).getId());
         Assert.assertEquals(entries1.size() > 2 ? "Too few entries were added to list." : "Too many entries were added to list.", 2, entries1.size());
-        Assert.assertEquals("Wrong entry found in list.", entry1.getId(), entries1.get(0).getId());
+        Assert.assertEquals("Wrong entry found in list.", task1.getId(), entries1.get(0).getId());
         Assert.assertEquals("Entry has wrong list position.", 0, (int) entries1.get(0).getListPosition());
-        Assert.assertEquals("Wrong entry found in list.", entry2.getId(), entries1.get(1).getId());
+        Assert.assertEquals("Wrong entry found in list.", task2.getId(), entries1.get(1).getId());
         Assert.assertEquals("Entry has wrong list position.", 1, (int) entries1.get(1).getListPosition());
 
-        listManager.updateList(user.getId(), profile, entry1.getId(), list0.getId());
+        listManager.updateList(user.getId(), profile, task1.getId(), list0.getId());
         entries0 = listManager.getListEntries(user.getId(), profile, list0.getId());
         entries1 = listManager.getListEntries(user.getId(), profile, list1.getId());
         Assert.assertEquals("Entry was not added to other list.", 2, entries0.size());
         Assert.assertEquals("Entry was not remove from other list.", 1, entries1.size());
-        Assert.assertEquals("Wrong entry found in list.", entry2.getId(), entries1.get(0).getId());
+        Assert.assertEquals("Wrong entry found in list.", task2.getId(), entries1.get(0).getId());
         Assert.assertEquals("List position was not adjusted after removing item.", 0, (int) entries1.get(0).getListPosition());
 
-        listManager.updateList(user.getId(), user.getProfile(), entry0.getId(), null);
-        List<Entry> listNull = listManager.getListEntries(user.getId(), user.getProfile(), null);
-        Optional<Entry> entryNull = listNull.stream().filter(e -> e.getId() == entry0.getId()).findFirst();
+        listManager.updateList(user.getId(), user.getProfile(), task0.getId(), null);
+        List<Task> listNull = listManager.getListEntries(user.getId(), user.getProfile(), null);
+        Optional<Task> entryNull = listNull.stream().filter(e -> e.getId() == task0.getId()).findFirst();
         Assert.assertTrue("Entry was not added to null list.", entryNull.isPresent());
         Assert.assertNull("Entries list was not updated for null.", entryNull.get().getList());
         Assert.assertNull("Entries list position was not updated for null.", entryNull.get().getListPosition());
 
         User userOther = database.getUserManager().addUser(2, "asdfsalkdfjhasdlfkjhasdklsdfjh@asdklfjhasdflkjdhasf.net", null, 0);
-        List<Entry> otherList = listManager.getListEntries(userOther.getId(), userOther.getProfile(), list0.getId());
+        List<Task> otherList = listManager.getListEntries(userOther.getId(), userOther.getProfile(), list0.getId());
         Assert.assertTrue("Entries for user without entries were returned.", otherList.isEmpty());
         database.close();
 
@@ -134,17 +134,17 @@ public class ListTest {
 
         TaskList list = listManager.addList(getUniqueListId(database), "NAME", "GREEN");
         listManager.addUserProfileToList(user.getId(), user.getProfile(), list.getId());
-        Entry entry = database.getEntryManager().addNewEntry(user.getId(), user.getProfile(), "TASK");
-        listManager.updateList(user.getId(), user.getProfile(), entry.getId(), list.getId());
+        Task task = database.getTaskManager().addNewTask(user.getId(), user.getProfile(), "TASK");
+        listManager.updateList(user.getId(), user.getProfile(), task.getId(), list.getId());
 
         listManager.removeList(list.getId());
         Optional<TaskList> listReturned = listManager.getList(list.getId());
         Assert.assertTrue("List was not removed.", listReturned.isEmpty());
 
-        List<Entry> entries = listManager.getListEntries(user.getId(), user.getProfile(), list.getId());
+        List<Task> entries = listManager.getListEntries(user.getId(), user.getProfile(), list.getId());
         Assert.assertTrue("List was not removed from entries.", entries.isEmpty());
 
-        Optional<Entry> entryReturned = database.getEntryManager().getEntry(user.getId(), user.getProfile(), entry.getId());
+        Optional<Task> entryReturned = database.getTaskManager().getTask(user.getId(), user.getProfile(), task.getId());
         Assert.assertTrue("Entry was removed too.", entryReturned.isPresent());
         Assert.assertNull("Entries list field was not set to null.", entryReturned.get().getList());
         Assert.assertNull("Entries list position field was not set to null.", entryReturned.get().getListPosition());
@@ -156,28 +156,28 @@ public class ListTest {
     public void swapListEntries() throws PositionOutOfBoundException, InvalidActionException {
         User user = DatabaseTestSuite.user;
         Database database = DatabaseTestSuite.databaseSupplier.get();
-        EntryManagerI entryManager = database.getEntryManager();
+        TaskManagerI entryManager = database.getTaskManager();
         ListManagerI listManager = database.getListManager();
-        Entry entry0 = entryManager.addNewEntry(user.getId(), DatabaseTestSuite.user.getProfile(), "TASK0");
-        Entry entry1 = entryManager.addNewEntry(user.getId(), DatabaseTestSuite.user.getProfile(), "TASK1");
-        Entry entry2 = entryManager.addNewEntry(user.getId(), DatabaseTestSuite.user.getProfile(), "TASK2");
+        Task task0 = entryManager.addNewTask(user.getId(), DatabaseTestSuite.user.getProfile(), "TASK0");
+        Task task1 = entryManager.addNewTask(user.getId(), DatabaseTestSuite.user.getProfile(), "TASK1");
+        Task task2 = entryManager.addNewTask(user.getId(), DatabaseTestSuite.user.getProfile(), "TASK2");
 
         TaskList list = listManager.addList(getUniqueListId(database), "", null);
 
         listManager.addUserProfileToList(user.getId(), user.getProfile(), list.getId());
-        listManager.updateList(user.getId(), user.getProfile(), entry0.getId(), list.getId());
-        listManager.updateList(user.getId(), user.getProfile(), entry1.getId(), list.getId());
-        listManager.updateList(user.getId(), user.getProfile(), entry2.getId(), list.getId());
+        listManager.updateList(user.getId(), user.getProfile(), task0.getId(), list.getId());
+        listManager.updateList(user.getId(), user.getProfile(), task1.getId(), list.getId());
+        listManager.updateList(user.getId(), user.getProfile(), task2.getId(), list.getId());
 
-        listManager.swapListEntries(user.getId(), user.getProfile(), list.getId(), entry2.getId(), 0);
-        List<Entry> listReturned = listManager.getListEntries(user.getId(), user.getProfile(), list.getId());
+        listManager.swapListEntries(user.getId(), user.getProfile(), list.getId(), task2.getId(), 0);
+        List<Task> listReturned = listManager.getListEntries(user.getId(), user.getProfile(), list.getId());
         Assert.assertEquals(3, listReturned.size());
         Assert.assertEquals("List position for swapped item was not updated.", 0, (int) listReturned.get(0).getListPosition());
         Assert.assertEquals("List position for swapped item was not updated.", 2, (int) listReturned.get(2).getListPosition());
         Assert.assertEquals("List position for other item was has been changed.", 1, (int) listReturned.get(1).getListPosition());
 
         try{
-            listManager.swapListEntries(user.getId(), user.getProfile(), list.getId(), entry2.getId(), 3);
+            listManager.swapListEntries(user.getId(), user.getProfile(), list.getId(), task2.getId(), 3);
             Assert.fail("PositionOutOfBounds exception was not thrown.");
         } catch (PositionOutOfBoundException _){}
         database.close();
@@ -230,7 +230,7 @@ public class ListTest {
         User user = DatabaseTestSuite.user;
         int profile = user.getProfile();
         Database database = DatabaseTestSuite.databaseSupplier.get();
-        EntryManagerI entryManager = database.getEntryManager();
+        TaskManagerI entryManager = database.getTaskManager();
         ListManagerI listManager = database.getListManager();
 
         TaskList list0 = listManager.addList(getUniqueListId(database), "LIST0", null);
@@ -260,12 +260,12 @@ public class ListTest {
         User user = DatabaseTestSuite.user;
         int profile = user.getProfile();
         Database database = DatabaseTestSuite.databaseSupplier.get();
-        EntryManagerI entryManager = database.getEntryManager();
+        TaskManagerI entryManager = database.getTaskManager();
         ListManagerI listManager = database.getListManager();
 
         TaskList list0 = listManager.addList(getUniqueListId(database), "LIST0", null);
-        Entry entry = database.getEntryManager().addNewEntry(user.getId(), user.getProfile(), "TASK");
-        listManager.updateList(user.getId(), user.getProfile(), entry.getId(), list0.getId());
+        Task task = database.getTaskManager().addNewTask(user.getId(), user.getProfile(), "TASK");
+        listManager.updateList(user.getId(), user.getProfile(), task.getId(), list0.getId());
 
         listManager.addUserProfileToList(user.getId(), profile, list0.getId());
 
@@ -274,10 +274,10 @@ public class ListTest {
         Assert.assertTrue("List was not removed from user.", lists.isEmpty());
 
 
-        List<Entry> entries = listManager.getListEntries(user.getId(), user.getProfile(), list0.getId());
+        List<Task> entries = listManager.getListEntries(user.getId(), user.getProfile(), list0.getId());
         Assert.assertTrue("List was not removed from entries.", entries.isEmpty());
 
-        Optional<Entry> entryReturned = database.getEntryManager().getEntry(user.getId(), user.getProfile(), entry.getId());
+        Optional<Task> entryReturned = database.getTaskManager().getTask(user.getId(), user.getProfile(), task.getId());
         Assert.assertTrue("Entry was removed too.", entryReturned.isPresent());
         Assert.assertNull("Entries list field was not set to null.", entryReturned.get().getList());
         Assert.assertNull("Entries list position field was not set to null.", entryReturned.get().getListPosition());
@@ -312,14 +312,14 @@ public class ListTest {
         Database database = DatabaseTestSuite.databaseSupplier.get();
         User user = DatabaseTestSuite.user;
         ListManagerI listManager = database.getListManager();
-        EntryManagerI entryManager = database.getEntryManager();
+        TaskManagerI entryManager = database.getTaskManager();
 
         TaskList list0 = listManager.addList(0, "LIST0", null);
         TaskList list1 = listManager.addList(1, "LIST1", null);
         TaskList list2 = listManager.addList(2, "LIST2", null);
-        Entry entry = entryManager.addNewEntry(user.getId(), user.getProfile(), "TASK");
+        Task task = entryManager.addNewTask(user.getId(), user.getProfile(), "TASK");
         listManager.addUserProfileToList(user.getId(), user.getProfile(), list0.getId());
-        listManager.updateList(user.getId(), user.getProfile(), entry.getId(), list0.getId());
+        listManager.updateList(user.getId(), user.getProfile(), task.getId(), list0.getId());
         Long newId = listManager.updateId(list0.getId(), 3);
         Assert.assertNull("Id was returned.", newId);
         Optional<TaskList> listReturned = listManager.getList(3);
@@ -330,7 +330,7 @@ public class ListTest {
         Assert.assertFalse("List was not moved to new list id for user profile.", listsUser.isEmpty());
         Assert.assertEquals("Wrong list was returned.", 3, listsUser.get(0).getId());
 
-        List<Entry> entries = listManager.getListEntries(user.getId(), user.getProfile(), 3L);
+        List<Task> entries = listManager.getListEntries(user.getId(), user.getProfile(), 3L);
         Assert.assertFalse("Entry was not moved to new list id.", entries.isEmpty());
 
         listReturned = listManager.getList(1);

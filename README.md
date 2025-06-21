@@ -11,7 +11,7 @@ It provides:
     *  User
     *  etc.
   * An abstract database class consisting of
-    * An interface for an entry manager
+    * An interface for an task manager
     * An interface for a user manager
     * An interface for a list manager
     * An interface for general database operations

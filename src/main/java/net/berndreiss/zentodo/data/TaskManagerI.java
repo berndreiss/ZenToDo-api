@@ -8,7 +8,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
-public interface EntryManagerI {
+public interface TaskManagerI {
 
    /**
     * TODO DESCRIBE
@@ -24,16 +24,16 @@ public interface EntryManagerI {
     */
    ;
 
-   void postEntry(Entry entry);
+   void postTask(Task task);
 
-   Entry addNewEntry(long userId, int profile, String task);
+   Task addNewTask(long userId, int profile, String task);
 
    /**
     * Add a single new task to the database.
     *
     * @param task the task to be associated with the entry
     */
-   Entry addNewEntry(long userId, int profile, String task, int position) throws PositionOutOfBoundException;
+   Task addNewTask(long userId, int profile, String task, int position) throws PositionOutOfBoundException;
 
    /**
     * Add a single new task to the database.
@@ -41,7 +41,7 @@ public interface EntryManagerI {
     * @param id   the id of the new task as provided by the server
     * @param task the task to be associated with the entry
     */
-   Entry addNewEntry(long userId, int profile, long id, String task, int position) throws DuplicateIdException, PositionOutOfBoundException, InvalidActionException;
+   Task addNewTask(long userId, int profile, long id, String task, int position) throws DuplicateIdException, PositionOutOfBoundException, InvalidActionException;
 
    /**
     * Delete entry from database including the local queue(s). All entries with position greater than the deleted
@@ -49,7 +49,7 @@ public interface EntryManagerI {
     *
     * @param id the id of the entry to be deleted
     */
-   void removeEntry(long userId, int profile, long id);
+   void removeTask(long userId, int profile, long id);
 
    /**
     * Swap entry with id with the entry at position.
@@ -57,7 +57,7 @@ public interface EntryManagerI {
     * @param id       the id of the entry to be moved
     * @param position the position with which to swap
     */
-   void swapEntries(long userId, int profile, long id, int position) throws PositionOutOfBoundException;
+   void swapTasks(long userId, int profile, long id, int position) throws PositionOutOfBoundException;
 
 
    /**
@@ -104,10 +104,10 @@ public interface EntryManagerI {
 
 
 
-   Optional<Entry> getEntry(long userId, int profile, long id);
+   Optional<Task> getTask(long userId, int profile, long id);
 
-   List<Entry> getEntries(long userId, int profile);
+   List<Task> getTasks(long userId, int profile);
 
-   List<Entry> loadFocus(long userId, int profile);
-   List<Entry> loadDropped(long userId, int profile);
+   List<Task> loadFocus(long userId, int profile);
+   List<Task> loadDropped(long userId, int profile);
 }

@@ -137,7 +137,8 @@
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
-            <version>1.4.14</version>
+            <!-- we need this low version because of Android compatibility-->
+            <version>1.2.11</version>
         </dependency>
 
 
