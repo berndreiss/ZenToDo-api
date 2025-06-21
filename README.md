@@ -1,6 +1,6 @@
 # ZenToDo-api
 
-This is the API for interacting with the ZenToDo server (https://github.com/berndreiss/ZenToDo-server). It also contains all the relevant shared data types necessary to implement a ZenToDo list.
+This is the API for interacting with the ZenToDo server (https://github.com/berndreiss/ZenToDo-server). It also contains all the relevant shared data types necessary to implement a ZenToDo list. A frontend implementation can be found here: https://github.com/berndreiss/ZenToDo.
 
 It provides:
 * A client stub for interaction with the server
