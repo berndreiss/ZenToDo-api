@@ -11,13 +11,20 @@ import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
 
+/**
+ * Implementation of the TaskManagerI interface using JPA.
+ */
 public class TaskManager implements TaskManagerI {
 
 
     private final EntityManager em;
 
-    public TaskManager(EntityManager entityManager){
-        this.em = entityManager;
+    /**
+     * Create a new instance of the task manager.
+     * @param em the entity manager for interacting with the database
+     */
+    public TaskManager(EntityManager em){
+        this.em = em;
     }
 
     void close(){

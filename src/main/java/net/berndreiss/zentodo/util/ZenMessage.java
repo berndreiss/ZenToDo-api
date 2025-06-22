@@ -7,12 +7,25 @@ import org.json.JSONObject;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Class representing a message received from the server. It does not have a timestamp. It holds an operation type
+ * and the according arguments.
+ */
 public class ZenMessage {
 
+    /** The vector clock at the moment the operation was performed */
     public final VectorClock clock;
+    /** The type of operation performed */
     public final OperationType type;
+    /** The arguments used for the operation */
     public final List<Object> arguments;
 
+    /**
+     * Create a new instance of a message
+     * @param type the type of the operation
+     * @param arguments the arguments used in the operation
+     * @param clock the vector clock at the operation
+     */
     public ZenMessage(OperationType type, List<Object> arguments, VectorClock clock){
         this.type = type;
         this.arguments = arguments;

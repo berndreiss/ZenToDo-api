@@ -8,9 +8,16 @@ import net.berndreiss.zentodo.exceptions.PositionOutOfBoundException;
 
 import java.util.*;
 
+/**
+ * Implementation of the ListMangerI interface using JPA.
+ */
 public class ListManager implements ListManagerI {
-    private EntityManager em;
+    private final EntityManager em;
 
+    /**
+     * Create new instance of the list manager.
+     * @param em the entity manager for interacting with the database
+     */
     public ListManager(EntityManager em){
         this.em = em;
     }

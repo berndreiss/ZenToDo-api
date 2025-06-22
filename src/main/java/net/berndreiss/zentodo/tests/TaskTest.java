@@ -17,11 +17,11 @@ import java.util.stream.Collectors;
 
 public class TaskTest {
     @Before
-    public void prepare() throws InvalidActionException {
+    public void prepare() {
         DatabaseTestSuite.prepare();}
 
     @After
-    public void cleanUp() throws InvalidActionException {
+    public void cleanUp() {
         DatabaseTestSuite.cleanup();}
 
     public static long getUniqueId(User user, Database database){

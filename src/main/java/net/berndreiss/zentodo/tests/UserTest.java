@@ -22,11 +22,11 @@ public class UserTest {
     static final String mail1 = "adfaefawe@apvfoafap098aadfaafhaweihuaf.asfihuawefiui111";
     static final String mail2 = "adfaefawe@apvfoafap098aadfaafhaweihuaf.asfihuawefiuj222";
     @Before
-    public void prepare() throws InvalidActionException {
+    public void prepare() {
         DatabaseTestSuite.prepare();}
 
     @After
-    public void cleanUp() throws InvalidActionException {
+    public void cleanUp() {
         DatabaseTestSuite.cleanup();}
 
     @Test

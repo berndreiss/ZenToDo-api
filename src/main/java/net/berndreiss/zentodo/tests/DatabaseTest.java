@@ -1,7 +1,6 @@
 package net.berndreiss.zentodo.tests;
 
 import net.berndreiss.zentodo.data.Database;
-import net.berndreiss.zentodo.exceptions.InvalidActionException;
 import net.berndreiss.zentodo.data.Profile;
 import net.berndreiss.zentodo.data.User;
 import org.junit.After;
@@ -12,13 +11,19 @@ import org.junit.Test;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * Tests for basic database invariants.
+ */
 public class DatabaseTest {
     @Before
-    public void prepare() throws InvalidActionException {DatabaseTestSuite.prepare();}
+    public void prepare() {DatabaseTestSuite.prepare();}
 
     @After
-    public void cleanUp() throws InvalidActionException {DatabaseTestSuite.cleanup();}
+    public void cleanUp() {DatabaseTestSuite.cleanup();}
 
+    /**
+     * Test whether default user (id==0) and profile where created and assigned properly.
+     */
     @Test
     public void setup() {
         Database database = DatabaseTestSuite.databaseSupplier.get();

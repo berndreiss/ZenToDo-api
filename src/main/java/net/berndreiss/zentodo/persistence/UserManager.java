@@ -18,11 +18,19 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * Implementation of the UserMangagerI interface using JPA.
+ */
 public class UserManager implements UserManagerI {
 
-    private EntityManager em;
+    private final EntityManager em;
     private final String tokenPath;
-    private String token;
+
+    /**
+     * Creates a new instance of the user manager.
+     * @param em the entity manager for database interaction
+     * @param tokenPath the path where the token is to be stored
+     */
     public UserManager(EntityManager em, String tokenPath){
         this.em = em;
         this.tokenPath = tokenPath;
@@ -94,8 +102,6 @@ public class UserManager implements UserManagerI {
         profile.setProfileId(profileId);
         VectorClock clock = new VectorClock(device);
         user.setClock(clock.jsonify());
-        //user.setProfile(profile.getId());
-        //user.setProfile(profile.getId());
         em.persist(user);
         em.persist(profile);
         em.getTransaction().commit();
@@ -284,7 +290,6 @@ public class UserManager implements UserManagerI {
 
     @Override
     public synchronized void setToken(long user, String token) {
-        this.token = token;
         try {
             Files.write(Path.of((tokenPath == null ? "" : tokenPath + "/") + user + "_token"), token.getBytes());
         } catch (IOException e) {

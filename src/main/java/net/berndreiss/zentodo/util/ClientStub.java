@@ -34,13 +34,13 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
- * A client stub for communication with the server.
- * Default user
- * Queue
+ * A client stub for communication with the server. If a user is initialized the stub synchronizes all operations
+ * with the server. If no user is initialized a default user with id==0 is used.
+ * If the server is not available all operations are stored in a queue and sent on the next interaction with the server.
  */
 public class ClientStub implements OperationHandlerI {
 
-    private static final Logger logger = LoggerFactory.getLogger(ClientStub.class);
+    public static final Logger logger = LoggerFactory.getLogger(ClientStub.class);
 
     /** The websocket client for allowing the server to synch data live*/
     private ZenWebSocketClient webSocketClient;
@@ -65,6 +65,7 @@ public class ClientStub implements OperationHandlerI {
     /**The current vector clock for the user */
     private VectorClock vectorClock;
     /** The time drift with the server */
+    //TODO implement time drift logic
     public static TimeDrift timeDrift = new TimeDrift();
     /** Means of retrieving the password for login */
     private Supplier<String> passwordSupplier;

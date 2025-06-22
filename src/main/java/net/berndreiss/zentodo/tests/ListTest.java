@@ -16,17 +16,25 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Random;
 
+/**
+ * Test list operation (see TaskListI.java).
+ */
 public class ListTest {
     @Before
-    public void prepare() throws InvalidActionException {
+    public void prepare() {
         DatabaseTestSuite.prepare();
     }
 
     @After
-    public void cleanUp() throws InvalidActionException {
+    public void cleanUp() {
         DatabaseTestSuite.cleanup();
     }
 
+    /**
+     * Returns a unique id for a new list.
+     * @param database the database to use
+     * @return a unique id
+     */
     public static long getUniqueListId(Database database){
         Random random = new Random();
         long id = random.nextLong();
@@ -36,7 +44,7 @@ public class ListTest {
     }
 
     @Test
-    public void updateList() throws PositionOutOfBoundException, DuplicateIdException, InvalidActionException {
+    public void updateList() throws DuplicateIdException, InvalidActionException {
 
         User user = DatabaseTestSuite.user;
         int profile = user.getProfile();
@@ -183,7 +191,6 @@ public class ListTest {
         database.close();
     }
 
-
     @Test
     public void updateListName() throws PositionOutOfBoundException, InvalidActionException {
         Database database = DatabaseTestSuite.databaseSupplier.get();
@@ -201,7 +208,6 @@ public class ListTest {
         } catch (InvalidActionException _){}
         database.close();
     }
-
 
     @Test
     public void updateListColor() throws PositionOutOfBoundException, InvalidActionException {
@@ -307,6 +313,7 @@ public class ListTest {
         List<TaskList> listsAll = listManager.getLists();
         Assert.assertEquals("Not all lists were returned", 2, listsAll.size());
     }
+
     @Test
     public void updateId() throws InvalidActionException {
         Database database = DatabaseTestSuite.databaseSupplier.get();
@@ -345,6 +352,7 @@ public class ListTest {
         Assert.assertNotEquals("List id has not changed.", 1 , listChanged.get().getId());
         Assert.assertEquals("Wrong id was returned when update id.", listChanged.get().getId(), (long) newId);
     }
+
     @Test
     public void getListByName() throws InvalidActionException {
         Database database = DatabaseTestSuite.databaseSupplier.get();
