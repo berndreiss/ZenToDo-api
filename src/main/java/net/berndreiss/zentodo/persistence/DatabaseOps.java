@@ -12,15 +12,17 @@ public class DatabaseOps implements DatabaseOpsI {
 
     /**
      * Create new instance of the database operations class.
+     *
      * @param em the entity manager for interacting with the database
      */
-    public DatabaseOps(EntityManager em){
+    public DatabaseOps(EntityManager em) {
         this.em = em;
     }
 
-    void close(){
+    void close() {
         em.close();
     }
+
     @Override
     public void setTimeDelay(long delay) {
 

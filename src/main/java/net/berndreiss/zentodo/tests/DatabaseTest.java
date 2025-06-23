@@ -16,10 +16,14 @@ import java.util.Optional;
  */
 public class DatabaseTest {
     @Before
-    public void prepare() {DatabaseTestSuite.prepare();}
+    public void prepare() {
+        DatabaseTestSuite.prepare();
+    }
 
     @After
-    public void cleanUp() {DatabaseTestSuite.cleanup();}
+    public void cleanUp() {
+        DatabaseTestSuite.cleanup();
+    }
 
     /**
      * Test whether default user (id==0) and profile where created and assigned properly.

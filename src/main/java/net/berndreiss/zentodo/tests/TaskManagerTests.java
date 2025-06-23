@@ -1,7 +1,8 @@
 package net.berndreiss.zentodo.tests;
 
-import net.berndreiss.zentodo.data.*;
+import net.berndreiss.zentodo.data.Database;
 import net.berndreiss.zentodo.data.Task;
+import net.berndreiss.zentodo.data.TaskManagerI;
 import net.berndreiss.zentodo.data.User;
 import net.berndreiss.zentodo.exceptions.DuplicateIdException;
 import net.berndreiss.zentodo.exceptions.InvalidActionException;
@@ -12,22 +13,17 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.time.Instant;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
  * Test methods of the TaskManagerI interface.
  */
 public class TaskManagerTests {
-    @Before
-    public void prepare() {
-        DatabaseTestSuite.prepare();}
-
-    @After
-    public void cleanUp() {
-        DatabaseTestSuite.cleanup();}
-
-    public static long getUniqueId(User user, Database database){
+    public static long getUniqueId(User user, Database database) {
         TaskManagerI taskManager = database.getTaskManager();
         List<Task> entries = taskManager.getTasks(user.getId(), user.getProfile());
         Set<Long> existingIds = entries.stream().map(Task::getId).collect(Collectors.toSet());
@@ -37,6 +33,16 @@ public class TaskManagerTests {
             id++;
 
         return id;
+    }
+
+    @Before
+    public void prepare() {
+        DatabaseTestSuite.prepare();
+    }
+
+    @After
+    public void cleanUp() {
+        DatabaseTestSuite.cleanup();
     }
 
     @Test
@@ -70,7 +76,7 @@ public class TaskManagerTests {
         );
 
         Task task2 = taskManager.addNewTask(user.getId(), DatabaseTestSuite.user.getProfile(), "TASK2", 1);
-        Optional<Task> entry2Returned = taskManager.getTask(user.getId(), DatabaseTestSuite.user.getProfile(),  task2.getId());
+        Optional<Task> entry2Returned = taskManager.getTask(user.getId(), DatabaseTestSuite.user.getProfile(), task2.getId());
         Assert.assertTrue("entry2 should be present", entry2Returned.isPresent());
         Assert.assertEquals("Returned entry has wrong id for custom position.", task2.getId(), entry2Returned.get().getId());
         Assert.assertEquals("Returned entry has wrong user id for custom position.", user.getId(), entry2Returned.get().getUserId());
@@ -96,7 +102,8 @@ public class TaskManagerTests {
         Task task3 = null;
         try {
             task3 = taskManager.addNewTask(user.getId(), DatabaseTestSuite.user.getProfile(), id, "TASK3", 3);
-        } catch(DuplicateIdException _){}
+        } catch (DuplicateIdException _) {
+        }
         Assert.assertNotNull(task3);
         Optional<Task> entry3Returned = taskManager.getTask(user.getId(), DatabaseTestSuite.user.getProfile(), task3.getId());
         Assert.assertTrue("entry3 should be present", entry3Returned.isPresent());
@@ -142,19 +149,23 @@ public class TaskManagerTests {
         try {
             taskManager.addNewTask(user.getId(), user.getProfile(), task0.getId(), "TASK", 0);
             Assert.fail("Duplicate Id did not throw exception for added entry.");
-        } catch (DuplicateIdException _){}
+        } catch (DuplicateIdException _) {
+        }
         try {
-            taskManager.addNewTask(user.getId(), DatabaseTestSuite.user.getProfile(), "TASK2", entries.size()+1);
+            taskManager.addNewTask(user.getId(), DatabaseTestSuite.user.getProfile(), "TASK2", entries.size() + 1);
             Assert.fail("Add new entry did not throw exception for position out of bounds.");
-        } catch (PositionOutOfBoundException _){}
+        } catch (PositionOutOfBoundException _) {
+        }
         try {
-            taskManager.addNewTask(user.getId(), DatabaseTestSuite.user.getProfile(),2, "TASK2", entries.size()+1);
+            taskManager.addNewTask(user.getId(), DatabaseTestSuite.user.getProfile(), 2, "TASK2", entries.size() + 1);
             Assert.fail("Add new entry did not throw exception for position out of bounds.");
-        } catch (PositionOutOfBoundException | DuplicateIdException _){}
+        } catch (PositionOutOfBoundException | DuplicateIdException _) {
+        }
         try {
-            taskManager.addNewTask(user.getId(), user.getProfile(),0L, "task",0);
+            taskManager.addNewTask(user.getId(), user.getProfile(), 0L, "task", 0);
             Assert.fail("Entry id must not be 0.");
-        } catch (InvalidActionException _){}
+        } catch (InvalidActionException _) {
+        }
         database.close();
     }
 
@@ -173,7 +184,7 @@ public class TaskManagerTests {
         entries.add(task2);
         List<Task> entriesReturned = taskManager.getTasks(user.getId(), DatabaseTestSuite.user.getProfile());
         Assert.assertEquals("List returned by getEntries is of different size.", entries.size(), entriesReturned.size());
-        for (int i =0; i < entries.size(); i++)
+        for (int i = 0; i < entries.size(); i++)
             Assert.assertEquals("List returned by getEntries not equal to original list.", entries.get(i).getId(), entriesReturned.get(i).getId());
         database.close();
     }
@@ -218,7 +229,8 @@ public class TaskManagerTests {
 
         try {
             taskManager.updateId(user.getId(), user.getProfile(), addedTask.getId(), id);
-        } catch(DuplicateIdException _){}
+        } catch (DuplicateIdException _) {
+        }
         Optional<Task> getOldId = taskManager.getTask(user.getId(), user.getProfile(), addedTask.getId());
         Assert.assertTrue("Entry with old id still exists.", getOldId.isEmpty());
         Optional<Task> getNewId = taskManager.getTask(user.getId(), user.getProfile(), id);
@@ -226,7 +238,8 @@ public class TaskManagerTests {
         try {
             taskManager.updateId(user.getId(), user.getProfile(), id, id);
             Assert.fail("Duplicate Id did not throw exception for update id.");
-        } catch (DuplicateIdException _){}
+        } catch (DuplicateIdException _) {
+        }
         database.close();
     }
 
@@ -254,7 +267,8 @@ public class TaskManagerTests {
         try {
             taskManager.swapTasks(user.getId(), user.getProfile(), task0.getId(), 3);
             Assert.fail("Swap entries did not throw exception for position out of bounds.");
-        } catch (PositionOutOfBoundException _){}
+        } catch (PositionOutOfBoundException _) {
+        }
         database.close();
     }
 
@@ -286,7 +300,7 @@ public class TaskManagerTests {
         TaskManagerI taskManager = database.getTaskManager();
         Task task = taskManager.addNewTask(user.getId(), DatabaseTestSuite.user.getProfile(), "TASK0");
 
-        taskManager.updateFocus(user.getId(),user.getProfile(), task.getId(), true);
+        taskManager.updateFocus(user.getId(), user.getProfile(), task.getId(), true);
         Optional<Task> entryReturned = taskManager.getTask(user.getId(), user.getProfile(), task.getId());
         Assert.assertTrue(entryReturned.isPresent());
         Assert.assertTrue("Focus has not been set.", entryReturned.get().getFocus());
@@ -301,13 +315,12 @@ public class TaskManagerTests {
         TaskManagerI taskManager = database.getTaskManager();
         Task task = taskManager.addNewTask(user.getId(), DatabaseTestSuite.user.getProfile(), "TASK0");
 
-        taskManager.updateDropped(user.getId(),user.getProfile(), task.getId(), false);
+        taskManager.updateDropped(user.getId(), user.getProfile(), task.getId(), false);
         Optional<Task> entryReturned = taskManager.getTask(user.getId(), user.getProfile(), task.getId());
         Assert.assertTrue(entryReturned.isPresent());
         Assert.assertFalse("Setting dropped did not work.", entryReturned.get().getDropped());
         database.close();
     }
-
 
 
     @Test
@@ -342,7 +355,7 @@ public class TaskManagerTests {
     }
 
     @Test
-    public void loadFocusAndDropped(){
+    public void loadFocusAndDropped() {
         User user = DatabaseTestSuite.user;
         Database database = DatabaseTestSuite.databaseSupplier.get();
         TaskManagerI taskManager = database.getTaskManager();

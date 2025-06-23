@@ -1,15 +1,10 @@
 package net.berndreiss.zentodo.tests;
 
 import net.berndreiss.zentodo.data.*;
-
-import net.berndreiss.zentodo.data.Task;
-import net.berndreiss.zentodo.data.Profile;
-import net.berndreiss.zentodo.data.TaskList;
-import net.berndreiss.zentodo.data.User;
 import net.berndreiss.zentodo.exceptions.InvalidActionException;
 import net.berndreiss.zentodo.exceptions.InvalidUserActionException;
 import net.berndreiss.zentodo.util.ClientStub;
-import org.junit.*;
+import org.junit.Assert;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -29,22 +24,29 @@ import java.util.function.Supplier;
         ListManagerTests.class
 })
 public class DatabaseTestSuite {
-    /** The database to run the tests against */
+    /**
+     * The database to run the tests against
+     */
     public static Supplier<Database> databaseSupplier;
-    /** The default user for the tests */
+    /**
+     * The default user for the tests
+     */
     public static User user;
-    /** The default profile for the tests */
+    /**
+     * The default profile for the tests
+     */
     public static Profile profile;
 
     /**
      * Remove all data from the database -> clears users, tasks, and lists.
+     *
      * @param database the database to clear
      */
     public static void clearDatabase(Database database) {
         UserManagerI userManager = database.getUserManager();
         TaskManagerI taskManager = database.getTaskManager();
         ListManagerI listManager = database.getListManager();
-        for (TaskList l: listManager.getLists())
+        for (TaskList l : listManager.getLists())
             listManager.removeList(l.getId());
         for (User u : userManager.getUsers()) {
             userManager.clearQueue(u.getId());
@@ -57,7 +59,8 @@ public class DatabaseTestSuite {
                 Assert.assertTrue(taskManager.getTasks(u.getId(), p.getId()).isEmpty());
                 try {
                     userManager.removeProfile(u.getId(), p.getId());
-                } catch (InvalidActionException _){}
+                } catch (InvalidActionException _) {
+                }
 
             }
             try {
@@ -68,7 +71,7 @@ public class DatabaseTestSuite {
             }
         }
 
-        for (Profile p: userManager.getProfiles(0)) {
+        for (Profile p : userManager.getProfiles(0)) {
             List<Task> tasks = taskManager.getTasks(0, p.getId());
             for (Task t : tasks)
                 taskManager.removeTask(0, 0, t.getId());

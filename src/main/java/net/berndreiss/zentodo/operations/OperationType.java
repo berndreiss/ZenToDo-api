@@ -31,39 +31,39 @@ public enum OperationType {
     /**
      * PROFILE (int), ID (long), POSITION (int)
      */
-    SWAP ,
+    SWAP,
     /**
      * PROFILE (int), ID (long), LIST (long), LIST_POSITION (int)
      */
-    SWAP_LIST ,
+    SWAP_LIST,
     /**
      * PROFILE (int), ID (long), TASK (String)
      */
-    UPDATE_TASK ,
+    UPDATE_TASK,
     /**
      * PROFILE (int), ID (long), FOCUS (boolean)
      */
-    UPDATE_FOCUS ,
+    UPDATE_FOCUS,
     /**
      * PROFILE (int), ID (long), DROPPED (boolean)
      */
-    UPDATE_DROPPED ,
+    UPDATE_DROPPED,
     /**
      * PROFILE (int), ID (long), LIST (Long)
      */
-    UPDATE_LIST ,
+    UPDATE_LIST,
     /**
      * PROFILE (int), ID (long), REMINDER_DATE (Instant)
      */
-    UPDATE_REMINDER_DATE ,
+    UPDATE_REMINDER_DATE,
     /**
      * PROFILE (int), ID (long), RECURRENCE (String)
      */
-    UPDATE_RECURRENCE ,
+    UPDATE_RECURRENCE,
     /**
      * LIST (long), COLOR (String)
      */
-    UPDATE_LIST_COLOR ,
+    UPDATE_LIST_COLOR,
     /**
      * ID (long), NAME (String)
      */

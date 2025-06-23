@@ -3,7 +3,8 @@ package net.berndreiss.zentodo.util;
 import jakarta.websocket.*;
 
 import java.io.IOException;
-import java.net.*;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -28,6 +29,17 @@ public class ZenWebSocketClient extends Endpoint {
      */
     private final ClientStub clientStub;
 
+    /**
+     * Get a new websocket client.
+     *
+     * @param messageConsumer the action to perform when receiving a message
+     * @param clientStub      the client stub using the websocket client
+     */
+    public ZenWebSocketClient(Consumer<String> messageConsumer, ClientStub clientStub) {
+        this.messageConsumer = messageConsumer;
+        this.clientStub = clientStub;
+    }
+
     @OnOpen
     public void onOpen(Session session, EndpointConfig endpointConfig) {
         if (clientStub.getMessagePrinter() != null)
@@ -45,25 +57,14 @@ public class ZenWebSocketClient extends Endpoint {
             clientStub.getMessagePrinter().accept("Disconnected websocket client");
     }
 
-
     @OnError
     public void onError(Session session, Throwable throwable) {
         ClientStub.logger.error("Websocket client encountered an error.", throwable);
     }
 
     /**
-     * Get a new websocket client.
-     *
-     * @param messageConsumer the action to perform when receiving a message
-     * @param clientStub      the client stub using the websocket client
-     */
-    public ZenWebSocketClient(Consumer<String> messageConsumer, ClientStub clientStub) {
-        this.messageConsumer = messageConsumer;
-        this.clientStub = clientStub;
-    }
-
-    /**
      * Establish a connection to the server.
+     *
      * @param email  the email of the user
      * @param token  the JWT token for authorization
      * @param device the current device used

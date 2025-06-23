@@ -12,65 +12,85 @@ import java.util.List;
 @Table(name = "users")
 public class User {
 
-    /** The user id */
+    /**
+     * The user id
+     */
     @Id
     private Long id;
 
-    /** The users email address */
+    /**
+     * The users email address
+     */
     @Column(unique = true, nullable = false)
     private String email;
 
-    /** The username */
+    /**
+     * The username
+     */
     @Column
     private String userName = null;
 
-    /** True if the user has been enabled (they confirmed their email address) */
+    /**
+     * True if the user has been enabled (they confirmed their email address)
+     */
     @Column
     private boolean enabled = false;
 
     /**
-     *  Client side: the device assigned by the server.
-     *  Server side: the last active device.
+     * Client side: the device assigned by the server.
+     * Server side: the last active device.
      */
     @Column
     private Integer device;
 
-    /** The active profile */
-    @Column (nullable = false)
+    /**
+     * The active profile
+     */
+    @Column(nullable = false)
     private int profile;
 
-    /** The current vector clock */
+    /**
+     * The current vector clock
+     */
     @Column(columnDefinition = "TEXT")
     private String clock;
 
-    /** The devices for the user */
-    @OneToMany (mappedBy = "deviceId.user", cascade = CascadeType.REMOVE, orphanRemoval = true,  fetch = FetchType.EAGER)
+    /**
+     * The devices for the user
+     */
+    @OneToMany(mappedBy = "deviceId.user", cascade = CascadeType.REMOVE, orphanRemoval = true, fetch = FetchType.EAGER)
     private List<Device> devices = new ArrayList<>();
 
-    /** The profiles for the user */
-    @OneToMany (mappedBy = "profileId.user", cascade = CascadeType.REMOVE, orphanRemoval = true,  fetch = FetchType.EAGER)
+    /**
+     * The profiles for the user
+     */
+    @OneToMany(mappedBy = "profileId.user", cascade = CascadeType.REMOVE, orphanRemoval = true, fetch = FetchType.EAGER)
     private List<Profile> profiles = new ArrayList<>();
 
-    /** The queue items for the user */
-    @OneToMany (mappedBy = "user", cascade = CascadeType.REMOVE, orphanRemoval = true,  fetch = FetchType.EAGER)
+    /**
+     * The queue items for the user
+     */
+    @OneToMany(mappedBy = "user", cascade = CascadeType.REMOVE, orphanRemoval = true, fetch = FetchType.EAGER)
     private List<QueueItem> queueItems = new ArrayList<>();
 
-    public User(){}
+    public User() {
+    }
 
-    public User(String email){
+    public User(String email) {
         this.email = email;
     }
 
-    public User(String email, String userName){
+    public User(String email, String userName) {
         this.email = email;
         this.userName = userName;
     }
 
-    public User(String email, Integer device){
+    public User(String email, Integer device) {
         this.email = email;
         this.device = device;
     }
-    public User(String email, String username, Integer device){
+
+    public User(String email, String username, Integer device) {
         this.email = email;
         this.userName = username;
         this.device = device;
@@ -100,27 +120,41 @@ public class User {
         this.userName = userName;
     }
 
-    public boolean getEnabled(){
+    public boolean getEnabled() {
         return enabled;
     }
 
-    public void setEnabled(boolean enabled){
+    public Integer getDevice() {
+        return device;
+    }
+
+    public void setDevice(Integer device) {
+        this.device = device;
+    }
+
+    public int getProfile() {
+        return profile;
+    }
+
+    public void setProfile(int profile) {
+        this.profile = profile;
+    }
+
+    public boolean isEnabled() {
+        return enabled;
+    }
+
+    public void setEnabled(boolean enabled) {
         this.enabled = enabled;
     }
 
-    public Integer getDevice(){return device;}
+    public String getClock() {
+        return clock;
+    }
 
-    public void setDevice(Integer device){this.device = device;}
-
-    public int getProfile(){return profile;}
-
-    public void setProfile(int profile){this.profile = profile;}
-
-    public boolean isEnabled() {return enabled;}
-
-    public String getClock() {return clock;}
-
-    public void setClock(String clock) {this.clock = clock;}
+    public void setClock(String clock) {
+        this.clock = clock;
+    }
 
     //TODO do we want to solve this via the java class?
     //public List<Device> getDevices() {return devices;}

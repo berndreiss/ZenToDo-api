@@ -1,7 +1,7 @@
 package net.berndreiss.zentodo.persistence;
 
 import jakarta.persistence.EntityManagerFactory;
-import net.berndreiss.zentodo.data.*;
+import net.berndreiss.zentodo.data.Database;
 import net.berndreiss.zentodo.data.Profile;
 import net.berndreiss.zentodo.data.User;
 import net.berndreiss.zentodo.exceptions.DuplicateIdException;
@@ -15,13 +15,14 @@ import java.util.Optional;
 /**
  * Implementation of the Database interface.
  */
-public class DbHandler extends Database implements  AutoCloseable {
+public class DbHandler extends Database implements AutoCloseable {
 
     public EntityManagerFactory emf;
 
     /**
      * Create a new instance of the database handler.
-     * @param emf the entity manager factory for retrieving entity manager for interacting with the database
+     *
+     * @param emf       the entity manager factory for retrieving entity manager for interacting with the database
      * @param tokenPath the path where tokens are stored
      */
     public DbHandler(EntityManagerFactory emf, String tokenPath) {
@@ -33,8 +34,10 @@ public class DbHandler extends Database implements  AutoCloseable {
         if (user.isPresent()) {
             List<Profile> profiles = getUserManager().getProfiles(0);
             if (profiles.isEmpty()) {
-                try{
-                getUserManager().addProfile(0);}catch (InvalidActionException _){}//should never occur
+                try {
+                    getUserManager().addProfile(0);
+                } catch (InvalidActionException _) {
+                }//should never occur
             }
             return;
         }

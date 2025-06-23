@@ -4,21 +4,22 @@ import com.sun.istack.NotNull;
 import jakarta.persistence.EntityManagerFactory;
 import jakarta.persistence.Persistence;
 import jakarta.websocket.DeploymentException;
+import net.berndreiss.zentodo.data.*;
+import net.berndreiss.zentodo.exceptions.*;
 import net.berndreiss.zentodo.operations.ClientOperationHandlerI;
 import net.berndreiss.zentodo.operations.OperationHandlerI;
 import net.berndreiss.zentodo.operations.OperationType;
-import net.berndreiss.zentodo.data.Task;
-import net.berndreiss.zentodo.data.TaskList;
-import net.berndreiss.zentodo.data.User;
-import net.berndreiss.zentodo.exceptions.*;
 import net.berndreiss.zentodo.persistence.DbHandler;
-import net.berndreiss.zentodo.data.*;
+import net.berndreiss.zentodo.tests.ListManagerTests;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.net.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -26,11 +27,12 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
 import java.time.format.DateTimeParseException;
-import java.util.*;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
@@ -42,34 +44,73 @@ import java.util.stream.Collectors;
 public class ClientStub implements OperationHandlerI {
 
     public static final Logger logger = LoggerFactory.getLogger(ClientStub.class);
-
-    /** The websocket client for allowing the server to synch data live*/
-    private ZenWebSocketClient webSocketClient;
-
-    /** The database for persisting data */
-    public final Database dbHandler;
-    /** Handlers being triggered when data is being received */
-    private final List<ClientOperationHandlerI> otherHandlers = new ArrayList<>();
-    /** Prints informative messages (e.g., Problem connecting to server) */
-    private Consumer<String> messagePrinter = _ -> {};
-    /** The protocol being used for the websocket client */
+    /**
+     * The protocol being used for the websocket client
+     */
     public static String WEBSOCKET_PROTOCOL = "wss";
-    /** The protocol being used with the server */
+    /**
+     * The protocol being used with the server
+     */
     public static String PROTOCOL = "https";
-    /** The server url */
+    /**
+     * The server url
+     */
     public static String SERVER = "zentodo.berndreiss.net/api";
-    /** The current user. Default user without online synchronization has id 0 */
-    @NotNull
-    public User user;
-    /** Status in regard to the server */
-    public Status status;
-    /**The current vector clock for the user */
-    private VectorClock vectorClock;
-    /** The time drift with the server */
+    /**
+     * The time drift with the server
+     */
     //TODO implement time drift logic
     public static TimeDrift timeDrift = new TimeDrift();
-    /** Means of retrieving the password for login */
+    /**
+     * The database for persisting data
+     */
+    public final Database dbHandler;
+    /**
+     * Handlers being triggered when data is being received
+     */
+    private final List<ClientOperationHandlerI> otherHandlers = new ArrayList<>();
+    /**
+     * The current user. Default user without online synchronization has id 0
+     */
+    @NotNull
+    public User user;
+    /**
+     * Status in regard to the server
+     */
+    public Status status;
+    /**
+     * The websocket client for allowing the server to synch data live
+     */
+    private ZenWebSocketClient webSocketClient;
+    /**
+     * Prints informative messages (e.g., Problem connecting to server)
+     */
+    private Consumer<String> messagePrinter = _ -> {
+    };
+    /**
+     * The current vector clock for the user
+     */
+    private VectorClock vectorClock;
+    /**
+     * Means of retrieving the password for login
+     */
     private Supplier<String> passwordSupplier;
+
+    /**
+     * Creates a new instance of the client stub and sets the use to the default user.
+     *
+     * @param dbHandler The database for persisting data
+     */
+    public ClientStub(@NotNull Database dbHandler) {
+        this.dbHandler = dbHandler;
+        Optional<User> user = dbHandler.getUserManager().getUser(0);
+        if (user.isEmpty()) {
+            logger.error("No default user has been found.");
+            throw new RuntimeException("No default user has been found.");
+        }
+        this.user = user.get();
+        this.status = Status.OFFLINE;
+    }
 
     //Method for testing purposes
     public static ClientStub getStub(String userName, String email, String persistenceUnit) {
@@ -84,7 +125,7 @@ public class ClientStub implements OperationHandlerI {
         }
         EntityManagerFactory emf = Persistence.createEntityManagerFactory(persistenceUnit);
         Database opHandler = new DbHandler(emf, userName);
-        ClientStub stub = new  ClientStub(opHandler);
+        ClientStub stub = new ClientStub(opHandler);
         try {
             stub.init(email, userName, () -> "Test1234!?");
         } catch (IOException e) {
@@ -131,18 +172,30 @@ public class ClientStub implements OperationHandlerI {
     }
 
     /**
-     * Creates a new instance of the client stub and sets the use to the default user.
-     * @param dbHandler The database for persisting data
+     * Get the body of a URL connection.
+     *
+     * @param connection The connection to process.
+     * @return The body.
+     * @throws IOException Thrown when there are problems communicating with the server.
      */
-    public ClientStub(@NotNull Database dbHandler) {
-        this.dbHandler = dbHandler;
-        Optional<User> user = dbHandler.getUserManager().getUser(0);
-        if (user.isEmpty()) {
-            logger.error("No default user has been found.");
-            throw new RuntimeException("No default user has been found.");
-        }
-        this.user = user.get();
-        this.status = Status.OFFLINE;
+    public static String getBody(HttpURLConnection connection) throws IOException {
+        BufferedReader br = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+        String inputLine;
+        StringBuilder response = new StringBuilder();
+        while ((inputLine = br.readLine()) != null)
+            response.append(inputLine);
+        return response.toString();
+    }
+
+    /**
+     * Get a body for a login request as a JSON format.
+     *
+     * @param email    The email for the login request.
+     * @param password The password for the login request.
+     * @return the login request.
+     */
+    private static String getLoginRequest(String email, String password) {
+        return "{\"email\": \"" + email + "\", \"password\": \"" + password + "\"}";
     }
 
     //Authenticate the user -> if non-existent in database register and add to database
@@ -305,6 +358,7 @@ public class ClientStub implements OperationHandlerI {
 
     /**
      * Reinitialize the user, if it was initialized before.
+     *
      * @throws IOException Exception thrown when there are problems communicating with the server.
      */
     public void reinit() throws IOException {
@@ -316,8 +370,9 @@ public class ClientStub implements OperationHandlerI {
 
     /**
      * Initialize the stub with a user.
-     * @param email Mail address of the user.
-     * @param name Name of the user.
+     *
+     * @param email            Mail address of the user.
+     * @param name             Name of the user.
      * @param passwordSupplier Means of retrieving the password for the user.
      * @throws IOException Exception thrown when communicating with the server.
      */
@@ -330,7 +385,7 @@ public class ClientStub implements OperationHandlerI {
         } catch (DuplicateUserIdException e) {//this should actually never happen
             logger.error("Attempt to add duplicate user id in authenticate.", e);
             throw new RuntimeException(e);
-        } catch (InvalidUserActionException e){
+        } catch (InvalidUserActionException e) {
             logger.error("Attempt to perform invalid user action in authenticate.", e);
             throw new RuntimeException(e);
         }
@@ -389,10 +444,10 @@ public class ClientStub implements OperationHandlerI {
             } catch (PositionOutOfBoundException e) {
                 logger.error("Position out of bound:\n{}", ZenMessage.jsonifyMessage(message), e);
                 throw new RuntimeException(e);
-            } catch (DuplicateIdException e){
+            } catch (DuplicateIdException e) {
                 logger.error("Attempt to add entry with duplicate id:\n{}", ZenMessage.jsonifyMessage(message), e);
                 throw new RuntimeException(e);
-            } catch (InvalidActionException e){
+            } catch (InvalidActionException e) {
                 logger.error("Attempt to perform invalid action:\n{}", ZenMessage.jsonifyMessage(message), e);
                 throw new RuntimeException(e);
             }
@@ -401,7 +456,7 @@ public class ClientStub implements OperationHandlerI {
         //Set up the websocket client and run it on another thread to retrieve messages live from the server
         webSocketClient = new ZenWebSocketClient(this::consumeMessage, this);
         final Optional<String> token = dbHandler.getUserManager().getToken(user.getId());
-        if (token.isEmpty()){
+        if (token.isEmpty()) {
             logger.error("There is no token although the user is logged in.");
             throw new RuntimeException("There is no token although the user is logged in.");
         }
@@ -427,9 +482,9 @@ public class ClientStub implements OperationHandlerI {
 
     /**
      * Consume a raw message form the server:
-     *   - parses the message as a list of ZenMessage
-     *   - sends an acknowledgement for the message to the server
-     *   - processes the operations contained in the message
+     * - parses the message as a list of ZenMessage
+     * - sends an acknowledgement for the message to the server
+     * - processes the operations contained in the message
      */
     private void consumeMessage(String rawMessage) {
 
@@ -449,7 +504,7 @@ public class ClientStub implements OperationHandlerI {
         } catch (URISyntaxException e) {
             logger.error("URI is not valid", e);
             throw new RuntimeException(e);
-        } catch (IOException e){
+        } catch (IOException e) {
             status = Status.OFFLINE;
             return;
         }
@@ -461,10 +516,10 @@ public class ClientStub implements OperationHandlerI {
             } catch (DuplicateIdException e) {
                 logger.error("There was an attempt to add an entry with a duplicate id:\n{}", ZenMessage.jsonifyMessage(zm), e);
                 throw new RuntimeException(e);
-            } catch (InvalidActionException e){
+            } catch (InvalidActionException e) {
                 logger.error("There was an attempt to perform an invalid action:\n{}", ZenMessage.jsonifyMessage(zm), e);
                 throw new RuntimeException(e);
-            } catch (PositionOutOfBoundException e){
+            } catch (PositionOutOfBoundException e) {
                 logger.error("An entry was out of bound:\n{}", ZenMessage.jsonifyMessage(zm), e);
                 throw new RuntimeException(e);
                 //TODO remove ConnectException for other handlers?
@@ -473,24 +528,10 @@ public class ClientStub implements OperationHandlerI {
     }
 
     /**
-     * Get the body of a URL connection.
-     * @param connection The connection to process.
-     * @return The body.
-     * @throws IOException Thrown when there are problems communicating with the server.
-     */
-    public static String getBody(HttpURLConnection connection) throws IOException {
-        BufferedReader br = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-        String inputLine;
-        StringBuilder response = new StringBuilder();
-        while ((inputLine = br.readLine()) != null)
-            response.append(inputLine);
-        return response.toString();
-    }
-
-    /**
      * Send a non authenticated Post message.
+     *
      * @param urlString URL to use.
-     * @param body Message body to send.
+     * @param body      Message body to send.
      * @return the URL connection.
      * @throws IOException Thrown when there are problems communicating with the server.
      */
@@ -508,45 +549,6 @@ public class ClientStub implements OperationHandlerI {
         connection.setRequestProperty("Content-Type", "application/json");
         //This is used to determine the time drift between the server and the client using the basic NTP
         // -> see class TimeDrift
-        connection.setRequestProperty("t1", TimeDrift.getTimeStamp());
-        connection.setDoOutput(true);
-
-        try (OutputStream os = connection.getOutputStream()) {
-            byte[] input = body.getBytes(StandardCharsets.UTF_8);
-            os.write(input, 0, input.length);
-        }
-        processResponse(connection);
-        return connection;
-    }
-
-    /**
-     * Send an authenticated post message to the server.
-     * If the status is DIRTY also send the queue to the server.
-     *
-     * @param urlString URL to use.
-     * @param body The body to send.
-     * @return a connection.
-     * @throws IOException Thrown when there is a problem communicating with the server.
-     * @throws URISyntaxException Thrown when the URI is not valid.
-     */
-    public synchronized HttpURLConnection sendAuthPostMessage(String urlString, String body) throws IOException, URISyntaxException {
-
-        //If the status is DIRTY send the queue to the server.
-        if (status == Status.DIRTY) {
-            HttpURLConnection connection = sendAuthPostMessage(PROTOCOL + "://" + SERVER + "/process_operation", ZenServerMessage.jsonifyServerList(dbHandler.getUserManager().getQueued(user.getId())));
-
-            if (connection.getResponseCode() != 200) {
-                throw new ConnectException("Something went wrong sending data to server.");
-            }
-            status = Status.ONLINE;
-        }
-
-        URL url = new URI(urlString).toURL();
-        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-        connection.setRequestMethod("POST");
-        connection.setRequestProperty("Content-Type", "application/json");
-        connection.setRequestProperty("Authorization", "Bearer " + dbHandler.getUserManager().getToken(user.getId()));
-        connection.setRequestProperty("device", String.valueOf(user.getDevice()));
         connection.setRequestProperty("t1", TimeDrift.getTimeStamp());
         connection.setDoOutput(true);
 
@@ -586,7 +588,49 @@ public class ClientStub implements OperationHandlerI {
     }*/
 
     /**
+     * Send an authenticated post message to the server.
+     * If the status is DIRTY also send the queue to the server.
+     *
+     * @param urlString URL to use.
+     * @param body      The body to send.
+     * @return a connection.
+     * @throws IOException        Thrown when there is a problem communicating with the server.
+     * @throws URISyntaxException Thrown when the URI is not valid.
+     */
+    public synchronized HttpURLConnection sendAuthPostMessage(String urlString, String body) throws IOException, URISyntaxException {
+
+        //If the status is DIRTY send the queue to the server.
+        if (status == Status.DIRTY) {
+            HttpURLConnection connection = sendAuthPostMessage(PROTOCOL + "://" + SERVER + "/process_operation", ZenServerMessage.jsonifyServerList(dbHandler.getUserManager().getQueued(user.getId())));
+
+            if (connection.getResponseCode() != 200) {
+                throw new ConnectException("Something went wrong sending data to server.");
+            }
+            status = Status.ONLINE;
+        }
+
+        URL url = new URI(urlString).toURL();
+        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+        connection.setRequestMethod("POST");
+        connection.setRequestProperty("Content-Type", "application/json");
+        connection.setRequestProperty("Authorization", "Bearer " + dbHandler.getUserManager().getToken(user.getId()));
+        connection.setRequestProperty("device", String.valueOf(user.getDevice()));
+        connection.setRequestProperty("t1", TimeDrift.getTimeStamp());
+        connection.setDoOutput(true);
+
+        try (OutputStream os = connection.getOutputStream()) {
+            byte[] input = body.getBytes(StandardCharsets.UTF_8);
+            os.write(input, 0, input.length);
+        }
+        processResponse(connection);
+        return connection;
+    }
+
+    //TODO do we want this?
+
+    /**
      * Processing the response involves calculating the time drift.
+     *
      * @param connection the connection to be processed
      */
     private void processResponse(HttpURLConnection connection) {
@@ -604,11 +648,11 @@ public class ClientStub implements OperationHandlerI {
             if (timeDrift == null || td.compareTo(timeDrift) < 0)
                 timeDrift = td;
 
-        } catch (DateTimeParseException _) {}
+        } catch (DateTimeParseException _) {
+        }
 
     }
 
-    //TODO do we want this?
     /**
      *
      */
@@ -618,6 +662,7 @@ public class ClientStub implements OperationHandlerI {
 
     /**
      * Add a handler for client side operations.
+     *
      * @param operationHandler The handler to be added.
      */
     public void addOperationHandler(ClientOperationHandlerI operationHandler) {
@@ -626,6 +671,7 @@ public class ClientStub implements OperationHandlerI {
 
     /**
      * Remove a handler for client side operations.
+     *
      * @param operationHandler The handler to be removed.
      */
     public void removeOperationHandler(ClientOperationHandlerI operationHandler) {
@@ -633,15 +679,8 @@ public class ClientStub implements OperationHandlerI {
     }
 
     /**
-     * Set the message printer.
-     * @param messagePrinter Printer to set.
-     */
-    public void setMessagePrinter(Consumer<String> messagePrinter) {
-        this.messagePrinter = messagePrinter;
-    }
-
-    /**
      * Get the message printer.
+     *
      * @return the printer.
      */
     public Consumer<String> getMessagePrinter() {
@@ -649,30 +688,31 @@ public class ClientStub implements OperationHandlerI {
     }
 
     /**
+     * Set the message printer.
+     *
+     * @param messagePrinter Printer to set.
+     */
+    public void setMessagePrinter(Consumer<String> messagePrinter) {
+        this.messagePrinter = messagePrinter;
+    }
+
+    //TODO replace this with headers?
+
+    /**
      * Get the user currently initialized in the stub. If no specific user was initialized, the default user is set (id==0);
+     *
      * @return the user currently initialized or the default user.
      */
     public User getUser() {
         return user;
     }
 
-    //TODO replace this with headers?
-    /**
-     * Get a body for a login request as a JSON format.
-     * @param email The email for the login request.
-     * @param password The password for the login request.
-     * @return the login request.
-     */
-    private static String getLoginRequest(String email, String password) {
-        return "{\"email\": \"" + email + "\", \"password\": \"" + password + "\"}";
-    }
-
-
     /**
      * Parses the message and performs the operation it contains.
+     *
      * @param message the message to process
-     * @throws DuplicateIdException thrown if task with duplicate id is added
-     * @throws InvalidActionException thrown if invalid action is performed
+     * @throws DuplicateIdException        thrown if task with duplicate id is added
+     * @throws InvalidActionException      thrown if invalid action is performed
      * @throws PositionOutOfBoundException thrown if task or list entry is out of bounds
      */
     private void receiveMessage(ZenMessage message) throws DuplicateIdException, InvalidActionException, PositionOutOfBoundException {
@@ -809,10 +849,11 @@ public class ClientStub implements OperationHandlerI {
 
     /**
      * Sends an update with an operation to the server.
-     * @param type The type of operation performed.
+     *
+     * @param type      The type of operation performed.
      * @param arguments The arguments for the operation.
      */
-    private synchronized void sendUpdate(OperationType type, List<Object> arguments){
+    private synchronized void sendUpdate(OperationType type, List<Object> arguments) {
         //Do nothing for default user
         if (user.getId() == 0)
             return;
@@ -854,7 +895,7 @@ public class ClientStub implements OperationHandlerI {
         //Tell the server
         sendAddEntryUpdate(returnedTask);
         //Call handlers
-        for (OperationHandlerI oh: otherHandlers) {
+        for (OperationHandlerI oh : otherHandlers) {
             try {
                 oh.addNewTask(returnedTask);
             } catch (PositionOutOfBoundException | DuplicateIdException | InvalidActionException e) {
@@ -923,7 +964,7 @@ public class ClientStub implements OperationHandlerI {
         //Update locally
         dbHandler.getTaskManager().removeTask(user.getId(), user.getProfile(), id);
         //Call handlers
-        for (OperationHandlerI oh: otherHandlers)
+        for (OperationHandlerI oh : otherHandlers)
             oh.removeTask(id);
     }
 
@@ -983,7 +1024,7 @@ public class ClientStub implements OperationHandlerI {
         //Update locally
         dbHandler.getTaskManager().swapTasks(user.getId(), user.getProfile(), id, position);
         //Call handlers
-        for (OperationHandlerI oh: otherHandlers)
+        for (OperationHandlerI oh : otherHandlers)
             oh.swapTasks(id, position);
     }
 
@@ -999,7 +1040,7 @@ public class ClientStub implements OperationHandlerI {
         //Update locally
         dbHandler.getListManager().swapListEntries(user.getId(), user.getProfile(), list, id, position);
         //Call handlers
-        for (OperationHandlerI oh: otherHandlers)
+        for (OperationHandlerI oh : otherHandlers)
             oh.swapListEntries(list, id, position);
     }
 
@@ -1014,7 +1055,7 @@ public class ClientStub implements OperationHandlerI {
         //Update locally
         dbHandler.getTaskManager().updateTask(user.getId(), user.getProfile(), id, value);
         //Call handlers
-        for (OperationHandlerI oh: otherHandlers)
+        for (OperationHandlerI oh : otherHandlers)
             oh.updateTask(id, value);
     }
 
@@ -1029,7 +1070,7 @@ public class ClientStub implements OperationHandlerI {
         //Update locally
         dbHandler.getTaskManager().updateFocus(user.getId(), user.getProfile(), id, value);
         //Call handlers
-        for (OperationHandlerI oh: otherHandlers)
+        for (OperationHandlerI oh : otherHandlers)
             oh.updateFocus(id, value);
     }
 
@@ -1044,23 +1085,23 @@ public class ClientStub implements OperationHandlerI {
         //Update locally
         dbHandler.getTaskManager().updateDropped(user.getId(), user.getProfile(), id, value);
         //Call handlers
-        for (OperationHandlerI oh: otherHandlers)
+        for (OperationHandlerI oh : otherHandlers)
             oh.updateDropped(id, value);
     }
 
     @Override
-    public synchronized void updateList(long id, Long newId) {
+    public synchronized void updateList(long task, Long newId) {
         List<Object> arguments = new ArrayList<>();
         arguments.add(user.getProfile());
-        arguments.add(id);
+        arguments.add(task);
         arguments.add(newId);
         //Tell the server
         sendUpdate(OperationType.UPDATE_LIST, arguments);
         //Update locally
-        dbHandler.getListManager().updateList(user.getId(), user.getProfile(), id, newId);
+        dbHandler.getListManager().updateList(user.getId(), user.getProfile(), task, newId);
         //Call handlers
-        for (OperationHandlerI oh: otherHandlers)
-            oh.updateList(id, newId);
+        for (OperationHandlerI oh : otherHandlers)
+            oh.updateList(task, newId);
     }
 
     @Override
@@ -1074,7 +1115,7 @@ public class ClientStub implements OperationHandlerI {
         //Update locally
         dbHandler.getTaskManager().updateReminderDate(user.getId(), user.getProfile(), id, value);
         //Call handlers
-        for (OperationHandlerI oh: otherHandlers)
+        for (OperationHandlerI oh : otherHandlers)
             oh.updateReminderDate(id, value);
     }
 
@@ -1089,7 +1130,7 @@ public class ClientStub implements OperationHandlerI {
         //Update locally
         dbHandler.getTaskManager().updateRecurrence(user.getId(), user.getProfile(), id, value);
         //Call handlers
-        for (OperationHandlerI oh: otherHandlers)
+        for (OperationHandlerI oh : otherHandlers)
             oh.updateRecurrence(id, value);
     }
 
@@ -1103,7 +1144,7 @@ public class ClientStub implements OperationHandlerI {
         //Update locally
         dbHandler.getListManager().updateListColor(list, color);
         //Call handlers
-        for (OperationHandlerI oh: otherHandlers)
+        for (OperationHandlerI oh : otherHandlers)
             oh.updateListColor(list, color);
     }
 
@@ -1141,6 +1182,23 @@ public class ClientStub implements OperationHandlerI {
         //Change mail locally
         dbHandler.getUserManager().updateEmail(user.getId(), email);
         user.setEmail(email);
+    }
+
+    @Override
+    public List<TaskList> getLists() {
+        return dbHandler.getListManager().getListsForUser(user.getId(), user.getProfile());
+    }
+
+    @Override
+    public TaskList addNewList(String name, String color) throws InvalidActionException, DuplicateIdException {
+        //TODO try to get List id from server
+        long id = ListManagerTests.getUniqueListId(dbHandler);
+        TaskList list = dbHandler.getListManager().addList(id, name, color);
+        dbHandler.getListManager().addUserProfileToList(user.getId(), user.getProfile(), list.getId());
+        for (OperationHandlerI oh: otherHandlers)
+
+        return list;
+        //TODO tell server
     }
 
     /**

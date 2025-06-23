@@ -13,20 +13,27 @@ import java.util.List;
  */
 public class ZenMessage {
 
-    /** The vector clock at the moment the operation was performed */
+    /**
+     * The vector clock at the moment the operation was performed
+     */
     public final VectorClock clock;
-    /** The type of operation performed */
+    /**
+     * The type of operation performed
+     */
     public final OperationType type;
-    /** The arguments used for the operation */
+    /**
+     * The arguments used for the operation
+     */
     public final List<Object> arguments;
 
     /**
      * Create a new instance of a message
-     * @param type the type of the operation
+     *
+     * @param type      the type of the operation
      * @param arguments the arguments used in the operation
-     * @param clock the vector clock at the operation
+     * @param clock     the vector clock at the operation
      */
-    public ZenMessage(OperationType type, List<Object> arguments, VectorClock clock){
+    public ZenMessage(OperationType type, List<Object> arguments, VectorClock clock) {
         this.type = type;
         this.arguments = arguments;
         this.clock = clock;
@@ -34,6 +41,7 @@ public class ZenMessage {
 
     /**
      * Parse a JSON String as a ZenMessage.
+     *
      * @param jsonString The String to be parsed.
      * @return the ZenMessage.
      */
@@ -44,15 +52,16 @@ public class ZenMessage {
 
     /**
      * Parse a JSON object as a ZenMessage.
+     *
      * @param obj The String to be parsed.
      * @return the ZenMessage.
      */
-    public static ZenMessage parse(JSONObject obj){
+    public static ZenMessage parse(JSONObject obj) {
         VectorClock clock = new VectorClock(obj.getJSONObject("clock"));
         OperationType type = OperationType.valueOf(obj.getString("type"));
         JSONArray array = obj.getJSONArray("arguments");
         List<Object> arguments = new ArrayList<>();
-        for (int i = 0; i < array.length(); i++){
+        for (int i = 0; i < array.length(); i++) {
             arguments.add(array.get(i));
         }
         return new ZenMessage(type, arguments, clock);
@@ -60,6 +69,7 @@ public class ZenMessage {
 
     /**
      * Parse a JSON array as a list of ZenMessages.
+     *
      * @param jsonArray Array to be parsed.
      * @return a list of ZenMessages.
      */
@@ -91,6 +101,7 @@ public class ZenMessage {
 
     /**
      * Returns a ZenMessage in JSON format.
+     *
      * @param message The message to jsonify.
      * @return the jsonified message.
      */
@@ -100,7 +111,8 @@ public class ZenMessage {
 
     /**
      * Returns a ZenMessage in JSON format.
-     * @param message The message to jsonify.
+     *
+     * @param message    The message to jsonify.
      * @param whitespace The whitespace to be added at the beginning of each line.
      * @return the jsonified message.
      */
@@ -131,6 +143,7 @@ public class ZenMessage {
 
     /**
      * Jsonifies a list of messages.
+     *
      * @param list The messages to be jsonified.
      * @return the jsonified list.
      */

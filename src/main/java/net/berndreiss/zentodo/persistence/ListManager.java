@@ -17,12 +17,14 @@ public class ListManager implements ListManagerI {
 
     /**
      * Create new instance of the list manager.
+     *
      * @param em the entity manager for interacting with the database
      */
-    public ListManager(EntityManager em){
+    public ListManager(EntityManager em) {
         this.em = em;
     }
-    public void close(){
+
+    public void close() {
         em.close();
     }
 
@@ -207,12 +209,12 @@ public class ListManager implements ListManagerI {
     @Override
     public List<Task> getListEntries(long userId, int profile, Long list) {
         List<Task> entries;
-        if (list == null){
-            entries= em.createQuery("SELECT t FROM Task t WHERE t.list IS NULL AND t.userId = :userId AND t.profile = :profile", Task.class)
+        if (list == null) {
+            entries = em.createQuery("SELECT t FROM Task t WHERE t.list IS NULL AND t.userId = :userId AND t.profile = :profile", Task.class)
                     .setParameter("userId", userId)
                     .setParameter("profile", profile)
                     .getResultList();
-        }else {
+        } else {
             entries = em.createQuery("SELECT t FROM Task t WHERE t.list = :list AND t.userId = :userId AND t.profile = :profile", Task.class)
                     .setParameter("list", list)
                     .setParameter("userId", userId)
@@ -220,7 +222,7 @@ public class ListManager implements ListManagerI {
                     .getResultList();
         }
         if (list == null)
-            return  entries.stream().sorted(Comparator.comparing(Task::getPosition)).toList();
+            return entries.stream().sorted(Comparator.comparing(Task::getPosition)).toList();
         return entries.stream().sorted(Comparator.comparing(Task::getListPosition)).toList();
     }
 
@@ -240,7 +242,7 @@ public class ListManager implements ListManagerI {
                     .getSingleResult();
 
             return getList(id);
-        } catch (NoResultException _){
+        } catch (NoResultException _) {
             return Optional.empty();
         }
 
@@ -257,7 +259,7 @@ public class ListManager implements ListManagerI {
 
     @Override
     public List<TaskList> getLists() {
-       return em.createQuery("SELECT l FROM TaskList l", TaskList.class).getResultList();
+        return em.createQuery("SELECT l FROM TaskList l", TaskList.class).getResultList();
     }
 
     @Override
@@ -280,7 +282,7 @@ public class ListManager implements ListManagerI {
 
     }
 
-    public long getUniqueUserId(){
+    public long getUniqueUserId() {
         Random random = new Random();
         long id = random.nextLong();
         while (getList(id).isPresent())
