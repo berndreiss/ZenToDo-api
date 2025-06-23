@@ -19,7 +19,7 @@ import java.util.Random;
 /**
  * Test list operation (see TaskListI.java).
  */
-public class ListTest {
+public class ListManagerTests {
     @Before
     public void prepare() {
         DatabaseTestSuite.prepare();
@@ -49,11 +49,11 @@ public class ListTest {
         User user = DatabaseTestSuite.user;
         int profile = user.getProfile();
         Database database = DatabaseTestSuite.databaseSupplier.get();
-        TaskManagerI entryManager = database.getTaskManager();
+        TaskManagerI taskManager = database.getTaskManager();
         ListManagerI listManager = database.getListManager();
-        Task task0 = entryManager.addNewTask(user.getId(), profile, "TASK0");
-        Task task1 = entryManager.addNewTask(user.getId(), profile, "TASK1");
-        Task task2 = entryManager.addNewTask(user.getId(), profile, "TASK2");
+        Task task0 = taskManager.addNewTask(user.getId(), profile, "TASK0");
+        Task task1 = taskManager.addNewTask(user.getId(), profile, "TASK1");
+        Task task2 = taskManager.addNewTask(user.getId(), profile, "TASK2");
 
         List<Task> entriesNoList = listManager.getListEntries(user.getId(), user.getProfile(), null);
         Assert.assertFalse("Did not return entries without a list.", entriesNoList.isEmpty());
@@ -62,8 +62,8 @@ public class ListTest {
         TaskList list0 = listManager.addList(getUniqueListId(database), "LIST0", null);
         TaskList listNullId = listManager.addList(list0.getId(), "LIST NULL", null);
         Assert.assertNull("List returned for identical ids was not null.", listNullId);
-        List<TaskList> listsDuplId = listManager.getLists();
-        Assert.assertTrue("List with identical id was added.", listsDuplId.stream()
+        List<TaskList> listsDuplicateId = listManager.getLists();
+        Assert.assertTrue("List with identical id was added.", listsDuplicateId.stream()
                 .noneMatch(l -> {
                     if(l.getName() == null)
                         return false;
@@ -77,7 +77,7 @@ public class ListTest {
         List<Task> entries0 = listManager.getListEntries(user.getId(), profile, list0.getId());
         List<Task> entries1 = listManager.getListEntries(user.getId(), profile, list1.getId());
         Assert.assertEquals(entries0.isEmpty() ? "Entry was not added to list." : "Too many entries were added to list.", 1, entries0.size());
-        Assert.assertEquals("Wrong entry found in list.", task0.getId(), entries0.get(0).getId());
+        Assert.assertEquals("Wrong entry found in list.", task0.getId(), entries0.getFirst().getId());
         Assert.assertEquals(entries1.size() > 2 ? "Too few entries were added to list." : "Too many entries were added to list.", 2, entries1.size());
         Assert.assertEquals("Wrong entry found in list.", task1.getId(), entries1.get(0).getId());
         Assert.assertEquals("Entry has wrong list position.", 0, (int) entries1.get(0).getListPosition());
@@ -89,8 +89,8 @@ public class ListTest {
         entries1 = listManager.getListEntries(user.getId(), profile, list1.getId());
         Assert.assertEquals("Entry was not added to other list.", 2, entries0.size());
         Assert.assertEquals("Entry was not remove from other list.", 1, entries1.size());
-        Assert.assertEquals("Wrong entry found in list.", task2.getId(), entries1.get(0).getId());
-        Assert.assertEquals("List position was not adjusted after removing item.", 0, (int) entries1.get(0).getListPosition());
+        Assert.assertEquals("Wrong entry found in list.", task2.getId(), entries1.getFirst().getId());
+        Assert.assertEquals("List position was not adjusted after removing item.", 0, (int) entries1.getFirst().getListPosition());
 
         listManager.updateList(user.getId(), user.getProfile(), task0.getId(), null);
         List<Task> listNull = listManager.getListEntries(user.getId(), user.getProfile(), null);
@@ -107,7 +107,7 @@ public class ListTest {
     }
 
     @Test
-    public void addList() throws PositionOutOfBoundException, InvalidActionException {
+    public void addList() throws InvalidActionException {
         Database database = DatabaseTestSuite.databaseSupplier.get();
         ListManagerI listManager = database.getListManager();
 
@@ -135,7 +135,7 @@ public class ListTest {
     }
 
     @Test
-    public void removeList() throws PositionOutOfBoundException, InvalidActionException {
+    public void removeList() throws InvalidActionException {
         Database database = DatabaseTestSuite.databaseSupplier.get();
         User user = DatabaseTestSuite.user;
         ListManagerI listManager = database.getListManager();
@@ -164,11 +164,11 @@ public class ListTest {
     public void swapListEntries() throws PositionOutOfBoundException, InvalidActionException {
         User user = DatabaseTestSuite.user;
         Database database = DatabaseTestSuite.databaseSupplier.get();
-        TaskManagerI entryManager = database.getTaskManager();
+        TaskManagerI taskManager = database.getTaskManager();
         ListManagerI listManager = database.getListManager();
-        Task task0 = entryManager.addNewTask(user.getId(), DatabaseTestSuite.user.getProfile(), "TASK0");
-        Task task1 = entryManager.addNewTask(user.getId(), DatabaseTestSuite.user.getProfile(), "TASK1");
-        Task task2 = entryManager.addNewTask(user.getId(), DatabaseTestSuite.user.getProfile(), "TASK2");
+        Task task0 = taskManager.addNewTask(user.getId(), DatabaseTestSuite.user.getProfile(), "TASK0");
+        Task task1 = taskManager.addNewTask(user.getId(), DatabaseTestSuite.user.getProfile(), "TASK1");
+        Task task2 = taskManager.addNewTask(user.getId(), DatabaseTestSuite.user.getProfile(), "TASK2");
 
         TaskList list = listManager.addList(getUniqueListId(database), "", null);
 
@@ -192,7 +192,7 @@ public class ListTest {
     }
 
     @Test
-    public void updateListName() throws PositionOutOfBoundException, InvalidActionException {
+    public void updateListName() throws InvalidActionException {
         Database database = DatabaseTestSuite.databaseSupplier.get();
         ListManagerI listManager = database.getListManager();
 
@@ -210,7 +210,7 @@ public class ListTest {
     }
 
     @Test
-    public void updateListColor() throws PositionOutOfBoundException, InvalidActionException {
+    public void updateListColor() throws InvalidActionException {
         Database database = DatabaseTestSuite.databaseSupplier.get();
         ListManagerI listManager = database.getListManager();
 
@@ -236,7 +236,6 @@ public class ListTest {
         User user = DatabaseTestSuite.user;
         int profile = user.getProfile();
         Database database = DatabaseTestSuite.databaseSupplier.get();
-        TaskManagerI entryManager = database.getTaskManager();
         ListManagerI listManager = database.getListManager();
 
         TaskList list0 = listManager.addList(getUniqueListId(database), "LIST0", null);
@@ -252,8 +251,8 @@ public class ListTest {
         Assert.assertTrue("List1 is not in the returned list.", lists.stream().anyMatch(l ->l.getName().equals("LIST1")));
 
         try{
-            TaskList listDupl = listManager.addList(getUniqueListId(database), "LIST0", null);
-            listManager.addUserProfileToList(user.getId(), user.getProfile(), listDupl.getId());
+            TaskList listDuplicate = listManager.addList(getUniqueListId(database), "LIST0", null);
+            listManager.addUserProfileToList(user.getId(), user.getProfile(), listDuplicate.getId());
             Assert.fail("List with existing name was added for user.");
         } catch (InvalidActionException _){}
         database.close();
@@ -266,7 +265,6 @@ public class ListTest {
         User user = DatabaseTestSuite.user;
         int profile = user.getProfile();
         Database database = DatabaseTestSuite.databaseSupplier.get();
-        TaskManagerI entryManager = database.getTaskManager();
         ListManagerI listManager = database.getListManager();
 
         TaskList list0 = listManager.addList(getUniqueListId(database), "LIST0", null);
@@ -304,53 +302,45 @@ public class ListTest {
 
         List<TaskList> lists0 = listManager.getListsForUser(DatabaseTestSuite.user.getId(), DatabaseTestSuite.user.getProfile());
         Assert.assertEquals(1, lists0.size());
-        Assert.assertEquals("Wrong list was associated with the default user.", list0.getId(), lists0.get(0).getId());
+        Assert.assertEquals("Wrong list was associated with the default user.", list0.getId(), lists0.getFirst().getId());
 
         List<TaskList> lists1 = listManager.getListsForUser(user.getId(), user.getProfile());
         Assert.assertEquals(1,  lists1.size());
-        Assert.assertEquals("Wrong list was associated with the default user.", list1.getId(), lists1.get(0).getId());
+        Assert.assertEquals("Wrong list was associated with the default user.", list1.getId(), lists1.getFirst().getId());
 
         List<TaskList> listsAll = listManager.getLists();
         Assert.assertEquals("Not all lists were returned", 2, listsAll.size());
     }
 
     @Test
-    public void updateId() throws InvalidActionException {
+    public void updateId() throws InvalidActionException, DuplicateIdException {
         Database database = DatabaseTestSuite.databaseSupplier.get();
         User user = DatabaseTestSuite.user;
         ListManagerI listManager = database.getListManager();
-        TaskManagerI entryManager = database.getTaskManager();
+        TaskManagerI taskManager = database.getTaskManager();
 
         TaskList list0 = listManager.addList(0, "LIST0", null);
-        TaskList list1 = listManager.addList(1, "LIST1", null);
-        TaskList list2 = listManager.addList(2, "LIST2", null);
-        Task task = entryManager.addNewTask(user.getId(), user.getProfile(), "TASK");
+        listManager.addList(1, "LIST1", null);
+        listManager.addList(2, "LIST2", null);
+        Task task = taskManager.addNewTask(user.getId(), user.getProfile(), "TASK");
         listManager.addUserProfileToList(user.getId(), user.getProfile(), list0.getId());
         listManager.updateList(user.getId(), user.getProfile(), task.getId(), list0.getId());
-        Long newId = listManager.updateId(list0.getId(), 3);
-        Assert.assertNull("Id was returned.", newId);
+        listManager.updateId(list0.getId(), 3);
         Optional<TaskList> listReturned = listManager.getList(3);
         Assert.assertTrue("List id was not updated.", listReturned.isPresent());
         Assert.assertEquals("List id was updated for wrong list.", "LIST0", listReturned.get().getName());
 
         List<TaskList> listsUser = listManager.getListsForUser(user.getId(), user.getProfile());
         Assert.assertFalse("List was not moved to new list id for user profile.", listsUser.isEmpty());
-        Assert.assertEquals("Wrong list was returned.", 3, listsUser.get(0).getId());
+        Assert.assertEquals("Wrong list was returned.", 3, listsUser.getFirst().getId());
 
         List<Task> entries = listManager.getListEntries(user.getId(), user.getProfile(), 3L);
         Assert.assertFalse("Entry was not moved to new list id.", entries.isEmpty());
 
-        listReturned = listManager.getList(1);
-        newId = listManager.updateId(3, 1);
-        listReturned = listManager.getList(1);
-        Assert.assertTrue("List id was not updated.", listReturned.isPresent());
-        Assert.assertEquals("List id was updated for wrong list.", "LIST0", listReturned.get().getName());
-
-        List<TaskList> lists = listManager.getLists();
-        Optional<TaskList> listChanged = lists.stream().filter(l -> l.getName().equals("LIST1")).findFirst();
-        Assert.assertTrue("List does not exist anymore.", listChanged.isPresent());
-        Assert.assertNotEquals("List id has not changed.", 1 , listChanged.get().getId());
-        Assert.assertEquals("Wrong id was returned when update id.", listChanged.get().getId(), (long) newId);
+        try {
+            listManager.updateId(3, 1);
+            Assert.fail("DuplicateIdException has not been thrown.");
+        } catch (DuplicateIdException _){}
     }
 
     @Test
@@ -358,9 +348,8 @@ public class ListTest {
         Database database = DatabaseTestSuite.databaseSupplier.get();
         User user = DatabaseTestSuite.user;
         ListManagerI listManager = database.getListManager();
-        UserManagerI userManager = database.getUserManager();
         TaskList list0 = listManager.addList(getUniqueListId(database), "LIST0", null);
-        TaskList list1 = listManager.addList(getUniqueListId(database), "LIST1", null);
+        listManager.addList(getUniqueListId(database), "LIST1", null);
 
         Optional<TaskList> listReturned = listManager.getListByName(user.getId(), user.getProfile(), "LIST0");
         Assert.assertTrue("List for user was returned without assigning it.", listReturned.isEmpty());

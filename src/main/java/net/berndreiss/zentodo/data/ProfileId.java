@@ -7,6 +7,9 @@ import jakarta.persistence.ManyToOne;
 import java.io.Serializable;
 import java.util.Objects;
 
+/**
+ * Helper class for allowing for composite keys.
+ */
 @Embeddable
 public class ProfileId implements Serializable {
     private int id;

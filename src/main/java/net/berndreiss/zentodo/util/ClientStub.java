@@ -37,6 +37,7 @@ import java.util.stream.Collectors;
  * A client stub for communication with the server. If a user is initialized the stub synchronizes all operations
  * with the server. If no user is initialized a default user with id==0 is used.
  * If the server is not available all operations are stored in a queue and sent on the next interaction with the server.
+ * //TODO make if possible for the client stub to be 'live only' -> no DB, just syncing with the server
  */
 public class ClientStub implements OperationHandlerI {
 
@@ -269,11 +270,11 @@ public class ClientStub implements OperationHandlerI {
         }
 
         //User exists and is enabled. Proceed to retrieve token and log in.
-        String token = userManager.getToken(user.getId());
+        Optional<String> token = userManager.getToken(user.getId());
 
-        if (token != null) {
+        if (token.isPresent()) {
             //Renew token and log in.
-            HttpURLConnection connection = sendPostMessage(PROTOCOL + "://" + SERVER + "/auth/renewToken", getLoginRequest(email, token));
+            HttpURLConnection connection = sendPostMessage(PROTOCOL + "://" + SERVER + "/auth/renewToken", getLoginRequest(email, token.get()));
             if (connection.getResponseCode() == 200) {
                 userManager.setToken(user.getId(), getBody(connection));
                 if (messagePrinter != null)
@@ -399,12 +400,17 @@ public class ClientStub implements OperationHandlerI {
 
         //Set up the websocket client and run it on another thread to retrieve messages live from the server
         webSocketClient = new ZenWebSocketClient(this::consumeMessage, this);
+        final Optional<String> token = dbHandler.getUserManager().getToken(user.getId());
+        if (token.isEmpty()){
+            logger.error("There is no token although the user is logged in.");
+            throw new RuntimeException("There is no token although the user is logged in.");
+        }
+
         Thread thread = new Thread(() -> {
             try {
-                webSocketClient.connect(user.getEmail(), dbHandler.getUserManager().getToken(user.getId()), user.getDevice());
+                webSocketClient.connect(user.getEmail(), token.get(), user.getDevice());
             } catch (DeploymentException | IOException e) {
                 logger.error("Problem connecting the websocket client", e);
-                throw new RuntimeException(e);
             }
         });
         thread.start();
@@ -695,7 +701,9 @@ public class ClientStub implements OperationHandlerI {
                 task.setRecurrence(recurrence);
                 dbHandler.getTaskManager().postTask(task);
             }
-            case ADD_NEW_ENTRY -> {
+            case ADD_NEW_TASK -> {
+                //TODO handle id already existing -> check in with the server to get a new one for the other task
+                //DO NOT ACKNOWLEDGE UNTIL WE HAVE THIS RESOLVED!
                 List<Object> args = message.arguments;
                 int profile = Integer.parseInt(args.get(0).toString());
                 long id = Long.parseLong(args.get(1).toString());
@@ -840,44 +848,59 @@ public class ClientStub implements OperationHandlerI {
     @Override
     public synchronized Task addNewTask(String task) {
         //Add locally (done first to get an id)
-        Task entry = dbHandler.getTaskManager().addNewTask(user.getId(), user.getProfile(), task);
-        if (entry == null)
+        Task returnedTask = dbHandler.getTaskManager().addNewTask(user.getId(), user.getProfile(), task);
+        if (returnedTask == null)
             return null;
         //Tell the server
-        sendAddEntryUpdate(entry);
+        sendAddEntryUpdate(returnedTask);
         //Call handlers
-        for (OperationHandlerI oh: otherHandlers)
-            oh.addNewTask(task);
-        return entry;
+        for (OperationHandlerI oh: otherHandlers) {
+            try {
+                oh.addNewTask(returnedTask);
+            } catch (PositionOutOfBoundException | DuplicateIdException | InvalidActionException e) {
+                logger.error("Error adding new task.", e);
+                throw new RuntimeException(e);
+            }
+        }
+        return returnedTask;
     }
 
     @Override
     public synchronized Task addNewTask(String task, int position) throws PositionOutOfBoundException {
         //Add locally (done first to get an id)
-        Task entry = dbHandler.getTaskManager().addNewTask(user.getId(), user.getProfile(), task, position);
-        if (entry == null)
+        Task returnedTask = dbHandler.getTaskManager().addNewTask(user.getId(), user.getProfile(), task, position);
+        if (returnedTask == null)
             return null;
         //Tell the server
-        sendAddEntryUpdate(entry);
+        sendAddEntryUpdate(returnedTask);
         //Call handlers
-        for (OperationHandlerI oh: otherHandlers)
-            oh.addNewTask(task, position);
-        return entry;
+        for (OperationHandlerI oh : otherHandlers)
+            try {
+                oh.addNewTask(returnedTask);
+            } catch (PositionOutOfBoundException | DuplicateIdException | InvalidActionException e) {
+                logger.error("Error adding new task.", e);
+                throw new RuntimeException(e);
+            }
+        return returnedTask;
     }
 
     //TODO THIS IS NOT IDEAL
     @Override
-    public synchronized Task addNewTask(Task task) throws PositionOutOfBoundException, DuplicateIdException, InvalidActionException {
+    public synchronized void addNewTask(Task task) throws PositionOutOfBoundException, DuplicateIdException, InvalidActionException {
+        if (task == null)
+            return;
         //Add locally (done first to get an id)
-        Task persistedTask = dbHandler.getTaskManager().addNewTask(user.getId(), user.getProfile(), task.getId(), task.getTask(), task.getPosition());
-        if (persistedTask == null)
-            return null;
+        dbHandler.getTaskManager().addNewTask(user.getId(), user.getProfile(), task.getId(), task.getTask(), task.getPosition());
         //Tell the server
-        sendAddEntryUpdate(persistedTask);
+        sendAddEntryUpdate(task);
         //Call handlers
-        for (OperationHandlerI oh: otherHandlers)
-            oh.addNewTask(task);
-        return persistedTask;
+        for (OperationHandlerI oh : otherHandlers)
+            try {
+                oh.addNewTask(task);
+            } catch (PositionOutOfBoundException | DuplicateIdException | InvalidActionException e) {
+                logger.error("Error adding new task.", e);
+                throw new RuntimeException(e);
+            }
     }
 
     //Helper method for sending operations of type ADD_NEW_ENTRY to the server
@@ -887,7 +910,7 @@ public class ClientStub implements OperationHandlerI {
         arguments.add(task.getId());
         arguments.add(task.getTask());
         arguments.add(task.getPosition());
-        sendUpdate(OperationType.ADD_NEW_ENTRY, arguments);
+        sendUpdate(OperationType.ADD_NEW_TASK, arguments);
     }
 
     @Override
@@ -1110,7 +1133,7 @@ public class ClientStub implements OperationHandlerI {
         HttpURLConnection connection = sendPostMessage(PROTOCOL + "://" + SERVER + "/auth/status", loginRequest);
         String body = getBody(connection);
         if (!body.equals("non"))
-            throw new InvalidActionException("User with mail address already exists.");
+            throw new InvalidUserActionException("User with mail address already exists.");
         //Tell the server, that the mail address changed
         List<Object> arguments = new ArrayList<>();
         arguments.add(email);

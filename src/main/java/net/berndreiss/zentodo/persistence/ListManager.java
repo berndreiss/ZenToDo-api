@@ -3,6 +3,7 @@ package net.berndreiss.zentodo.persistence;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.NoResultException;
 import net.berndreiss.zentodo.data.*;
+import net.berndreiss.zentodo.exceptions.DuplicateIdException;
 import net.berndreiss.zentodo.exceptions.InvalidActionException;
 import net.berndreiss.zentodo.exceptions.PositionOutOfBoundException;
 
@@ -79,7 +80,7 @@ public class ListManager implements ListManagerI {
         em.getTransaction().begin();
         em.persist(profile);
         em.persist(list);
-        em.createNativeQuery("UPDATE tasks SET list = NULL, listposition = NULL WHERE list = :listId")
+        em.createNativeQuery("UPDATE tasks SET list = NULL, listPosition = NULL WHERE list = :listId")
                 .setParameter("listId", listId)
                 .executeUpdate();
         em.getTransaction().commit();
@@ -97,7 +98,7 @@ public class ListManager implements ListManagerI {
             }
             list.getProfiles().clear();
             em.remove(list);
-            em.createNativeQuery("UPDATE tasks SET list = NULL, listposition = NULL WHERE list = :listId")
+            em.createNativeQuery("UPDATE tasks SET list = NULL, listPosition = NULL WHERE list = :listId")
                     .setParameter("listId", id)
                     .executeUpdate();
             em.getTransaction().commit();
@@ -148,16 +149,15 @@ public class ListManager implements ListManagerI {
     }
 
     @Override
-    public synchronized Long updateId(long listId, long id) {
+    public synchronized void updateId(long listId, long id) throws DuplicateIdException {
         Optional<TaskList> list = getList(listId);
         if (list.isEmpty())
-            return null;
+            return;
         Optional<TaskList> existingList = getList(id);
         Long newId = null;
-        if (existingList.isPresent()) {
-            newId = getUniqueUserId();
-            updateId(existingList.get().getId(), newId);
-        }
+        if (existingList.isPresent())
+            throw new DuplicateIdException("List with id already exists");
+        //TODO test for this
 
         //THIS IS VERY DIRTY NEED A BETTER WAY TO DO THIS
         //STILL WE NEED TO BE ABLE TO UPDATE THE ID ON LISTS
@@ -178,8 +178,6 @@ public class ListManager implements ListManagerI {
                 .executeUpdate();
         em.getTransaction().commit();
         em.clear();
-        return newId;
-
     }
 
     @Override

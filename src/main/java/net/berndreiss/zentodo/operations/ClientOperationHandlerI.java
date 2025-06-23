@@ -6,107 +6,124 @@ import net.berndreiss.zentodo.util.VectorClock;
 import net.berndreiss.zentodo.util.ZenServerMessage;
 
 import java.util.List;
+import java.util.Optional;
 
 /**
- * TODO IMPLEMENT DESCRIPTION
+ * Additional methods needed for the server to interact with the client.
  */
 public interface ClientOperationHandlerI extends OperationHandlerI {
 
     /**
-     * Add a list of entries to the database including all the fields in the entry.
-     *
-     * @param entries the entries to be added
+     * Add a list of tasks to the database including all the fields in the task.
+     * @param tasks the tasks to be added
      */
-    void post(List<Task> entries);
+    void post(List<Task> tasks);
 
 
     /**
-     * TODO DESCRIBE
-     * @param entry
-     * @param id
+     * Update the id of a task.
+     * @param user the user id
+     * @param profile the profile id
+     * @param task the task id to update
+     * @param newId the newId
      */
-    void updateId(long userId, long profile, long entry, long id);
+    void updateId(long user, long profile, long task, long newId);
 
     /**
-     * TODO DESCRIBE
-     * @param delay
+     * Set the time delay
+     * @param delay the delay to set
      */
     void setTimeDelay(long delay);
 
     /**
-     * TODO DESCRIBE
-     * @param message
+     * Add a message to the queue
+     * @param user the user active
+     * @param message the message to add
      */
     void addToQueue(User user, ZenServerMessage message);
 
     /**
-     * TODO DESCRIBE
-     * @return
+     * Get all queued messages for the user.
+     * @param user the user id
+     * @return a list of queued messages
      */
-    List<ZenServerMessage> getQueued(long userId);
-
-
-    void clearQueue(long userId);
+    List<ZenServerMessage> getQueued(long user);
 
     /**
-     * TODO DESCRIBE
-     * @return
+     * Clear the queue for the user.
+     * @param user the user id
      */
-    String getToken(long userId);
+    void clearQueue(long user);
 
     /**
-     * TODO DESCRIBE
-     * @param token
+     * Get the token for the user.
+     * @param user the user id
+     * @return a JWT token if it exists
      */
-    void setToken(long userId, String token);
-
-
-    /**
-     * TODO DESCRIBE
-     * @param email
-     * @param userName
-     */
-    User addUser(long userId, String email, String userName, long device);
+    Optional<String> getToken(long user);
 
     /**
-     * TODO
+     * Set the token for the user.
+     * @param user the user id
+     * @param token the JWT token to set
      */
-    void removeUser(long userId);
+    void setToken(long user, String token);
 
     /**
-     *
-     * @param email
-     * @return
+     * Add a new user.
+     * @param user the user id
+     * @param email the users email
+     * @param userName the username
+     * @param device the device
+     * @return a new User
      */
-    User getUserByEmail(String email);
+    User addUser(long user, String email, String userName, long device);
 
     /**
-     * TODO DESCRIBE
-     * @return
+     * Remove an existing user.
+     * @param user the user id
      */
-    boolean userExists(long userId);
+    void removeUser(long user);
 
     /**
-     * TODO DESCRIBE
-     * @return
+     * Get the user by email.
+     * @param email the email of the user
+     * @return the user if it exists
      */
-    boolean isEnabled(long userId);
+    Optional<User> getUserByEmail(String email);
 
     /**
-     * TODO DESCRIBE
+     * Check whether a user exists.
+     * @param user the user id
+     * @return true if the user exists, false otherwise
      */
-    void enableUser(long userId);
+    boolean userExists(long user);
 
     /**
-     * TODO
-     * @param id
+     * Check whether user is enabled.
+     * @param user the user id
+     * @return true if the user has been enabled, false otherwise
      */
-    void setDevice(long userId, long id);
+    boolean isEnabled(long user);
 
     /**
-     * TODO
-     * @param clock
+     * Set the enabled field of the user to true.
+     * @param user the user id
      */
-    void setClock(long userId,VectorClock clock);
+    void enableUser(long user);
+
+    /**
+     * Set the device for the user.
+     * @param user the user id
+     * @param id the device id to set
+     */
+    void setDevice(long user, long id);
+
+    /**
+     * Set the clock for the user.
+     * @param user the user id
+     * @param clock the clock to set
+     */
+    void setClock(long user,VectorClock clock);
 
 }

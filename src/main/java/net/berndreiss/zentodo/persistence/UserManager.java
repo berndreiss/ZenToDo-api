@@ -19,7 +19,7 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * Implementation of the UserMangagerI interface using JPA.
+ * Implementation of the UserManagerI interface using JPA.
  */
 public class UserManager implements UserManagerI {
 
@@ -280,11 +280,11 @@ public class UserManager implements UserManagerI {
         em.getTransaction().commit();
     }
     @Override
-    public String getToken(long user) {
+    public Optional<String> getToken(long user) {
         try {
-            return Files.readString(Path.of((tokenPath == null ? "" : tokenPath + "/") + user + "_token"));
+            return Optional.of(Files.readString(Path.of((tokenPath == null ? "" : tokenPath + "/") + user + "_token")));
         } catch(IOException e){
-            return null;
+            return Optional.empty();
         }
     }
 

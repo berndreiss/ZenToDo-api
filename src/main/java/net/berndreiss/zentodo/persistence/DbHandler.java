@@ -25,7 +25,7 @@ public class DbHandler extends Database implements  AutoCloseable {
      * @param tokenPath the path where tokens are stored
      */
     public DbHandler(EntityManagerFactory emf, String tokenPath) {
-        super(new TaskManager(emf.createEntityManager()), new UserManager(emf.createEntityManager(), tokenPath), new DatabaseOps(emf.createEntityManager()), new ListManager(emf.createEntityManager()));
+        super(new TaskManager(emf.createEntityManager()), new UserManager(emf.createEntityManager(), tokenPath), new ListManager(emf.createEntityManager()), new DatabaseOps(emf.createEntityManager()));
         this.emf = emf;
 
         //Get the default user and create it if it does not exist

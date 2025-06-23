@@ -23,7 +23,7 @@ public enum OperationType {
     /**
      * PROFILE (int), ID (long), TASK (String), POSITION (int)
      */
-    ADD_NEW_ENTRY,
+    ADD_NEW_TASK,
     /**
      * PROFILE (int), ID (long)
      */
@@ -76,5 +76,4 @@ public enum OperationType {
      * OLD_ID (long), NEW_ID (long)
      */
     UPDATE_ID,
-    ;
 }

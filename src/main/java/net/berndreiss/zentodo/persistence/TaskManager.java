@@ -6,6 +6,7 @@ import net.berndreiss.zentodo.data.Task;
 import net.berndreiss.zentodo.exceptions.DuplicateIdException;
 import net.berndreiss.zentodo.exceptions.InvalidActionException;
 import net.berndreiss.zentodo.exceptions.PositionOutOfBoundException;
+import net.berndreiss.zentodo.util.ClientStub;
 
 import java.time.Instant;
 import java.util.*;
@@ -74,7 +75,10 @@ public class TaskManager implements TaskManagerI {
         Task entry = null;
         try {
             entry = addNewTask(userId, profile, task, entries.size());
-        } catch (PositionOutOfBoundException _) {}
+        } catch (PositionOutOfBoundException e) {
+            ClientStub.logger.error("Out of bounds error when adding task.", e);
+            throw new RuntimeException(e);
+        }
         return entry;
     }
     @Override
@@ -93,7 +97,10 @@ public class TaskManager implements TaskManagerI {
         Task entry = null;
         try {
             entry = addNewTask(userId, profile, id, task, position);
-        } catch(DuplicateIdException | InvalidActionException _){}
+        } catch(DuplicateIdException | InvalidActionException e){
+            ClientStub.logger.error("Error when adding task.", e);
+            throw new RuntimeException(e);
+        }
         return entry;
     }
 
@@ -101,6 +108,7 @@ public class TaskManager implements TaskManagerI {
     @Override
     public synchronized Task addNewTask(long userId, int profile, long id, String task, int position) throws DuplicateIdException, PositionOutOfBoundException, InvalidActionException {
         if (id == 0)
+
             throw new InvalidActionException("Id must not be 0.");
 
         List<Task> entries = getTasks(userId, profile);

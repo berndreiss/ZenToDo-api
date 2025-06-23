@@ -24,9 +24,9 @@ import java.util.function.Supplier;
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
         DatabaseTest.class,
-        TaskTest.class,
+        TaskManagerTests.class,
         UserTest.class,
-        ListTest.class
+        ListManagerTests.class
 })
 public class DatabaseTestSuite {
     /** The database to run the tests against */

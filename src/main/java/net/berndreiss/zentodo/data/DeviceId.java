@@ -7,10 +7,15 @@ import jakarta.persistence.ManyToOne;
 import java.io.Serializable;
 import java.util.Objects;
 
+/**
+ * A helper class representing a composite device id.
+ */
 @Embeddable
 public class DeviceId implements Serializable {
+    /** The device id */
     private int id;
 
+    /** The associated user */
     @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)
     private User user;

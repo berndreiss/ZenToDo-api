@@ -9,6 +9,9 @@ import jakarta.persistence.Converter;
 import java.io.IOException;
 import java.util.List;
 
+/**
+ * Used to handle list of strings in the database.
+ */
 @Converter
 public class StringListConverter implements AttributeConverter<List<String>, String> {
 

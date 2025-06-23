@@ -6,42 +6,52 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * TODO DESCRIBE
+ * A class representing a user.
  */
 @Entity
 @Table(name = "users")
 public class User {
 
+    /** The user id */
     @Id
     private Long id;
 
+    /** The users email address */
     @Column(unique = true, nullable = false)
     private String email;
 
+    /** The username */
     @Column
     private String userName = null;
 
+    /** True if the user has been enabled (they confirmed their email address) */
     @Column
     private boolean enabled = false;
 
+    /**
+     *  Client side: the device assigned by the server.
+     *  Server side: the last active device.
+     */
     @Column
     private Integer device;
 
+    /** The active profile */
     @Column (nullable = false)
     private int profile;
 
+    /** The current vector clock */
     @Column(columnDefinition = "TEXT")
     private String clock;
 
-    @Column
-    private String password;
-
+    /** The devices for the user */
     @OneToMany (mappedBy = "deviceId.user", cascade = CascadeType.REMOVE, orphanRemoval = true,  fetch = FetchType.EAGER)
     private List<Device> devices = new ArrayList<>();
 
+    /** The profiles for the user */
     @OneToMany (mappedBy = "profileId.user", cascade = CascadeType.REMOVE, orphanRemoval = true,  fetch = FetchType.EAGER)
     private List<Profile> profiles = new ArrayList<>();
 
+    /** The queue items for the user */
     @OneToMany (mappedBy = "user", cascade = CascadeType.REMOVE, orphanRemoval = true,  fetch = FetchType.EAGER)
     private List<QueueItem> queueItems = new ArrayList<>();
 
@@ -112,19 +122,11 @@ public class User {
 
     public void setClock(String clock) {this.clock = clock;}
 
-    public String getPassword() {return password;}
-
-    public void setPassword(String password) {this.password = password;}
-
-    public List<Device> getDevices() {return devices;}
-
-    public void setDevices(List<Device> devices) {this.devices = devices;}
-
-    public List<Profile> getProfiles() {return profiles;}
-
-    public void setProfiles(List<Profile> profiles) {this.profiles = profiles;}
-
-    public List<QueueItem> getQueueItems() {return queueItems;}
-
-    public void setQueueItems(List<QueueItem> queueItems) {this.queueItems = queueItems;}
+    //TODO do we want to solve this via the java class?
+    //public List<Device> getDevices() {return devices;}
+    //public void setDevices(List<Device> devices) {this.devices = devices;}
+    //public List<Profile> getProfiles() {return profiles;}
+    //public void setProfiles(List<Profile> profiles) {this.profiles = profiles;}
+    //public List<QueueItem> getQueueItems() {return queueItems;}
+    //public void setQueueItems(List<QueueItem> queueItems) {this.queueItems = queueItems;}
 }

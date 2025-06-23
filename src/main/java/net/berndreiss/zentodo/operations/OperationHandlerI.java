@@ -1,7 +1,6 @@
 package net.berndreiss.zentodo.operations;
 
-import net.berndreiss.zentodo.data.Task;
-import net.berndreiss.zentodo.data.TaskList;
+import net.berndreiss.zentodo.data.*;
 import net.berndreiss.zentodo.exceptions.DuplicateIdException;
 import net.berndreiss.zentodo.exceptions.InvalidActionException;
 import net.berndreiss.zentodo.exceptions.PositionOutOfBoundException;
@@ -14,24 +13,58 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
- * This interface represents methods necessary to communicate with the server. If there are necessary side effects,
- * they are described in the methods documentation below. THESE SIDE EFFECTS ARE NECESSARY TO GUARANTEE CONSISTENCY.
+ * This interface represents methods for the user profile to interact with the data. All actions are synchronized with the server.
  */
 public interface OperationHandlerI {
 
+    /**
+     * Add a new task.
+     * @param task the task to be added
+     * @throws PositionOutOfBoundException thrown if position of task is greater than the number of tasks overall
+     * @throws DuplicateIdException        thrown if id already exists
+     * @throws InvalidActionException      thrown if id==0
+     */
+    void addNewTask(Task task) throws PositionOutOfBoundException, DuplicateIdException, InvalidActionException;
 
-
-    Task addNewTask(Task task) throws PositionOutOfBoundException, DuplicateIdException, InvalidActionException;
-
+    /**
+     * Add a new task.
+     * @param task the task to be added
+     * @return a new Task with a unique id and a position set
+     */
     Task addNewTask(String task);
+
+    /**
+     * Add a new task at a certain position.
+     * @param task the task to be added
+     * @param position the position to add it at
+     * @return a new Task with the position set and a unique id
+     * @throws PositionOutOfBoundException thrown if the position is not valid
+     */
     Task addNewTask(String task, int position) throws PositionOutOfBoundException;
 
+    /**
+     * Remove a task.
+     * @param id the id of the task to be removed
+     */
     void removeTask(long id);
 
+    /**
+     * Get a task.
+     * @param id the id of the task
+     * @return the task, if it exists
+     */
     Optional<Task> getTask(long id);
 
+    /**
+     * Get all tasks for the user profile.
+     * @return a list of all tasks for the profile
+     */
     List<Task> loadTasks();
 
+    /**
+     * Get all tasks that are selected for the FOCUS mode.
+     * @return a list of tasks in FOCUS mode
+     */
     List<Task> loadFocus();
 
     /**
@@ -41,7 +74,7 @@ public interface OperationHandlerI {
     List<Task> loadDropped();
 
     /**
-     * Load a task list.
+     * Load all tasks associated with a list.
      * @param list the list to load
      * @return the list
      */
