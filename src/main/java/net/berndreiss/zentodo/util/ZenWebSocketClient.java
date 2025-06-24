@@ -44,12 +44,19 @@ public class ZenWebSocketClient extends Endpoint {
     public void onOpen(Session session, EndpointConfig endpointConfig) {
         if (clientStub.getMessagePrinter() != null)
             clientStub.getMessagePrinter().accept("Connected websocket client");
-        session.addMessageHandler((MessageHandler.Whole<String>) messageConsumer::accept);
+        session.addMessageHandler((MessageHandler.Whole<Object>) message ->{
+            System.out.println(">>> Raw message type: " + message.getClass());
+            System.out.println(">>> Raw message: " + message);
+            if (message instanceof String str)
+                messageConsumer.accept(str);
+            else
+                ClientStub.logger.warn("Unexpected message type: " + message.getClass().getName() + ", " + message);
+
+        });
     }
 
     @OnMessage
-    public void onMessage(String message) {
-    }
+    public void onMessage(String message) {}
 
     @OnClose
     public void onClose(Session session, CloseReason reason) {

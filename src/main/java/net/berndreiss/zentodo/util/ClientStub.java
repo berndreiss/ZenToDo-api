@@ -47,15 +47,18 @@ public class ClientStub implements OperationHandlerI {
     /**
      * The protocol being used for the websocket client
      */
-    public static String WEBSOCKET_PROTOCOL = "wss";
+    //public static String WEBSOCKET_PROTOCOL = "wss";
+    public static String WEBSOCKET_PROTOCOL = "ws";
     /**
      * The protocol being used with the server
      */
-    public static String PROTOCOL = "https";
+    //public static String PROTOCOL = "https";
+    public static String PROTOCOL = "http";
     /**
      * The server url
      */
-    public static String SERVER = "zentodo.berndreiss.net/api";
+    //public static String SERVER = "zentodo.berndreiss.net/api";
+    public static String SERVER = "localhost:8080/api";
     /**
      * The time drift with the server
      */
@@ -435,6 +438,7 @@ public class ClientStub implements OperationHandlerI {
 
         //Get the response and process the messages it contains
         String response = getBody(connection);
+        System.out.println(response);
         JSONObject obj = new JSONObject(response);
         JSONArray array = (JSONArray) obj.get("message");
         List<ZenMessage> messages = ZenMessage.parseMessage(array);
@@ -609,11 +613,16 @@ public class ClientStub implements OperationHandlerI {
             status = Status.ONLINE;
         }
 
+        Optional<String> token = dbHandler.getUserManager().getToken(user.getId());
+        if (token.isEmpty()){
+            status = Status.OFFLINE;
+            throw new ConnectException("No token has been found for th user.");
+        }
         URL url = new URI(urlString).toURL();
         HttpURLConnection connection = (HttpURLConnection) url.openConnection();
         connection.setRequestMethod("POST");
         connection.setRequestProperty("Content-Type", "application/json");
-        connection.setRequestProperty("Authorization", "Bearer " + dbHandler.getUserManager().getToken(user.getId()));
+        connection.setRequestProperty("Authorization", "Bearer " + token.get());
         connection.setRequestProperty("device", String.valueOf(user.getDevice()));
         connection.setRequestProperty("t1", TimeDrift.getTimeStamp());
         connection.setDoOutput(true);
@@ -716,6 +725,9 @@ public class ClientStub implements OperationHandlerI {
      * @throws PositionOutOfBoundException thrown if task or list entry is out of bounds
      */
     private void receiveMessage(ZenMessage message) throws DuplicateIdException, InvalidActionException, PositionOutOfBoundException {
+        System.out.println(message.type);
+        if (true)
+            return;
         //TODO CHECK VALIDITY
         switch (message.type) {
             case POST -> {
@@ -1196,6 +1208,7 @@ public class ClientStub implements OperationHandlerI {
         TaskList list = dbHandler.getListManager().addList(id, name, color);
         dbHandler.getListManager().addUserProfileToList(user.getId(), user.getProfile(), list.getId());
         for (OperationHandlerI oh: otherHandlers)
+            oh.addNewList(name, color);
 
         return list;
         //TODO tell server

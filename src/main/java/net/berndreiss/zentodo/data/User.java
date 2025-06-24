@@ -56,6 +56,12 @@ public class User {
     private String clock;
 
     /**
+     * The password hash
+     */
+    @Column
+    private String passwordHash;
+
+    /**
      * The devices for the user
      */
     @OneToMany(mappedBy = "deviceId.user", cascade = CascadeType.REMOVE, orphanRemoval = true, fetch = FetchType.EAGER)
@@ -155,6 +161,9 @@ public class User {
     public void setClock(String clock) {
         this.clock = clock;
     }
+
+    public String getPasswordHash(){return passwordHash;}
+    public void setPasswordHash(String passwordHash){this.passwordHash = passwordHash;}
 
     //TODO do we want to solve this via the java class?
     //public List<Device> getDevices() {return devices;}

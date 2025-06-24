@@ -29,7 +29,7 @@ public interface ClientOperationHandlerI extends OperationHandlerI {
      * @param task    the task id to update
      * @param newId   the newId
      */
-    void updateId(long user, long profile, long task, long newId);
+    void updateId(long user, int profile, long task, long newId);
 
     /**
      * Set the time delay
