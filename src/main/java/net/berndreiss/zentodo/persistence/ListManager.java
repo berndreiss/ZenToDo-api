@@ -227,7 +227,7 @@ public class ListManager implements ListManagerI {
     }
 
     @Override
-    public Optional<TaskList> getList(long id) {
+    public Optional<TaskList> getList(Long id) {
         TaskList result = em.find(TaskList.class, id);
         return result == null ? Optional.empty() : Optional.of(result);
     }

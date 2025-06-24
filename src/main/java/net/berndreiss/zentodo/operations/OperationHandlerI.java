@@ -118,45 +118,45 @@ public interface OperationHandlerI {
     /**
      * Swap the position of two tasks.
      *
-     * @param id       the id of the task to be moved
+     * @param task       the id of the task to be moved
      * @param position the position with which to swap
      * @throws PositionOutOfBoundException Thrown if the position is out of bounds.
      */
-    void swapTasks(long id, int position) throws PositionOutOfBoundException;
+    void swapTasks(long task, int position) throws PositionOutOfBoundException;
 
     /**
      * Swap list entries.
      *
      * @param list     the list in question
-     * @param id       the id of the entry to be moved
+     * @param task       the id of the entry to be moved
      * @param position the position with which to swap
      * @throws PositionOutOfBoundException Thrown if the position is out of bounds
      */
-    void swapListEntries(long list, long id, int position) throws PositionOutOfBoundException;
+    void swapListEntries(long list, long task, int position) throws PositionOutOfBoundException;
 
     /**
      * Update the name of a task.
      *
-     * @param id    the id of the task to be updated
+     * @param task    the id of the task to be updated
      * @param value the value to update with
      */
-    void updateTask(long id, String value);
+    void updateTask(long task, String value);
 
     /**
      * Update the focus field of a task.
      *
-     * @param id    the id of the task to be updated
+     * @param task    the id of the task to be updated
      * @param value the value to update with
      */
-    void updateFocus(long id, boolean value);
+    void updateFocus(long task, boolean value);
 
     /**
      * Update the dropped field of a task.
      *
-     * @param id    the id of the task to be updated
+     * @param task    the id of the task to be updated
      * @param value the value to update with
      */
-    void updateDropped(long id, boolean value);
+    void updateDropped(long task, boolean value);
 
     /**
      * Update the list of a task.
@@ -170,19 +170,19 @@ public interface OperationHandlerI {
     /**
      * Update the reminder date of a task.
      *
-     * @param id    the id of the task to be updated
+     * @param task    the id of the task to be updated
      * @param value the value to update with
      */
-    void updateReminderDate(long id, Instant value);
+    void updateReminderDate(long task, Instant value);
 
     /**
      * Update the recurrence of a task.
      *
-     * @param id    the id of the task to be updated
+     * @param task    the id of the task to be updated
      * @param value the value to update with -> has to be in the form "interval|number".
      *              Valid intervals are 'd', 'w', 'm', and 'y'; valid numbers are any positive integers
      */
-    void updateRecurrence(long id, String value);
+    void updateRecurrence(long task, String value);
 
     /**
      * Update the color of a list.

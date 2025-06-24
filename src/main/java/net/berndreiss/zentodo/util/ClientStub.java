@@ -3,7 +3,6 @@ package net.berndreiss.zentodo.util;
 import com.sun.istack.NotNull;
 import jakarta.persistence.EntityManagerFactory;
 import jakarta.persistence.Persistence;
-import jakarta.websocket.DeploymentException;
 import net.berndreiss.zentodo.data.*;
 import net.berndreiss.zentodo.exceptions.*;
 import net.berndreiss.zentodo.operations.ClientOperationHandlerI;
@@ -47,18 +46,15 @@ public class ClientStub implements OperationHandlerI {
     /**
      * The protocol being used for the websocket client
      */
-    //public static String WEBSOCKET_PROTOCOL = "wss";
-    public static String WEBSOCKET_PROTOCOL = "ws";
+    public static String WEBSOCKET_PROTOCOL = "wss";
     /**
      * The protocol being used with the server
      */
-    //public static String PROTOCOL = "https";
-    public static String PROTOCOL = "http";
+    public static String PROTOCOL = "https";
     /**
      * The server url
      */
-    //public static String SERVER = "zentodo.berndreiss.net/api";
-    public static String SERVER = "localhost:8080/api";
+    public static String SERVER = "zentodo.berndreiss.net/api";
     /**
      * The time drift with the server
      */
@@ -150,9 +146,9 @@ public class ClientStub implements OperationHandlerI {
 
             ClientStub stub0 = getStub("user0", "bd_reiss@yahoo.de", "ZenToDoPU");
             //List<Entry> entries0 = stub0.loadEntries();
-            ClientStub stub1 = getStub("user1", "bd_reiss@yahoo.de", "ZenToDoPU1");
+            //ClientStub stub1 = getStub("user1", "bd_reiss@yahoo.de", "ZenToDoPU1");
             //List<Entry> entries1 = stub1.loadEntries();
-            ClientStub stub2 = getStub("user2", "bd_reiss@yahoo.de", "ZenToDoPU2");
+            //ClientStub stub2 = getStub("user2", "bd_reiss@yahoo.de", "ZenToDoPU2");
             //List<Entry> entries2 = stub2.loadEntries();
 
             Task task0 = stub0.addNewTask("TASK0");
@@ -169,8 +165,8 @@ public class ClientStub implements OperationHandlerI {
             //Optional<Entry> entry1 = stub.getEntry(entry.getId());
 
             stub0.dbHandler.close();
-            stub1.dbHandler.close();
-            stub2.dbHandler.close();
+            //stub1.dbHandler.close();
+            //stub2.dbHandler.close();
         }
     }
 
@@ -466,11 +462,7 @@ public class ClientStub implements OperationHandlerI {
         }
 
         Thread thread = new Thread(() -> {
-            try {
-                webSocketClient.connect(user.getEmail(), token.get(), user.getDevice());
-            } catch (DeploymentException | IOException e) {
-                logger.error("Problem connecting the websocket client", e);
-            }
+            webSocketClient.connect(user.getEmail(), token.get(), user.getDevice());
         });
         thread.start();
         // Set clock drift
@@ -726,8 +718,6 @@ public class ClientStub implements OperationHandlerI {
      */
     private void receiveMessage(ZenMessage message) throws DuplicateIdException, InvalidActionException, PositionOutOfBoundException {
         System.out.println(message.type);
-        if (true)
-            return;
         //TODO CHECK VALIDITY
         switch (message.type) {
             case POST -> {
@@ -1025,80 +1015,80 @@ public class ClientStub implements OperationHandlerI {
     }
 
     @Override
-    public synchronized void swapTasks(long id, int position) throws PositionOutOfBoundException {
-        dbHandler.getTaskManager().swapTasks(user.getId(), user.getProfile(), id, position);
+    public synchronized void swapTasks(long task, int position) throws PositionOutOfBoundException {
+        dbHandler.getTaskManager().swapTasks(user.getId(), user.getProfile(), task, position);
         List<Object> arguments = new ArrayList<>();
         arguments.add(user.getProfile());
-        arguments.add(id);
+        arguments.add(task);
         arguments.add(position);
         //Tell the server
         sendUpdate(OperationType.SWAP, arguments);
         //Update locally
-        dbHandler.getTaskManager().swapTasks(user.getId(), user.getProfile(), id, position);
+        dbHandler.getTaskManager().swapTasks(user.getId(), user.getProfile(), task, position);
         //Call handlers
         for (OperationHandlerI oh : otherHandlers)
-            oh.swapTasks(id, position);
+            oh.swapTasks(task, position);
     }
 
     @Override
-    public synchronized void swapListEntries(long list, long id, int position) throws PositionOutOfBoundException {
-        dbHandler.getListManager().swapListEntries(user.getId(), user.getProfile(), list, id, position);
+    public synchronized void swapListEntries(long list, long task, int position) throws PositionOutOfBoundException {
+        dbHandler.getListManager().swapListEntries(user.getId(), user.getProfile(), list, task, position);
         List<Object> arguments = new ArrayList<>();
         arguments.add(user.getProfile());
-        arguments.add(id);
+        arguments.add(task);
         arguments.add(position);
         //Tell the server
         sendUpdate(OperationType.SWAP_LIST, arguments);
         //Update locally
-        dbHandler.getListManager().swapListEntries(user.getId(), user.getProfile(), list, id, position);
+        dbHandler.getListManager().swapListEntries(user.getId(), user.getProfile(), list, task, position);
         //Call handlers
         for (OperationHandlerI oh : otherHandlers)
-            oh.swapListEntries(list, id, position);
+            oh.swapListEntries(list, task, position);
     }
 
     @Override
-    public synchronized void updateTask(long id, String value) {
+    public synchronized void updateTask(long task, String value) {
         List<Object> arguments = new ArrayList<>();
         arguments.add(user.getProfile());
-        arguments.add(id);
+        arguments.add(task);
         arguments.add(value);
         //Tell the server
         sendUpdate(OperationType.UPDATE_LIST, arguments);
         //Update locally
-        dbHandler.getTaskManager().updateTask(user.getId(), user.getProfile(), id, value);
+        dbHandler.getTaskManager().updateTask(user.getId(), user.getProfile(), task, value);
         //Call handlers
         for (OperationHandlerI oh : otherHandlers)
-            oh.updateTask(id, value);
+            oh.updateTask(task, value);
     }
 
     @Override
-    public synchronized void updateFocus(long id, boolean value) {
+    public synchronized void updateFocus(long task, boolean value) {
         List<Object> arguments = new ArrayList<>();
         arguments.add(user.getProfile());
-        arguments.add(id);
+        arguments.add(task);
         arguments.add(value);
         //Tell the server
         sendUpdate(OperationType.UPDATE_LIST, arguments);
         //Update locally
-        dbHandler.getTaskManager().updateFocus(user.getId(), user.getProfile(), id, value);
+        dbHandler.getTaskManager().updateFocus(user.getId(), user.getProfile(), task, value);
         //Call handlers
         for (OperationHandlerI oh : otherHandlers)
-            oh.updateFocus(id, value);
+            oh.updateFocus(task, value);
     }
 
     @Override
-    public synchronized void updateDropped(long id, boolean value) {
+    public synchronized void updateDropped(long task, boolean value) {
         List<Object> arguments = new ArrayList<>();
         arguments.add(user.getProfile());
-        arguments.add(id);
+        arguments.add(task);
         arguments.add(value);
         //Tell the sever
         sendUpdate(OperationType.UPDATE_LIST, arguments);
         //Update locally
-        dbHandler.getTaskManager().updateDropped(user.getId(), user.getProfile(), id, value);
+        dbHandler.getTaskManager().updateDropped(user.getId(), user.getProfile(), task, value);
         //Call handlers
         for (OperationHandlerI oh : otherHandlers)
-            oh.updateDropped(id, value);
+            oh.updateDropped(task, value);
     }
 
     @Override
@@ -1117,33 +1107,33 @@ public class ClientStub implements OperationHandlerI {
     }
 
     @Override
-    public synchronized void updateReminderDate(long id, Instant value) {
+    public synchronized void updateReminderDate(long task, Instant value) {
         List<Object> arguments = new ArrayList<>();
         arguments.add(user.getProfile());
-        arguments.add(id);
+        arguments.add(task);
         arguments.add(value);
         //Tell the server
         sendUpdate(OperationType.UPDATE_REMINDER_DATE, arguments);
         //Update locally
-        dbHandler.getTaskManager().updateReminderDate(user.getId(), user.getProfile(), id, value);
+        dbHandler.getTaskManager().updateReminderDate(user.getId(), user.getProfile(), task, value);
         //Call handlers
         for (OperationHandlerI oh : otherHandlers)
-            oh.updateReminderDate(id, value);
+            oh.updateReminderDate(task, value);
     }
 
     @Override
-    public synchronized void updateRecurrence(long id, String value) {
+    public synchronized void updateRecurrence(long task, String value) {
         List<Object> arguments = new ArrayList<>();
         arguments.add(user.getProfile());
-        arguments.add(id);
+        arguments.add(task);
         arguments.add(value);
         //Tell the server
         sendUpdate(OperationType.UPDATE_RECURRENCE, arguments);
         //Update locally
-        dbHandler.getTaskManager().updateRecurrence(user.getId(), user.getProfile(), id, value);
+        dbHandler.getTaskManager().updateRecurrence(user.getId(), user.getProfile(), task, value);
         //Call handlers
         for (OperationHandlerI oh : otherHandlers)
-            oh.updateRecurrence(id, value);
+            oh.updateRecurrence(task, value);
     }
 
     @Override

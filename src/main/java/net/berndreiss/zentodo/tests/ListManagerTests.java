@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Random;
 
+//TODO check for getList(null) -> should return empty
 //TODO check for proper list profile user associations -> maybe add client stub test class?
 /**
  * Test list operation (see TaskListI.java).
@@ -330,7 +331,7 @@ public class ListManagerTests {
         listManager.addUserProfileToList(user.getId(), user.getProfile(), list0.getId());
         listManager.updateList(user.getId(), user.getProfile(), task.getId(), list0.getId());
         listManager.updateId(list0.getId(), 3);
-        Optional<TaskList> listReturned = listManager.getList(3);
+        Optional<TaskList> listReturned = listManager.getList(3L);
         Assert.assertTrue("List id was not updated.", listReturned.isPresent());
         Assert.assertEquals("List id was updated for wrong list.", "LIST0", listReturned.get().getName());
 

@@ -106,7 +106,7 @@ public interface ListManagerI {
      * @param id the list id
      * @return the task list
      */
-    Optional<TaskList> getList(long id);
+    Optional<TaskList> getList(Long id);
 
     /**
      * Get a list by name.
@@ -120,6 +120,7 @@ public interface ListManagerI {
 
     /**
      * Get all lists for the user profile.
+     * //TODO check for getList(null)
      *
      * @param user    the user id
      * @param profile the profile id
