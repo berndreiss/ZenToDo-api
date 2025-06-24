@@ -723,7 +723,7 @@ public class ClientStub implements OperationHandlerI {
             case POST -> {
                 List<Object> args = message.arguments;
                 int profile = Integer.parseInt(args.get(0).toString());
-                long id = Long.parseLong(args.get(1).toString());
+                long task = Long.parseLong(args.get(1).toString());
                 String taskName = args.get(2).toString();
                 int position = Integer.parseInt(args.get(3).toString());
                 boolean focus = Boolean.parseBoolean(args.get(4).toString());
@@ -733,99 +733,108 @@ public class ClientStub implements OperationHandlerI {
                 Instant reminderDate = args.get(8).toString().isEmpty() ? null : Instant.parse(args.get(8).toString());
                 String recurrence = args.get(9).toString().isEmpty() ? null : args.get(9).toString();
 
-                Task task = new Task(user.getId(), profile, taskName, position);
-                task.setId(id);
-                task.setFocus(focus);
-                task.setDropped(dropped);
-                task.setList(list);
-                task.setListPosition(listPosition);
-                task.setReminderDate(reminderDate);
-                task.setRecurrence(recurrence);
-                dbHandler.getTaskManager().postTask(task);
+                Task newTask = new Task(user.getId(), profile, taskName, position);
+                newTask.setId(task);
+                newTask.setFocus(focus);
+                newTask.setDropped(dropped);
+                newTask.setList(list);
+                newTask.setListPosition(listPosition);
+                newTask.setReminderDate(reminderDate);
+                newTask.setRecurrence(recurrence);
+                dbHandler.getTaskManager().postTask(newTask);
             }
             case ADD_NEW_TASK -> {
                 //TODO handle id already existing -> check in with the server to get a new one for the other task
                 //DO NOT ACKNOWLEDGE UNTIL WE HAVE THIS RESOLVED!
                 List<Object> args = message.arguments;
                 int profile = Integer.parseInt(args.get(0).toString());
-                long id = Long.parseLong(args.get(1).toString());
+                long task = Long.parseLong(args.get(1).toString());
                 String taskName = args.get(2).toString();
                 int position = Integer.parseInt(args.get(3).toString());
-                Task task = dbHandler.getTaskManager().addNewTask(user.getId(), profile, id, taskName, position);
+                Task newTask = dbHandler.getTaskManager().addNewTask(user.getId(), profile, task, taskName, position);
                 for (OperationHandlerI oh : otherHandlers)
-                    oh.addNewTask(task);
+                    oh.addNewTask(newTask);
+            }
+            case ADD_NEW_LIST -> {
+                List<Object> args = message.arguments;
+                long task = Long.parseLong(args.get(0).toString());
+                String name = args.get(1).toString();
+                String color = args.get(2).toString().isEmpty() ? null : args.get(2).toString();
+                dbHandler.getListManager().addList(task, name, color);
+                for (OperationHandlerI oh: otherHandlers)
+                    oh.addNewList(name, color);
             }
             case DELETE -> {
                 int profile = Integer.parseInt(message.arguments.get(0).toString());
-                long id = Long.parseLong(message.arguments.get(1).toString());
-                dbHandler.getTaskManager().removeTask(user.getId(), profile, id);
+                long task = Long.parseLong(message.arguments.get(1).toString());
+                dbHandler.getTaskManager().removeTask(user.getId(), profile, task);
                 for (OperationHandlerI oh : otherHandlers)
-                    oh.removeTask(id);
+                    oh.removeTask(task);
             }
             case SWAP -> {
                 int profile = Integer.parseInt(message.arguments.get(0).toString());
-                long id = Long.parseLong(message.arguments.get(1).toString());
+                long task = Long.parseLong(message.arguments.get(1).toString());
                 int position = Integer.parseInt(message.arguments.get(2).toString());
-                dbHandler.getTaskManager().swapTasks(user.getId(), profile, id, position);
+                dbHandler.getTaskManager().swapTasks(user.getId(), profile, task, position);
                 for (OperationHandlerI oh : otherHandlers)
-                    oh.swapTasks(id, position);
+                    oh.swapTasks(task, position);
             }
             case SWAP_LIST -> {
                 int profile = Integer.parseInt(message.arguments.get(0).toString());
-                long id = Long.parseLong(message.arguments.get(1).toString());
+                long task = Long.parseLong(message.arguments.get(1).toString());
                 long list = Long.parseLong(message.arguments.get(2).toString());
                 int position = Integer.parseInt(message.arguments.get(3).toString());
-                dbHandler.getListManager().swapListEntries(user.getId(), profile, id, list, position);
+                dbHandler.getListManager().swapListEntries(user.getId(), profile, task, list, position);
                 for (OperationHandlerI oh : otherHandlers)
-                    oh.swapTasks(id, position);
+                    oh.swapListEntries(list, task, position);
             }
             case UPDATE_TASK -> {
                 int profile = Integer.parseInt(message.arguments.get(0).toString());
-                long id = Long.parseLong(message.arguments.get(1).toString());
-                String task = message.arguments.get(2).toString();
-                dbHandler.getTaskManager().updateTask(user.getId(), profile, id, task);
+                long task = Long.parseLong(message.arguments.get(1).toString());
+                String taskName = message.arguments.get(2).toString();
+                dbHandler.getTaskManager().updateTask(user.getId(), profile, task, taskName);
                 for (OperationHandlerI oh : otherHandlers)
-                    oh.updateTask(id, task);
+                    oh.updateTask(task, taskName);
             }
             case UPDATE_FOCUS -> {
                 int profile = Integer.parseInt(message.arguments.get(0).toString());
-                long id = Long.parseLong(message.arguments.get(1).toString());
+                long task = Long.parseLong(message.arguments.get(1).toString());
                 boolean focus = Boolean.parseBoolean(message.arguments.get(2).toString());
-                dbHandler.getTaskManager().updateFocus(user.getId(), profile, id, focus);
+                dbHandler.getTaskManager().updateFocus(user.getId(), profile, task, focus);
                 for (OperationHandlerI oh : otherHandlers)
-                    oh.updateFocus(id, focus);
+                    oh.updateFocus(task, focus);
             }
             case UPDATE_DROPPED -> {
                 int profile = Integer.parseInt(message.arguments.get(0).toString());
-                long id = Long.parseLong(message.arguments.get(1).toString());
+                long task = Long.parseLong(message.arguments.get(1).toString());
                 boolean dropped = Boolean.parseBoolean(message.arguments.get(2).toString());
-                dbHandler.getTaskManager().updateDropped(user.getId(), profile, id, dropped);
+                dbHandler.getTaskManager().updateDropped(user.getId(), profile, task, dropped);
                 for (OperationHandlerI oh : otherHandlers)
-                    oh.updateDropped(id, dropped);
+                    oh.updateDropped(task, dropped);
             }
             case UPDATE_LIST -> {
                 int profile = Integer.parseInt(message.arguments.get(0).toString());
-                long id = Long.parseLong(message.arguments.get(1).toString());
+                long task = Long.parseLong(message.arguments.get(1).toString());
                 Long list = Long.parseLong(message.arguments.get(2).toString());
-                dbHandler.getListManager().updateList(user.getId(), profile, id, list);
+                dbHandler.getListManager().updateList(user.getId(), profile, task, list);
                 for (OperationHandlerI oh : otherHandlers)
-                    oh.updateList(id, list);
+                    oh.updateList(task, list);
             }
             case UPDATE_REMINDER_DATE -> {
                 int profile = Integer.parseInt(message.arguments.get(0).toString());
-                long id = Long.parseLong(message.arguments.get(1).toString());
+                long task = Long.parseLong(message.arguments.get(1).toString());
                 Instant date = Instant.parse(message.arguments.get(1).toString());
-                dbHandler.getTaskManager().updateReminderDate(user.getId(), profile, id, date);
+                dbHandler.getTaskManager().updateReminderDate(user.getId(), profile, task, date);
                 for (OperationHandlerI oh : otherHandlers)
-                    oh.updateReminderDate(id, date);
+                    oh.updateReminderDate(task, date);
             }
             case UPDATE_RECURRENCE -> {
                 int profile = Integer.parseInt(message.arguments.get(0).toString());
-                long id = Long.parseLong(message.arguments.get(1).toString());
+                long task = Long.parseLong(message.arguments.get(1).toString());
                 String recurrence = message.arguments.get(2).toString();
-                dbHandler.getTaskManager().updateRecurrence(user.getId(), profile, id, recurrence);
+                dbHandler.getTaskManager().updateRecurrence(user.getId(), profile, task, recurrence);
                 for (OperationHandlerI oh : otherHandlers)
-                    oh.updateRecurrence(id, recurrence);
+                    oh.updateRecurrence(task, recurrence);
             }
             case UPDATE_LIST_COLOR -> {
                 long list = Long.parseLong(message.arguments.get(0).toString());
@@ -1032,15 +1041,16 @@ public class ClientStub implements OperationHandlerI {
 
     @Override
     public synchronized void swapListEntries(long list, long task, int position) throws PositionOutOfBoundException {
-        dbHandler.getListManager().swapListEntries(user.getId(), user.getProfile(), list, task, position);
+        dbHandler.getListManager().swapListEntries(user.getId(), user.getProfile(), task, list, position);
         List<Object> arguments = new ArrayList<>();
         arguments.add(user.getProfile());
         arguments.add(task);
+        arguments.add(list);
         arguments.add(position);
         //Tell the server
         sendUpdate(OperationType.SWAP_LIST, arguments);
         //Update locally
-        dbHandler.getListManager().swapListEntries(user.getId(), user.getProfile(), list, task, position);
+        dbHandler.getListManager().swapListEntries(user.getId(), user.getProfile(), task, list, position);
         //Call handlers
         for (OperationHandlerI oh : otherHandlers)
             oh.swapListEntries(list, task, position);
@@ -1053,7 +1063,7 @@ public class ClientStub implements OperationHandlerI {
         arguments.add(task);
         arguments.add(value);
         //Tell the server
-        sendUpdate(OperationType.UPDATE_LIST, arguments);
+        sendUpdate(OperationType.UPDATE_TASK, arguments);
         //Update locally
         dbHandler.getTaskManager().updateTask(user.getId(), user.getProfile(), task, value);
         //Call handlers
@@ -1068,7 +1078,7 @@ public class ClientStub implements OperationHandlerI {
         arguments.add(task);
         arguments.add(value);
         //Tell the server
-        sendUpdate(OperationType.UPDATE_LIST, arguments);
+        sendUpdate(OperationType.UPDATE_FOCUS, arguments);
         //Update locally
         dbHandler.getTaskManager().updateFocus(user.getId(), user.getProfile(), task, value);
         //Call handlers
@@ -1083,7 +1093,7 @@ public class ClientStub implements OperationHandlerI {
         arguments.add(task);
         arguments.add(value);
         //Tell the sever
-        sendUpdate(OperationType.UPDATE_LIST, arguments);
+        sendUpdate(OperationType.UPDATE_DROPPED, arguments);
         //Update locally
         dbHandler.getTaskManager().updateDropped(user.getId(), user.getProfile(), task, value);
         //Call handlers
@@ -1092,7 +1102,9 @@ public class ClientStub implements OperationHandlerI {
     }
 
     @Override
-    public synchronized void updateList(long task, Long newId) {
+    public synchronized void updateList(long task, Long newId) throws InvalidActionException {
+        if (newId != null && dbHandler.getListManager().getListsForUser(user.getId(), user.getProfile()).stream().anyMatch(tl -> tl.getId() == newId))
+            throw new InvalidActionException("No list with id exists for the user profile.");
         List<Object> arguments = new ArrayList<>();
         arguments.add(user.getProfile());
         arguments.add(task);
@@ -1195,13 +1207,17 @@ public class ClientStub implements OperationHandlerI {
     public TaskList addNewList(String name, String color) throws InvalidActionException, DuplicateIdException {
         //TODO try to get List id from server
         long id = ListManagerTests.getUniqueListId(dbHandler);
+        List<Object> arguments = new ArrayList<>();
+        arguments.add(id);
+        arguments.add(name);
+        arguments.add(color == null ? "" : color);
+        System.out.println("BRRRRRRRRRRRRRRRRRRRRRRRRR");
+        sendUpdate(OperationType.ADD_NEW_LIST, arguments);
         TaskList list = dbHandler.getListManager().addList(id, name, color);
         dbHandler.getListManager().addUserProfileToList(user.getId(), user.getProfile(), list.getId());
         for (OperationHandlerI oh: otherHandlers)
             oh.addNewList(name, color);
-
         return list;
-        //TODO tell server
     }
 
     /**

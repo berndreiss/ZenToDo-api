@@ -61,8 +61,9 @@ public interface ListManagerI {
      * @param profile the profile id
      * @param task    the task id
      * @param listId  the new list id
+     * throws InvalidActionException if list with id does not exist for user profile
      */
-    void updateList(long user, int profile, long task, Long listId);
+    void updateList(long user, int profile, long task, Long listId) throws InvalidActionException;
 
     /**
      * Update the id of a list.
@@ -140,12 +141,13 @@ public interface ListManagerI {
      *
      * @param user     the user id
      * @param profile  the profile id
-     * @param list     the list id
      * @param task     the task id to move
+     * @param list     the list id
      * @param position the position to swap with
      * @throws PositionOutOfBoundException thrown when position is not valid
      */
-    void swapListEntries(long user, int profile, long list, long task, int position) throws PositionOutOfBoundException;
+    //TODO what do we need here actually?
+    void swapListEntries(long user, int profile, long task, long list, int position) throws PositionOutOfBoundException;
 
 
 }

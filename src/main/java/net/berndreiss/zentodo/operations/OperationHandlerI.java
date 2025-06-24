@@ -165,7 +165,7 @@ public interface OperationHandlerI {
      * @param task    the id of the task to be updated
      * @param newId the new list to be set
      */
-    void updateList(long task, Long newId);
+    void updateList(long task, Long newId) throws InvalidActionException;
 
     /**
      * Update the reminder date of a task.

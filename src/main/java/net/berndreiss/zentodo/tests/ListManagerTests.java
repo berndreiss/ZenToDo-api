@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Random;
 
+//TODO test for invalidaction when updating task with list not assigned to user profile
 //TODO check for getList(null) -> should return empty
 //TODO check for proper list profile user associations -> maybe add client stub test class?
 /**
@@ -179,7 +180,7 @@ public class ListManagerTests {
         listManager.updateList(user.getId(), user.getProfile(), task1.getId(), list.getId());
         listManager.updateList(user.getId(), user.getProfile(), task2.getId(), list.getId());
 
-        listManager.swapListEntries(user.getId(), user.getProfile(), list.getId(), task2.getId(), 0);
+        listManager.swapListEntries(user.getId(), user.getProfile(), task2.getId(), list.getId(), 0);
         List<Task> listReturned = listManager.getListEntries(user.getId(), user.getProfile(), list.getId());
         Assert.assertEquals(3, listReturned.size());
         Assert.assertEquals("List position for swapped item was not updated.", 0, (int) listReturned.get(0).getListPosition());
@@ -187,7 +188,7 @@ public class ListManagerTests {
         Assert.assertEquals("List position for other item was has been changed.", 1, (int) listReturned.get(1).getListPosition());
 
         try {
-            listManager.swapListEntries(user.getId(), user.getProfile(), list.getId(), task2.getId(), 3);
+            listManager.swapListEntries(user.getId(), user.getProfile(), task2.getId(), list.getId(), 3);
             Assert.fail("PositionOutOfBounds exception was not thrown.");
         } catch (PositionOutOfBoundException _) {
         }
@@ -274,8 +275,10 @@ public class ListManagerTests {
 
         TaskList list0 = listManager.addList(getUniqueListId(database), "LIST0", null);
         Task task = database.getTaskManager().addNewTask(user.getId(), user.getProfile(), "TASK");
+        listManager.addUserProfileToList(user.getId(), user.getProfile(), list0.getId());
         listManager.updateList(user.getId(), user.getProfile(), task.getId(), list0.getId());
 
+        listManager.addUserProfileToList(user.getId(), user.getProfile(), list0.getId());
         listManager.addUserProfileToList(user.getId(), profile, list0.getId());
 
         listManager.removeUserProfileFromList(user.getId(), profile, list0.getId());

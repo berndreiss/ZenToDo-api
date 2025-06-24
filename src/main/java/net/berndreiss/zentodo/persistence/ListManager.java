@@ -108,12 +108,9 @@ public class ListManager implements ListManagerI {
     }
 
     @Override
-    public synchronized void updateList(long userId, int profile, long entryId, Long id) {
-        if (id != null) {
-            Optional<TaskList> list = getList(id);
-            if (list.isEmpty())
-                return;
-        }
+    public synchronized void updateList(long userId, int profile, long entryId, Long id) throws InvalidActionException{
+        if (id != null && getListsForUser(userId, profile).stream().noneMatch(tl -> tl.getId() == id))
+                throw new InvalidActionException("No list with id assigned to user profile");
         Optional<Task> entry;
         entry = em.createQuery("SELECT t FROM Task t WHERE t.userId = :userId  AND profile = :profile AND t.id = :id", Task.class)
                 .setParameter("userId", userId)
@@ -263,11 +260,11 @@ public class ListManager implements ListManagerI {
     }
 
     @Override
-    public synchronized void swapListEntries(long userId, int profile, long list, long entryId, int position) throws PositionOutOfBoundException {
+    public synchronized void swapListEntries(long userId, int profile, long taskId, long list, int position) throws PositionOutOfBoundException {
         List<Task> entries = getListEntries(userId, profile, list);
         if (position >= entries.size())
             throw new PositionOutOfBoundException("List position is too big.");
-        Optional<Task> entry = entries.stream().filter(e -> e.getId() == entryId).findFirst();
+        Optional<Task> entry = entries.stream().filter(e -> e.getId() == taskId).findFirst();
         if (entry.isEmpty())
             return;
         Task other = entries.get(position);

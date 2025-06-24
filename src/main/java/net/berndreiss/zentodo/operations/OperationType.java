@@ -8,56 +8,60 @@ package net.berndreiss.zentodo.operations;
 
 public enum OperationType {
     /**
-     * PROFILE (int), ID (long), TASK (String), POSITION (int), FOCUS (boolean), DROPPED (boolean),
+     * PROFILE (int), TASK (long), TASK_NAME (String), POSITION (int), FOCUS (boolean), DROPPED (boolean),
      * LIST (Long), LIST_POSITION (Long), REMINDER_DATE (Instant), RECURRENCE (String)
      */
     POST,
     /**
-     * ID (long), NAME (String), COLOR (String), PROFILES (int[])
+     * TASK (long), NAME (String), COLOR (String), PROFILES (int[])
      */
     POST_LIST,
     /**
-     * ID (long), NAME (String)
+     * TASK (long), NAME (String)
      */
     POST_PROFILE,
     /**
-     * PROFILE (int), ID (long), TASK (String), POSITION (int)
+     * PROFILE (int), TASK (long), TASK (String), POSITION (int)
      */
     ADD_NEW_TASK,
     /**
-     * PROFILE (int), ID (long)
+     * TASK (long), NAME (@NotNull String), Color (String -> HEX)
+     */
+    ADD_NEW_LIST,
+    /**
+     * PROFILE (int), TASK (long)
      */
     DELETE,
     /**
-     * PROFILE (int), ID (long), POSITION (int)
+     * PROFILE (int), TASK (long), POSITION (int)
      */
     SWAP,
     /**
-     * PROFILE (int), ID (long), LIST (long), LIST_POSITION (int)
+     * PROFILE (int), TASK (long), LIST (long), LIST_POSITION (int)
      */
     SWAP_LIST,
     /**
-     * PROFILE (int), ID (long), TASK (String)
+     * PROFILE (int), TASK (long), TASK_NAME (String)
      */
     UPDATE_TASK,
     /**
-     * PROFILE (int), ID (long), FOCUS (boolean)
+     * PROFILE (int), TASK (long), FOCUS (boolean)
      */
     UPDATE_FOCUS,
     /**
-     * PROFILE (int), ID (long), DROPPED (boolean)
+     * PROFILE (int), TASK (long), DROPPED (boolean)
      */
     UPDATE_DROPPED,
     /**
-     * PROFILE (int), ID (long), LIST (Long)
+     * PROFILE (int), TASK (long), LIST (Long)
      */
     UPDATE_LIST,
     /**
-     * PROFILE (int), ID (long), REMINDER_DATE (Instant)
+     * PROFILE (int), TASK (long), REMINDER_DATE (Instant)
      */
     UPDATE_REMINDER_DATE,
     /**
-     * PROFILE (int), ID (long), RECURRENCE (String)
+     * PROFILE (int), TASK (long), RECURRENCE (String)
      */
     UPDATE_RECURRENCE,
     /**
@@ -65,11 +69,11 @@ public enum OperationType {
      */
     UPDATE_LIST_COLOR,
     /**
-     * ID (long), NAME (String)
+     * LIST (long), NAME (String)
      */
     UPDATE_USER_NAME,
     /**
-     * ID (long), MAIL (String)
+     * USER (long), MAIL (String)
      */
     UPDATE_MAIL,
     /**
