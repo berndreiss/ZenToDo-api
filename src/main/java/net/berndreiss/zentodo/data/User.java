@@ -170,6 +170,6 @@ public class User {
     //public void setDevices(List<Device> devices) {this.devices = devices;}
     //public List<Profile> getProfiles() {return profiles;}
     //public void setProfiles(List<Profile> profiles) {this.profiles = profiles;}
-    //public List<QueueItem> getQueueItems() {return queueItems;}
+    public List<QueueItem> getQueueItems() {return queueItems;}
     //public void setQueueItems(List<QueueItem> queueItems) {this.queueItems = queueItems;}
 }
