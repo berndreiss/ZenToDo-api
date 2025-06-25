@@ -7,7 +7,7 @@ public class Database {
 
     private final TaskManagerI taskManager;
     private final UserManagerI userManager;
-    private final DatabaseOpsI databaseOps;
+    private final MetadataManagerI databaseOps;
     private final ListManagerI listManager;
 
     /**
@@ -18,7 +18,7 @@ public class Database {
      * @param listManager manages lists
      * @param databaseOps manages user independent data
      */
-    public Database(TaskManagerI taskManager, UserManagerI userManager, ListManagerI listManager, DatabaseOpsI databaseOps) {
+    public Database(TaskManagerI taskManager, UserManagerI userManager, ListManagerI listManager, MetadataManagerI databaseOps) {
         this.taskManager = taskManager;
         this.userManager = userManager;
         this.databaseOps = databaseOps;
@@ -37,7 +37,7 @@ public class Database {
         return listManager;
     }
 
-    public DatabaseOpsI getDatabaseOps() {
+    public MetadataManagerI getDatabaseOps() {
         return databaseOps;
     }
 

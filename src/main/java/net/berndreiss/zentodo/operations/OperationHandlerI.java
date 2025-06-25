@@ -3,6 +3,7 @@ package net.berndreiss.zentodo.operations;
 import com.sun.istack.NotNull;
 import net.berndreiss.zentodo.data.Task;
 import net.berndreiss.zentodo.data.TaskList;
+import net.berndreiss.zentodo.data.User;
 import net.berndreiss.zentodo.exceptions.DuplicateIdException;
 import net.berndreiss.zentodo.exceptions.InvalidActionException;
 import net.berndreiss.zentodo.exceptions.PositionOutOfBoundException;
@@ -223,4 +224,10 @@ public interface OperationHandlerI {
      * throws InvalidActionException thrown when name already exists the user profile
      */
     TaskList addNewList(@NotNull String name, String color) throws InvalidActionException, DuplicateIdException;
+
+    /**
+     * Get a list of all available users.
+     * @return a list of users
+     */
+    List<User> getUsers();
 }

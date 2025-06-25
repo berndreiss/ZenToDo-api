@@ -1231,6 +1231,11 @@ public class ClientStub implements OperationHandlerI {
         return list;
     }
 
+    @Override
+    public List<User> getUsers() {
+        return dbHandler.getUserManager().getUsers();
+    }
+
     /**
      * Clear the queue for the initialized user.
      */
