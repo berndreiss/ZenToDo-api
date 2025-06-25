@@ -29,11 +29,11 @@ public class ListManager implements ListManagerI {
     }
 
     @Override
-    public synchronized TaskList addList(long id, String name, String color) throws InvalidActionException {
+    public synchronized TaskList addList(long id, String name, String color) throws InvalidActionException, DuplicateIdException {
         if (name == null)
             throw new InvalidActionException("List name must not be null.");
         if (getList(id).isPresent())
-            return null;
+            throw new DuplicateIdException("List with id already exists.");
         TaskList list = new TaskList(id, name, color);
         em.getTransaction().begin();
         em.persist(list);

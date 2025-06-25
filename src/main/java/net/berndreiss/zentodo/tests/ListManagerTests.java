@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Random;
 
+//TODO test for list duplicate id
 //TODO test for invalidaction when updating task with list not assigned to user profile
 //TODO check for getList(null) -> should return empty
 //TODO check for proper list profile user associations -> maybe add client stub test class?
@@ -61,8 +62,10 @@ public class ListManagerTests {
         Assert.assertEquals("Returned wrong amount of entries without a list.", 3, entriesNoList.size());
 
         TaskList list0 = listManager.addList(getUniqueListId(database), "LIST0", null);
-        TaskList listNullId = listManager.addList(list0.getId(), "LIST NULL", null);
-        Assert.assertNull("List returned for identical ids was not null.", listNullId);
+        try {
+            listManager.addList(list0.getId(), "LIST NULL", null);
+            Assert.fail("Adding list with duplicate id did not throw DuplicateIdException.");
+        } catch(DuplicateIdException _){}
         List<TaskList> listsDuplicateId = listManager.getLists();
         Assert.assertTrue("List with identical id was added.", listsDuplicateId.stream()
                 .noneMatch(l -> {
@@ -71,6 +74,8 @@ public class ListManagerTests {
                     return l.getName().equals("LIST NULL");
                 }));
         TaskList list1 = listManager.addList(getUniqueListId(database), "LIST1", null);
+        listManager.addUserProfileToList(user.getId(), user.getProfile(), list0.getId());
+        listManager.addUserProfileToList(user.getId(), user.getProfile(), list1.getId());
         listManager.updateList(user.getId(), profile, task0.getId(), list0.getId());
         listManager.updateList(user.getId(), profile, task1.getId(), list1.getId());
         listManager.updateList(user.getId(), profile, task2.getId(), list1.getId());
@@ -269,7 +274,6 @@ public class ListManagerTests {
     @Test
     public void removeUserProfileFromList() throws InvalidActionException, DuplicateIdException {
         User user = DatabaseTestSuite.user;
-        int profile = user.getProfile();
         Database database = DatabaseTestSuite.databaseSupplier.get();
         ListManagerI listManager = database.getListManager();
 
@@ -278,11 +282,8 @@ public class ListManagerTests {
         listManager.addUserProfileToList(user.getId(), user.getProfile(), list0.getId());
         listManager.updateList(user.getId(), user.getProfile(), task.getId(), list0.getId());
 
-        listManager.addUserProfileToList(user.getId(), user.getProfile(), list0.getId());
-        listManager.addUserProfileToList(user.getId(), profile, list0.getId());
-
-        listManager.removeUserProfileFromList(user.getId(), profile, list0.getId());
-        List<TaskList> lists = listManager.getListsForUser(user.getId(), profile);
+        listManager.removeUserProfileFromList(user.getId(), user.getProfile(), list0.getId());
+        List<TaskList> lists = listManager.getListsForUser(user.getId(), user.getProfile());
         Assert.assertTrue("List was not removed from user.", lists.isEmpty());
 
 
