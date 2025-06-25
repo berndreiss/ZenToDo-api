@@ -367,8 +367,8 @@ public class TaskManagerTests {
         List<Task> dropped = taskManager.loadDropped(user.getId(), user.getProfile());
         Assert.assertFalse("Focused tasks were not loaded.", focused.isEmpty());
         Assert.assertFalse("Dropped tasks were not loaded.", dropped.isEmpty());
-        Assert.assertEquals("Wrong task was loaded for focused tasks.", taskFocus.getId(), focused.getFirst().getId());
-        Assert.assertEquals("Wrong task was loaded for dropped tasks.", taskDropped.getId(), dropped.getFirst().getId());
+        Assert.assertEquals("Wrong task was loaded for focused tasks.", taskFocus.getId(), focused.get(0).getId());
+        Assert.assertEquals("Wrong task was loaded for dropped tasks.", taskDropped.getId(), dropped.get(0).getId());
 
         database.close();
     }

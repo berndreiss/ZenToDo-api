@@ -852,11 +852,11 @@ public class ClientStub implements OperationHandlerI {
                     oh.updateListColor(list, color);
             }
             case UPDATE_USER_NAME -> {
-                String name = message.arguments.getFirst().toString();
+                String name = message.arguments.get(0).toString();
                 dbHandler.getUserManager().updateUserName(user.getId(), name);
             }
             case UPDATE_MAIL -> {
-                String mail = message.arguments.getFirst().toString();
+                String mail = message.arguments.get(0).toString();
                 dbHandler.getUserManager().updateEmail(user.getId(), mail);
             }
             case UPDATE_ID -> {

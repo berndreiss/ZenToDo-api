@@ -169,7 +169,7 @@ public class UserManager implements UserManagerI {
         if (results.isEmpty())
             return Optional.empty();
         else
-            return Optional.of(results.getFirst());
+            return Optional.of(results.get(0));
     }
 
     @Override
@@ -178,7 +178,7 @@ public class UserManager implements UserManagerI {
                 .setParameter("id", id)
                 .getResultList();
 
-        return users.isEmpty() ? Optional.empty() : Optional.of(users.getFirst());
+        return users.isEmpty() ? Optional.empty() : Optional.of(users.get(0));
     }
 
     @Override
@@ -190,7 +190,7 @@ public class UserManager implements UserManagerI {
         if (results.isEmpty())
             return Optional.empty();
         else
-            return Optional.of(results.getFirst());
+            return Optional.of(results.get(0));
     }
 
     @Override

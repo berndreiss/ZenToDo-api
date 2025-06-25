@@ -35,7 +35,7 @@ public class DatabaseTest {
         List<Profile> profiles = database.getUserManager().getProfiles(0L);
         Assert.assertTrue("Default user was not created.", user.isPresent());
         Assert.assertFalse("Default profile for default user was not created.", profiles.isEmpty());
-        Assert.assertEquals("Default profile was not assigned to user.", profiles.getFirst().getProfileId().getId(), user.get().getProfile());
+        Assert.assertEquals("Default profile was not assigned to user.", profiles.get(0).getProfileId().getId(), user.get().getProfile());
         database.close();
     }
 }

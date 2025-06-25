@@ -99,8 +99,8 @@ public class DatabaseTestSuite {
         user = userOpt.get();
         List<Profile> profiles = database.getUserManager().getProfiles(0L);
         Assert.assertFalse("PREPARE: Default profile for default user was not created.", profiles.isEmpty());
-        Assert.assertEquals("PREPARE: Default profile was not assigned to user.", profiles.getFirst().getProfileId().getId(), user.getProfile());
-        profile = profiles.getFirst();
+        Assert.assertEquals("PREPARE: Default profile was not assigned to user.", profiles.get(0).getProfileId().getId(), user.getProfile());
+        profile = profiles.get(0);
         database.close();
     }
 

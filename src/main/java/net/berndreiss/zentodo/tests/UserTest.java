@@ -265,9 +265,9 @@ public class UserTest {
         userManager.addToQueue(user, message);
         List<ZenServerMessage> messages = userManager.getQueued(user.getId());
         Assert.assertEquals(2, messages.size());
-        Assert.assertEquals("Queue was not updated properly", message.type, messages.getFirst().type);
-        Assert.assertEquals("Queue was not updated properly", message.clock.jsonify(), messages.getFirst().clock.jsonify());
-        Assert.assertEquals("Queue was not updated properly", message.timeStamp.getEpochSecond(), messages.getFirst().timeStamp.getEpochSecond());
+        Assert.assertEquals("Queue was not updated properly", message.type, messages.get(0).type);
+        Assert.assertEquals("Queue was not updated properly", message.clock.jsonify(), messages.get(0).clock.jsonify());
+        Assert.assertEquals("Queue was not updated properly", message.timeStamp.getEpochSecond(), messages.get(0).timeStamp.getEpochSecond());
         Assert.assertEquals("Queue was not updated properly", "TASK0", ((Task) message.arguments.get(0)).getTask());
         Assert.assertEquals("Queue was not updated properly", "TASK1", ((Task) message.arguments.get(1)).getTask());
         database.close();

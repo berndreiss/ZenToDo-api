@@ -83,7 +83,7 @@ public class ListManagerTests {
         List<Task> entries0 = listManager.getListEntries(user.getId(), profile, list0.getId());
         List<Task> entries1 = listManager.getListEntries(user.getId(), profile, list1.getId());
         Assert.assertEquals(entries0.isEmpty() ? "Entry was not added to list." : "Too many entries were added to list.", 1, entries0.size());
-        Assert.assertEquals("Wrong entry found in list.", task0.getId(), entries0.getFirst().getId());
+        Assert.assertEquals("Wrong entry found in list.", task0.getId(), entries0.get(0).getId());
         Assert.assertEquals(entries1.size() > 2 ? "Too few entries were added to list." : "Too many entries were added to list.", 2, entries1.size());
         Assert.assertEquals("Wrong entry found in list.", task1.getId(), entries1.get(0).getId());
         Assert.assertEquals("Entry has wrong list position.", 0, (int) entries1.get(0).getListPosition());
@@ -95,8 +95,8 @@ public class ListManagerTests {
         entries1 = listManager.getListEntries(user.getId(), profile, list1.getId());
         Assert.assertEquals("Entry was not added to other list.", 2, entries0.size());
         Assert.assertEquals("Entry was not remove from other list.", 1, entries1.size());
-        Assert.assertEquals("Wrong entry found in list.", task2.getId(), entries1.getFirst().getId());
-        Assert.assertEquals("List position was not adjusted after removing item.", 0, (int) entries1.getFirst().getListPosition());
+        Assert.assertEquals("Wrong entry found in list.", task2.getId(), entries1.get(0).getId());
+        Assert.assertEquals("List position was not adjusted after removing item.", 0, (int) entries1.get(0).getListPosition());
 
         listManager.updateList(user.getId(), user.getProfile(), task0.getId(), null);
         List<Task> listNull = listManager.getListEntries(user.getId(), user.getProfile(), null);
@@ -311,11 +311,11 @@ public class ListManagerTests {
 
         List<TaskList> lists0 = listManager.getListsForUser(DatabaseTestSuite.user.getId(), DatabaseTestSuite.user.getProfile());
         Assert.assertEquals(1, lists0.size());
-        Assert.assertEquals("Wrong list was associated with the default user.", list0.getId(), lists0.getFirst().getId());
+        Assert.assertEquals("Wrong list was associated with the default user.", list0.getId(), lists0.get(0).getId());
 
         List<TaskList> lists1 = listManager.getListsForUser(user.getId(), user.getProfile());
         Assert.assertEquals(1, lists1.size());
-        Assert.assertEquals("Wrong list was associated with the default user.", list1.getId(), lists1.getFirst().getId());
+        Assert.assertEquals("Wrong list was associated with the default user.", list1.getId(), lists1.get(0).getId());
 
         List<TaskList> listsAll = listManager.getLists();
         Assert.assertEquals("Not all lists were returned", 2, listsAll.size());
@@ -341,7 +341,7 @@ public class ListManagerTests {
 
         List<TaskList> listsUser = listManager.getListsForUser(user.getId(), user.getProfile());
         Assert.assertFalse("List was not moved to new list id for user profile.", listsUser.isEmpty());
-        Assert.assertEquals("Wrong list was returned.", 3, listsUser.getFirst().getId());
+        Assert.assertEquals("Wrong list was returned.", 3, listsUser.get(0).getId());
 
         List<Task> entries = listManager.getListEntries(user.getId(), user.getProfile(), 3L);
         Assert.assertFalse("Entry was not moved to new list id.", entries.isEmpty());
