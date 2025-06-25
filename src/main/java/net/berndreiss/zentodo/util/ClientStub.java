@@ -3,6 +3,7 @@ package net.berndreiss.zentodo.util;
 import com.sun.istack.NotNull;
 import jakarta.persistence.EntityManagerFactory;
 import jakarta.persistence.Persistence;
+import jakarta.persistence.criteria.CriteriaBuilder;
 import net.berndreiss.zentodo.data.*;
 import net.berndreiss.zentodo.exceptions.*;
 import net.berndreiss.zentodo.operations.ClientOperationHandlerI;
@@ -764,6 +765,13 @@ public class ClientStub implements OperationHandlerI {
                 for (OperationHandlerI oh: otherHandlers)
                     oh.addNewList(name, color);
             }
+            case ADD_USER_PROFILE_TO_LIST -> {
+                List<Object> args = message.arguments;
+                long user = Long.parseLong(args.get(0).toString());
+                int profile = Integer.parseInt(args.get(1).toString());
+                long list = Long.parseLong(args.get(2).toString());
+                dbHandler.getListManager().addUserProfileToList(user, profile, list);
+            }
             case DELETE -> {
                 int profile = Integer.parseInt(message.arguments.get(0).toString());
                 long task = Long.parseLong(message.arguments.get(1).toString());
@@ -1103,8 +1111,6 @@ public class ClientStub implements OperationHandlerI {
 
     @Override
     public synchronized void updateList(long task, Long newId) throws InvalidActionException {
-        if (newId != null && dbHandler.getListManager().getListsForUser(user.getId(), user.getProfile()).stream().anyMatch(tl -> tl.getId() == newId))
-            throw new InvalidActionException("No list with id exists for the user profile.");
         List<Object> arguments = new ArrayList<>();
         arguments.add(user.getProfile());
         arguments.add(task);
@@ -1211,10 +1217,15 @@ public class ClientStub implements OperationHandlerI {
         arguments.add(id);
         arguments.add(name);
         arguments.add(color == null ? "" : color);
-        System.out.println("BRRRRRRRRRRRRRRRRRRRRRRRRR");
         sendUpdate(OperationType.ADD_NEW_LIST, arguments);
         TaskList list = dbHandler.getListManager().addList(id, name, color);
         dbHandler.getListManager().addUserProfileToList(user.getId(), user.getProfile(), list.getId());
+        arguments = new ArrayList<>();
+        arguments.add(user.getId());
+        arguments.add(user.getProfile());
+        arguments.add(list.getId());
+        sendUpdate(OperationType.ADD_USER_PROFILE_TO_LIST, arguments);
+        //TODO make this one message
         for (OperationHandlerI oh: otherHandlers)
             oh.addNewList(name, color);
         return list;

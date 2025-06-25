@@ -29,6 +29,10 @@ public enum OperationType {
      */
     ADD_NEW_LIST,
     /**
+     * USER (long), PROFILE (int), LIST (long)
+     */
+    ADD_USER_PROFILE_TO_LIST,
+    /**
      * PROFILE (int), TASK (long)
      */
     DELETE,
