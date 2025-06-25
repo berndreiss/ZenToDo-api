@@ -99,7 +99,7 @@ public interface OperationHandlerI {
     List<TaskList> loadLists();
 
     /**
-     * Retrieve the colors of all lists as a map.
+     * Retrieve the colors of all lists as a map. Returns white if color == null.
      *
      * @return a map<list, color>
      */

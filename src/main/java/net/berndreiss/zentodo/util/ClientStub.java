@@ -1022,7 +1022,7 @@ public class ClientStub implements OperationHandlerI {
         List<TaskList> lists = loadLists();
         return lists.stream().collect(Collectors.toMap(
                 TaskList::getId,
-                TaskList::getColor
+                taskList -> taskList.getColor() == null ? "#00ffffff" : taskList.getColor()
         ));
     }
 
