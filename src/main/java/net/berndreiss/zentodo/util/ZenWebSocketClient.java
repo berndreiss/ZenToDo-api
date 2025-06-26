@@ -3,6 +3,9 @@ package net.berndreiss.zentodo.util;
 import okhttp3.*;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 /**
@@ -18,6 +21,9 @@ public class ZenWebSocketClient {
     private final ClientStub clientStub;
     private WebSocket webSocket;
     private OkHttpClient client;
+
+    private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+    private static final long KEEP_ALIVE_INTERVAL_SECONDS = 30;
 
     public ZenWebSocketClient(Consumer<String> messageConsumer, ClientStub clientStub) {
         this.messageConsumer = messageConsumer;
@@ -40,13 +46,21 @@ public class ZenWebSocketClient {
             @Override
             public void onOpen(@NotNull WebSocket webSocket, @NotNull Response response) {
                 if (clientStub.getMessagePrinter() != null)
-                    clientStub.getMessagePrinter().accept("Connected websocket client");
+                    clientStub.getMessagePrinter().accept("Connected to server");
+
+                scheduler.scheduleAtFixedRate(() -> {
+                    if (ZenWebSocketClient.this.webSocket != null) {
+                        ZenWebSocketClient.this.webSocket.send("{\"type\":\"ping\"}");
+                    }
+                }, KEEP_ALIVE_INTERVAL_SECONDS, KEEP_ALIVE_INTERVAL_SECONDS, TimeUnit.SECONDS);
             }
 
             @Override
             public void onMessage(@NotNull WebSocket webSocket, @NotNull String text) {
-                System.out.println(">>> Raw message: " + text);
-                messageConsumer.accept(text);
+                if (text.contains("{\"type\":\"pong\"}"))
+                    System.out.println("PONG");
+                else
+                    messageConsumer.accept(text);
             }
 
             @Override
@@ -54,13 +68,16 @@ public class ZenWebSocketClient {
                 webSocket.close(1000, null);
                 if (clientStub.getMessagePrinter() != null)
                     clientStub.getMessagePrinter().accept("Disconnected websocket client");
+                scheduler.shutdown();
             }
 
             @Override
             public void onFailure(@NotNull WebSocket webSocket, @NotNull Throwable t, Response response) {
                 ClientStub.logger.error("WebSocket error", t);
+                scheduler.shutdown();
             }
         });
+
     }
 
     public void disconnect() {
@@ -70,6 +87,7 @@ public class ZenWebSocketClient {
         if (client != null) {
             client.dispatcher().executorService().shutdown();
         }
+        scheduler.shutdown();
     }
 
     public void sendMessage(String message) {
