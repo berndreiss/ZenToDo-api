@@ -135,7 +135,7 @@ public class ClientStub implements OperationHandlerI {
     }
 
     //Method for testing purposes
-    public static void main(String[] args) {
+    public static void main(String[] args) throws InvalidActionException, DuplicateIdException {
         for (int i = 0; i < 1; i++) {
             try {
                 Files.createDirectory(Paths.get("user0"));
@@ -152,10 +152,11 @@ public class ClientStub implements OperationHandlerI {
             //List<Entry> entries2 = stub2.loadEntries();
 
             List<Task> tasks = stub0.loadDropped();
-            Optional<Task> task = tasks.stream().filter(t -> t.getTask().equals("Test")).findFirst();
+            Optional<Task> task = tasks.stream().filter(t -> t.getTask().equals("Test1")).findFirst();
             if (task.isPresent()){
-                stub0.updateFocus(task.get().getId(), true);
-                stub0.updateFocus(task.get().getId(), false);
+                TaskList list = stub0.addNewList("TEST", null);
+                stub0.updateList(task.get().getId(), list.getId());
+                stub0.updateDropped(task.get().getId(), false);
             }
             //Entry entry1 = stub1.addNewEntry("TASK1");
             //Entry entry2 = stub2.addNewEntry("TASK2");
