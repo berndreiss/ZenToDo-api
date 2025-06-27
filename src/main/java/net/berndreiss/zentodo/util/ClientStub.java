@@ -3,7 +3,6 @@ package net.berndreiss.zentodo.util;
 import com.sun.istack.NotNull;
 import jakarta.persistence.EntityManagerFactory;
 import jakarta.persistence.Persistence;
-import jakarta.persistence.criteria.CriteriaBuilder;
 import net.berndreiss.zentodo.data.*;
 import net.berndreiss.zentodo.exceptions.*;
 import net.berndreiss.zentodo.operations.ClientOperationHandlerI;
@@ -152,7 +151,12 @@ public class ClientStub implements OperationHandlerI {
             //ClientStub stub2 = getStub("user2", "bd_reiss@yahoo.de", "ZenToDoPU2");
             //List<Entry> entries2 = stub2.loadEntries();
 
-            Task task0 = stub0.addNewTask("TASK0");
+            List<Task> tasks = stub0.loadDropped();
+            Optional<Task> task = tasks.stream().filter(t -> t.getTask().equals("Test")).findFirst();
+            if (task.isPresent()){
+                stub0.updateFocus(task.get().getId(), true);
+                stub0.updateFocus(task.get().getId(), false);
+            }
             //Entry entry1 = stub1.addNewEntry("TASK1");
             //Entry entry2 = stub2.addNewEntry("TASK2");
 
@@ -831,7 +835,7 @@ public class ClientStub implements OperationHandlerI {
             case UPDATE_REMINDER_DATE -> {
                 int profile = Integer.parseInt(message.arguments.get(0).toString());
                 long task = Long.parseLong(message.arguments.get(1).toString());
-                Instant date = Instant.parse(message.arguments.get(1).toString());
+                Instant date = Instant.parse(message.arguments.get(2).toString());
                 dbHandler.getTaskManager().updateReminderDate(user.getId(), profile, task, date);
                 for (OperationHandlerI oh : otherHandlers)
                     oh.updateReminderDate(task, date);
