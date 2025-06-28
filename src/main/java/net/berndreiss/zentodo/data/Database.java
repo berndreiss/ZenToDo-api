@@ -7,7 +7,7 @@ public class Database {
 
     private final TaskManagerI taskManager;
     private final UserManagerI userManager;
-    private final MetadataManagerI databaseOps;
+    private final MetadataManagerI metadataManager;
     private final ListManagerI listManager;
 
     /**
@@ -16,12 +16,12 @@ public class Database {
      * @param taskManager manages tasks
      * @param userManager manages users
      * @param listManager manages lists
-     * @param databaseOps manages user independent data
+     * @param metadataManager manages user independent data
      */
-    public Database(TaskManagerI taskManager, UserManagerI userManager, ListManagerI listManager, MetadataManagerI databaseOps) {
+    public Database(TaskManagerI taskManager, UserManagerI userManager, ListManagerI listManager, MetadataManagerI metadataManager) {
         this.taskManager = taskManager;
         this.userManager = userManager;
-        this.databaseOps = databaseOps;
+        this.metadataManager = metadataManager;
         this.listManager = listManager;
     }
 
@@ -37,8 +37,8 @@ public class Database {
         return listManager;
     }
 
-    public MetadataManagerI getDatabaseOps() {
-        return databaseOps;
+    public MetadataManagerI getMetadataManager() {
+        return metadataManager;
     }
 
     public void close() {

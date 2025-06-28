@@ -52,7 +52,7 @@ public class DbHandler extends Database implements AutoCloseable {
     public void close() {
         ((TaskManager) getTaskManager()).close();
         ((UserManager) getUserManager()).close();
-        ((MetadataManager) getDatabaseOps()).close();
+        ((MetadataManager) getMetadataManager()).close();
         ((ListManager) getListManager()).close();
         emf.close();
     }

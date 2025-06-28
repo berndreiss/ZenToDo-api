@@ -828,7 +828,7 @@ public class ClientStub implements OperationHandlerI {
             case UPDATE_LIST -> {
                 int profile = Integer.parseInt(message.arguments.get(0).toString());
                 long task = Long.parseLong(message.arguments.get(1).toString());
-                Long list = Long.parseLong(message.arguments.get(2).toString());
+                Long list = message.arguments.get(2).toString().isEmpty() ? null : Long.parseLong(message.arguments.get(2).toString());
                 dbHandler.getListManager().updateList(user.getId(), profile, task, list);
                 for (OperationHandlerI oh : otherHandlers)
                     oh.updateList(task, list);
@@ -836,7 +836,7 @@ public class ClientStub implements OperationHandlerI {
             case UPDATE_REMINDER_DATE -> {
                 int profile = Integer.parseInt(message.arguments.get(0).toString());
                 long task = Long.parseLong(message.arguments.get(1).toString());
-                Instant date = Instant.parse(message.arguments.get(2).toString());
+                Instant date = message.arguments.get(2).toString().isEmpty() ? null : Instant.parse(message.arguments.get(2).toString());
                 dbHandler.getTaskManager().updateReminderDate(user.getId(), profile, task, date);
                 for (OperationHandlerI oh : otherHandlers)
                     oh.updateReminderDate(task, date);
@@ -844,20 +844,20 @@ public class ClientStub implements OperationHandlerI {
             case UPDATE_RECURRENCE -> {
                 int profile = Integer.parseInt(message.arguments.get(0).toString());
                 long task = Long.parseLong(message.arguments.get(1).toString());
-                String recurrence = message.arguments.get(2).toString();
+                String recurrence = message.arguments.get(2).toString().isEmpty() ? null : message.arguments.get(2).toString();
                 dbHandler.getTaskManager().updateRecurrence(user.getId(), profile, task, recurrence);
                 for (OperationHandlerI oh : otherHandlers)
                     oh.updateRecurrence(task, recurrence);
             }
             case UPDATE_LIST_COLOR -> {
                 long list = Long.parseLong(message.arguments.get(0).toString());
-                String color = message.arguments.get(1).toString();
+                String color = message.arguments.get(1).toString().isEmpty() ? null : message.arguments.get(1).toString();
                 dbHandler.getListManager().updateListColor(list, color);
                 for (OperationHandlerI oh : otherHandlers)
                     oh.updateListColor(list, color);
             }
             case UPDATE_USER_NAME -> {
-                String name = message.arguments.get(0).toString();
+                String name = message.arguments.get(0).toString().isEmpty() ? null : message.arguments.get(0).toString();
                 dbHandler.getUserManager().updateUserName(user.getId(), name);
             }
             case UPDATE_MAIL -> {
@@ -1119,7 +1119,7 @@ public class ClientStub implements OperationHandlerI {
         List<Object> arguments = new ArrayList<>();
         arguments.add(user.getProfile());
         arguments.add(task);
-        arguments.add(newId);
+        arguments.add(newId == null ? "" : newId);
         //Tell the server
         sendUpdate(OperationType.UPDATE_LIST, arguments);
         //Update locally
@@ -1134,7 +1134,7 @@ public class ClientStub implements OperationHandlerI {
         List<Object> arguments = new ArrayList<>();
         arguments.add(user.getProfile());
         arguments.add(task);
-        arguments.add(value);
+        arguments.add(value == null ? "" : value);
         //Tell the server
         sendUpdate(OperationType.UPDATE_REMINDER_DATE, arguments);
         //Update locally
@@ -1149,7 +1149,7 @@ public class ClientStub implements OperationHandlerI {
         List<Object> arguments = new ArrayList<>();
         arguments.add(user.getProfile());
         arguments.add(task);
-        arguments.add(value);
+        arguments.add(value == null ? "" : value);
         //Tell the server
         sendUpdate(OperationType.UPDATE_RECURRENCE, arguments);
         //Update locally
@@ -1163,7 +1163,7 @@ public class ClientStub implements OperationHandlerI {
     public synchronized void updateListColor(long list, String color) {
         List<Object> arguments = new ArrayList<>();
         arguments.add(list);
-        arguments.add(color);
+        arguments.add(color == null ? "" : color);
         //Tell the server
         sendUpdate(OperationType.UPDATE_LIST_COLOR, arguments);
         //Update locally
@@ -1178,7 +1178,7 @@ public class ClientStub implements OperationHandlerI {
         if (user.getId() == 0)
             return;
         List<Object> arguments = new ArrayList<>();
-        arguments.add(name);
+        arguments.add(name == null ? "" : name);
         //Tell the server
         sendUpdate(OperationType.UPDATE_USER_NAME, arguments);
         //Update locally

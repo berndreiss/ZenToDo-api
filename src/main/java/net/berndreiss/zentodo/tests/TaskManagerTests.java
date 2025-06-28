@@ -19,6 +19,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+//TODO check whether returned tasks are only tasks for the user for PICK!!!
 /**
  * Test methods of the TaskManagerI interface.
  */
